@@ -378,3 +378,7 @@ The library throws clear error messages for various error conditions:
 ## License
 
 MIT
+
+## Acknowledgements
+
+OpenAI ChatGPT helped prepare the prompts and the ZED editor with agent coding of Claude did the implementation of the code.
