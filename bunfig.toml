@@ -1,0 +1,18 @@
+# Bun Configuration
+
+[test]
+# Use built-in default patterns for test files
+preload = ["./tests/setup.js"]
+
+[install]
+registry = "https://registry.npmjs.org"
+exact = true
+
+[debug]
+# Default `console.log` options
+log = { format = "pretty" }
+
+[build]
+minify = false
+sourcemap = "external"
+target = "browser"

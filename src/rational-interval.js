@@ -1,0 +1,437 @@
+/**
+ * RationalInterval.js
+ * 
+ * A class representing closed intervals of rational numbers.
+ * Each interval is represented as [a, b] where a and b are Rational numbers.
+ */
+
+import { Rational } from './rational.js';
+
+export class RationalInterval {
+  #low;
+  #high;
+  static zero = Object.freeze(new RationalInterval(Rational.zero, Rational.zero));
+  static one = Object.freeze(new RationalInterval(Rational.one, Rational.one));
+  static unitInterval = Object.freeze(new RationalInterval(Rational.zero, Rational.one));
+
+  /**
+   * Creates a new RationalInterval.
+   * 
+   * @param {Rational|string|number|bigint} a - The first endpoint
+   * @param {Rational|string|number|bigint} b - The second endpoint
+   * @throws {Error} If the inputs cannot be converted to Rational numbers
+   */
+  constructor(a, b) {
+    // Convert inputs to Rational objects
+    const aRational = a instanceof Rational ? a : new Rational(a);
+    const bRational = b instanceof Rational ? b : new Rational(b);
+
+    // Ensure the interval is ordered correctly (lower endpoint first)
+    if (aRational.lessThanOrEqual(bRational)) {
+      this.#low = aRational;
+      this.#high = bRational;
+    } else {
+      this.#low = bRational;
+      this.#high = aRational;
+    }
+  }
+
+  /**
+   * Gets the lower endpoint of the interval
+   * @returns {Rational} The lower endpoint
+   */
+  get low() {
+    return this.#low;
+  }
+
+  /**
+   * Gets the higher endpoint of the interval
+   * @returns {Rational} The higher endpoint
+   */
+  get high() {
+    return this.#high;
+  }
+
+  /**
+   * Adds another interval to this one.
+   * [a,b] + [c,d] = [a+c, b+d]
+   * 
+   * @param {RationalInterval} other - The interval to add
+   * @returns {RationalInterval} The sum as a new RationalInterval
+   */
+  add(other) {
+    const newLow = this.#low.add(other.low);
+    const newHigh = this.#high.add(other.high);
+    return new RationalInterval(newLow, newHigh);
+  }
+
+  /**
+   * Subtracts another interval from this one.
+   * [a,b] - [c,d] = [a-d, b-c]
+   * 
+   * @param {RationalInterval} other - The interval to subtract
+   * @returns {RationalInterval} The difference as a new RationalInterval
+   */
+  subtract(other) {
+    const newLow = this.#low.subtract(other.high);
+    const newHigh = this.#high.subtract(other.low);
+    return new RationalInterval(newLow, newHigh);
+  }
+
+  /**
+   * Multiplies this interval by another.
+   * For [a,b] * [c,d], compute min and max of all pairwise products
+   * 
+   * @param {RationalInterval} other - The interval to multiply by
+   * @returns {RationalInterval} The product as a new RationalInterval
+   */
+  multiply(other) {
+    // Calculate all possible endpoint products
+    const products = [
+      this.#low.multiply(other.low),
+      this.#low.multiply(other.high),
+      this.#high.multiply(other.low),
+      this.#high.multiply(other.high)
+    ];
+    
+    // Find the minimum and maximum
+    let min = products[0];
+    let max = products[0];
+    
+    for (let i = 1; i < products.length; i++) {
+      if (products[i].lessThan(min)) min = products[i];
+      if (products[i].greaterThan(max)) max = products[i];
+    }
+    
+    return new RationalInterval(min, max);
+  }
+
+  /**
+   * Divides this interval by another.
+   * For [a,b] / [c,d], if 0 ∉ [c,d], compute min and max of all pairwise divisions
+   * 
+   * @param {RationalInterval} other - The interval to divide by
+   * @returns {RationalInterval} The quotient as a new RationalInterval
+   * @throws {Error} If the divisor interval contains zero
+   */
+  divide(other) {
+    const zero = RationalInterval.zero; 
+    
+    // Check if the divisor is exactly zero
+    if (other.low.equals(zero) && other.high.equals(zero)) {
+      throw new Error("Division by zero");
+    }
+    
+    // Check if the divisor interval contains zero
+    if (other.containsZero()) {
+      throw new Error("Cannot divide by an interval containing zero");
+    }
+    
+    // Calculate all possible endpoint quotients
+    const quotients = [
+      this.#low.divide(other.low),
+      this.#low.divide(other.high),
+      this.#high.divide(other.low),
+      this.#high.divide(other.high)
+    ];
+    
+    // Find the minimum and maximum
+    let min = quotients[0];
+    let max = quotients[0];
+    
+    for (let i = 1; i < quotients.length; i++) {
+      if (quotients[i].lessThan(min)) min = quotients[i];
+      if (quotients[i].greaterThan(max)) max = quotients[i];
+    }
+    
+    return new RationalInterval(min, max);
+  }
+  
+  /**
+   * Reciprocates an interval; does not rely on division.
+   * 
+   * @returns {RationalInterval} The reciprocal as a new RationalInterval
+   * @throws {Error} If this interval contains zero
+   */
+  reciprocate() {
+    if (this.containsZero()) {
+      throw new Error("Cannot reciprocate an interval containing zero");
+    }
+   
+    // order does not matter since the constructor orders it. Order given is the right one for positive intervals.
+    return new RationalInterval(this.#high.reciprocal(), this.#low.reciprocal());
+  }
+
+  /**
+   * Negates an interval; does not rely on subtraction
+   * 
+   * @returns {RationalInterval} The negation as a new RationalInterval
+   */
+  negate() {
+    return new RationalInterval(this.#high.negate(), this.#low.negate());
+  }
+  
+  /**
+   * Raises this interval to an integer power. The meaning is to apply the power to each rational in the interval which is encapsulated by doing it to the endpoints.  
+   * 
+   * @param {number|bigint} exponent - The exponent (must be an integer)
+   * @returns {RationalInterval} The result as a new RationalInterval
+   * @throws {Error} If raising to the power would involve division by zero or 0^0
+   */
+  pow(exponent) {
+    const n = BigInt(exponent);
+    const zero = Rational.zero;
+    
+    // Special case for exponent 0
+    if (n === 0n) {
+      if (this.#low.equals(zero) && this.#high.equals(zero)) {
+        throw new Error("Zero cannot be raised to the power of zero");
+      }
+      if (this.containsZero()) {
+        throw new Error("Cannot raise an interval containing zero to the power of zero");
+      }
+      // Any non-zero raised to 0 is 1
+      return new RationalInterval(Rational.one, Rational.one);
+    }
+    
+    // For negative exponents
+    if (n < 0n) {
+      // Check if interval contains 0
+      if (this.containsZero()) {
+        throw new Error("Cannot raise an interval containing zero to a negative power");
+      }
+      
+      // Compute 1/([a,b]^|n|)
+      const positivePower = this.pow(-n);
+      const reciprocal = new RationalInterval(positivePower.high.reciprocal(), positivePower.low.reciprocal());
+      return reciprocal;
+    }
+    
+    // For positive exponents
+    
+    // Special case for exponent 1
+    if (n === 1n) {
+      return new RationalInterval(this.#low, this.#high);
+    }
+    
+    // For even powers
+    if (n % 2n === 0n) {
+      // If interval contains 0, minimum is 0, otherwise compute min of endpoints^n
+      let minVal;
+      let maxVal;
+      
+      if (this.#low.lessThanOrEqual(zero) && this.#high.greaterThanOrEqual(zero)) {
+        minVal = new Rational(0);
+        // Maximum is max(low^n, high^n) if both have same sign
+        // Otherwise it's max of absolute values raised to the power
+        const lowPow = this.#low.abs().pow(n);
+        const highPow = this.#high.abs().pow(n);
+        maxVal = lowPow.greaterThan(highPow) ? lowPow : highPow;
+      } else if (this.#high.lessThan(zero)) {
+        // Both endpoints negative, even power
+        // min = high^n, max = low^n (powers reverse the order)
+        minVal = this.#high.pow(n);
+        maxVal = this.#low.pow(n);
+      } else {
+        // Both endpoints positive, even power
+        // min = low^n, max = high^n
+        minVal = this.#low.pow(n);
+        maxVal = this.#high.pow(n);
+      }
+      
+      return new RationalInterval(minVal, maxVal);
+    } else {
+      // For odd powers, the order is preserved
+      return new RationalInterval(this.#low.pow(n), this.#high.pow(n));
+    }
+  }
+
+  
+  /**
+   * Implements power raising by multiplying or dividing the intervals to itself. This is different from the above power 
+   * 
+   * @param {number|bigint} exponent - The exponent (must be an integer)
+   * @returns {RationalInterval} The result as a new RationalInterval
+   * @throws {Error} If raising to the power would involve division by zero or 0^0
+   */
+  mpow(exponent) {
+    const n = BigInt(exponent);
+    const zero = Rational.zero;
+    
+    // Special case for exponent 0
+    if (n === 0n) {
+      throw new Error("Multiplicative exponentiation requires at least one factor")
+    }
+    
+    // For negative exponents
+    if (n < 0n) {
+      // Compute reciprocal first
+      const recipInterval = this.reciprocate();
+      // Then compute positive power of the reciprocal
+      return recipInterval.mpow(-n);
+    }
+    
+    // For positive exponents
+    
+    // Special case for exponent 1
+    if (n === 1n) {
+      return new RationalInterval(this.#low, this.#high);
+    }
+    
+    // Iterate from n down to 1 multiplying each interval
+    if (n === 1n) {
+      return new RationalInterval(this.#low, this.#high);
+    }
+    
+    let result = new RationalInterval(this.#low, this.#high);
+    for (let i = 1n; i < n; i++) {
+      result = result.multiply(this);
+    }
+    return result;
+  }
+  
+  
+  /**
+   * Checks if this interval overlaps with another
+   * 
+   * @param {RationalInterval} other - The interval to check against
+   * @returns {boolean} True if the intervals overlap
+   */
+  overlaps(other) {
+    return !(this.#high.lessThan(other.low) || other.high.lessThan(this.#low));
+  }
+
+  /**
+   * Checks if this interval entirely contains another
+   * 
+   * @param {RationalInterval} other - The interval to check against
+   * @returns {boolean} True if this interval contains the other
+   */
+  contains(other) {
+    return this.#low.lessThanOrEqual(other.low) && this.#high.greaterThanOrEqual(other.high);
+  }
+
+  /**
+   * Checks if a rational number is contained in this interval
+   * 
+   * @param {Rational|string|number|bigint} value - The value to check
+   * @returns {boolean} True if the value is in the interval
+   */
+  containsValue(value) {
+    const r = value instanceof Rational ? value : new Rational(value);
+    return this.#low.lessThanOrEqual(r) && this.#high.greaterThanOrEqual(r);
+  }
+
+  /**
+   * Checks if zero is contained in this interval
+   * For use in division and exponentiation error handling
+   * @returns {boolean} True if the interval contains zero
+   */
+  containsZero() {
+    const zero = Rational.zero;
+    return (this.#low.lessThanOrEqual(zero) && this.#high.greaterThanOrEqual(zero));
+  }
+
+  /**
+   * Checks if this interval equals another
+   * 
+   * @param {RationalInterval} other - The interval to compare with
+   * @returns {boolean} True if the intervals are equal
+   */
+  equals(other) {
+    return this.#low.equals(other.low) && this.#high.equals(other.high);
+  }
+
+  /**
+   * Gets the intersection of this interval with another
+   * 
+   * @param {RationalInterval} other - The interval to intersect with
+   * @returns {RationalInterval|null} The intersection interval, or null if they don't overlap
+   */
+  intersection(other) {
+    if (!this.overlaps(other)) {
+      return null;
+    }
+    
+    const newLow = this.#low.greaterThan(other.low) ? this.#low : other.low;
+    const newHigh = this.#high.lessThan(other.high) ? this.#high : other.high;
+    
+    return new RationalInterval(newLow, newHigh);
+  }
+
+  /**
+   * Gets the union of this interval with another if they overlap or are adjacent
+   * 
+   * @param {RationalInterval} other - The interval to unite with
+   * @returns {RationalInterval|null} The union interval, or null if they are disjoint
+   */
+  union(other) {
+    // Check if intervals are disjoint and not adjacent
+    const oneLow = new Rational(1);
+    const adjacentRight = this.#high.add(oneLow).equals(other.low);
+    const adjacentLeft = other.high.add(oneLow).equals(this.#low);
+    
+    if (!this.overlaps(other) && !adjacentRight && !adjacentLeft) {
+      return null;
+    }
+    
+    const newLow = this.#low.lessThan(other.low) ? this.#low : other.low;
+    const newHigh = this.#high.greaterThan(other.high) ? this.#high : other.high;
+    
+    return new RationalInterval(newLow, newHigh);
+  }
+
+  /**
+   * Converts this interval to a string in the format "low:high"
+   * 
+   * @returns {string} String representation of this interval
+   */
+  toString() {
+    return `${this.#low.toString()}:${this.#high.toString()}`;
+  }
+  
+  /**
+   * Converts this interval to a string in mixed number format "a..b/c:d..e/f"
+   * where endpoints are represented as mixed numbers
+   * 
+   * @returns {string} Mixed number string representation of this interval
+   */
+  toMixedString() {
+    return `${this.#low.toMixedString()}:${this.#high.toMixedString()}`;
+  }
+
+  /**
+   * Creates a RationalInterval from a single value (creating a point interval)
+   * 
+   * @param {Rational|string|number|bigint} value - The value
+   * @returns {RationalInterval} A new point interval
+   */
+  static point(value) {
+    let r;
+    if (value instanceof Rational) {
+      r = value;
+    } else if (typeof value === 'number') {
+      r = new Rational(String(value));
+    } else if (typeof value === 'string' || typeof value === 'bigint') {
+      r = new Rational(value);
+    } else {
+      r = new Rational(0);
+    }
+    return new RationalInterval(r, r);
+  }
+
+  /**
+   * Creates a RationalInterval from a string in the format "a:b"
+   * 
+   * @param {string} str - The string representation
+   * @returns {RationalInterval} A new interval
+   * @throws {Error} If the string format is invalid
+   */
+  static fromString(str) {
+    const parts = str.split(':');
+    if (parts.length !== 2) {
+      throw new Error("Invalid interval format. Use 'a:b'");
+    }
+    return new RationalInterval(parts[0], parts[1]);
+  }
+}

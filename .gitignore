@@ -1,0 +1,38 @@
+# Ignore dependencies
+node_modules/
+bun.lockb
+
+# Ignore build output
+dist/
+build/
+out/
+
+# Ignore logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Ignore editor specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Ignore coverage reports
+coverage/
+
+# Ignore generated JavaScript files (if using TypeScript)
+*.js.map
+
+# Ignore OS specific files
+.DS_Store
+Thumbs.db
