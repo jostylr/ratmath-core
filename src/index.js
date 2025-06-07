@@ -7,18 +7,19 @@
 
 import { Rational } from './rational.js';
 import { RationalInterval } from './rational-interval.js';
-import { Parser } from './parser.js';
+import { Parser, parseRepeatingDecimal } from './parser.js';
 import { Fraction } from './fraction.js';
 import { FractionInterval } from './fraction-interval.js';
 
 // Export named exports
-export { Rational, RationalInterval, Parser, Fraction, FractionInterval };
+export { Rational, RationalInterval, Parser, parseRepeatingDecimal, Fraction, FractionInterval };
 
 // Default export for convenient importing
 export default {
   Rational,
   RationalInterval,
   Parser,
+  parseRepeatingDecimal,
   Fraction,
   FractionInterval
 };

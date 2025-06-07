@@ -8,6 +8,173 @@
 import { Rational } from './rational.js';
 import { RationalInterval } from './rational-interval.js';
 
+/**
+ * Parses a repeating decimal string and returns the exact rational equivalent
+ * 
+ * @param {string} str - String like "0.12#45" or "733.#3" or "1.23#0"
+ * @returns {Rational|RationalInterval} The exact rational representation, or interval for non-repeating decimals
+ * @throws {Error} If the string format is invalid
+ */
+export function parseRepeatingDecimal(str) {
+  if (!str || typeof str !== 'string') {
+    throw new Error('Input must be a non-empty string');
+  }
+
+  str = str.trim();
+  
+  // Handle negative numbers
+  const isNegative = str.startsWith('-');
+  if (isNegative) {
+    str = str.substring(1);
+  }
+
+  // Check if this is a non-repeating decimal (no # symbol)
+  if (!str.includes('#')) {
+    return parseNonRepeatingDecimal(str, isNegative);
+  }
+
+  // Split on the # symbol
+  const parts = str.split('#');
+  if (parts.length !== 2) {
+    throw new Error('Invalid repeating decimal format. Use format like "0.12#45"');
+  }
+
+  const [nonRepeatingPart, repeatingPart] = parts;
+  
+  // Validate repeating part
+  if (!/^\d+$/.test(repeatingPart)) {
+    throw new Error('Repeating part must contain only digits');
+  }
+
+  // Handle special case where repeating part is "0" - this means the decimal terminates
+  if (repeatingPart === '0') {
+    try {
+      // Convert decimal string to rational manually
+      const decimalParts = nonRepeatingPart.split('.');
+      if (decimalParts.length > 2) {
+        throw new Error('Invalid decimal format - multiple decimal points');
+      }
+      
+      const integerPart = decimalParts[0] || '0';
+      const fractionalPart = decimalParts[1] || '';
+      
+      if (!/^\d*$/.test(integerPart) || !/^\d*$/.test(fractionalPart)) {
+        throw new Error('Decimal must contain only digits and at most one decimal point');
+      }
+      
+      let numerator, denominator;
+      if (!fractionalPart) {
+        // Just an integer
+        numerator = BigInt(integerPart);
+        denominator = 1n;
+      } else {
+        // Convert decimal to fraction
+        numerator = BigInt(integerPart + fractionalPart);
+        denominator = 10n ** BigInt(fractionalPart.length);
+      }
+      
+      const rational = new Rational(numerator, denominator);
+      return isNegative ? rational.negate() : rational;
+    } catch (error) {
+      throw new Error(`Invalid decimal format: ${error.message}`);
+    }
+  }
+
+  // Split non-repeating part into integer and fractional parts
+  const decimalParts = nonRepeatingPart.split('.');
+  if (decimalParts.length > 2) {
+    throw new Error('Invalid decimal format - multiple decimal points');
+  }
+
+  const integerPart = decimalParts[0] || '0';
+  const fractionalPart = decimalParts[1] || '';
+
+  // Validate parts contain only digits
+  if (!/^\d*$/.test(integerPart) || !/^\d*$/.test(fractionalPart)) {
+    throw new Error('Non-repeating part must contain only digits and at most one decimal point');
+  }
+
+  // Calculate the rational representation
+  const n = fractionalPart.length; // number of non-repeating fractional digits
+  const m = repeatingPart.length;  // number of repeating digits
+
+  // Create the numbers: abc (concatenated) and ab (non-repeating part only)
+  const abcStr = integerPart + fractionalPart + repeatingPart;
+  const abStr = integerPart + fractionalPart;
+
+  const abc = BigInt(abcStr);
+  const ab = BigInt(abStr);
+
+  // Calculate denominator: 10^(n+m) - 10^n = 10^n * (10^m - 1)
+  const powerOfTenN = 10n ** BigInt(n);
+  const powerOfTenM = 10n ** BigInt(m);
+  const denominator = powerOfTenN * (powerOfTenM - 1n);
+
+  // Calculate numerator: abc - ab
+  const numerator = abc - ab;
+
+  let result = new Rational(numerator, denominator);
+  return isNegative ? result.negate() : result;
+}
+
+/**
+ * Parses a non-repeating decimal and returns an interval representing the uncertainty
+ * For example, "1.23" becomes the interval [1.225, 1.235)
+ * 
+ * @private
+ * @param {string} str - Decimal string like "1.23"
+ * @param {boolean} isNegative - Whether the number is negative
+ * @returns {RationalInterval} The interval representation
+ */
+function parseNonRepeatingDecimal(str, isNegative) {
+  // Validate decimal format
+  const decimalParts = str.split('.');
+  if (decimalParts.length > 2) {
+    throw new Error('Invalid decimal format - multiple decimal points');
+  }
+
+  const integerPart = decimalParts[0] || '0';
+  const fractionalPart = decimalParts[1] || '';
+
+  if (!/^\d+$/.test(integerPart) || !/^\d*$/.test(fractionalPart)) {
+    throw new Error('Decimal must contain only digits and at most one decimal point');
+  }
+
+  // If there's no fractional part, treat as exact integer
+  if (!fractionalPart) {
+    const rational = new Rational(integerPart);
+    return RationalInterval.point(isNegative ? rational.negate() : rational);
+  }
+
+  // Create interval [x.yyy5, x.yyy5) where the last digit is treated as ±0.5
+  const lastDigitPlace = 10n ** BigInt(fractionalPart.length + 1);
+  const baseValue = BigInt(integerPart + fractionalPart);
+  
+  let lower, upper;
+  
+  if (isNegative) {
+    // For negative numbers like -1.5, we want [-1.55, -1.45]
+    // So we need to add 5 and subtract 5 from baseValue * 10, then negate
+    const lowerNumerator = -(baseValue * 10n + 5n);
+    const upperNumerator = -(baseValue * 10n - 5n);
+    
+    lower = new Rational(lowerNumerator, lastDigitPlace);
+    upper = new Rational(upperNumerator, lastDigitPlace);
+  } else {
+    // For positive numbers like 0.5, we want [0.45, 0.55]
+    // baseValue = 5, lastDigitPlace = 100
+    // lower = (5 * 10 - 5) / 100 = 45/100 = 9/20
+    // upper = (5 * 10 + 5) / 100 = 55/100 = 11/20
+    const lowerNumerator = baseValue * 10n - 5n;
+    const upperNumerator = baseValue * 10n + 5n;
+
+    lower = new Rational(lowerNumerator, lastDigitPlace);
+    upper = new Rational(upperNumerator, lastDigitPlace);
+  }
+
+  return new RationalInterval(lower, upper);
+}
+
 export class Parser {
   /**
    * Parses a string representing an interval arithmetic expression
@@ -258,12 +425,44 @@ export class Parser {
   }
 
   /**
-   * Parses a rational number of the form "a/b", "a", or mixed number "a..b/c"
+   * Parses a rational number of the form "a/b", "a", mixed number "a..b/c", or repeating decimal "a.b#c"
    * @private
    */
   static #parseRational(expr) {
     if (expr.length === 0) {
       throw new Error('Unexpected end of expression');
+    }
+    
+    // Check for repeating decimal notation first
+    let hashIndex = expr.indexOf('#');
+    if (hashIndex !== -1) {
+      // Find the end of the repeating decimal
+      let endIndex = hashIndex + 1;
+      while (endIndex < expr.length && /\d/.test(expr[endIndex])) {
+        endIndex++;
+      }
+      
+      const repeatingDecimalStr = expr.substring(0, endIndex);
+      try {
+        const result = parseRepeatingDecimal(repeatingDecimalStr);
+        
+        // If result is an interval, treat it as a point interval for the rational
+        if (result instanceof RationalInterval) {
+          // For parsing in expressions, use the midpoint of the interval
+          const midpoint = result.low.add(result.high).divide(new Rational(2));
+          return {
+            value: midpoint,
+            remainingExpr: expr.substring(endIndex)
+          };
+        } else {
+          return {
+            value: result,
+            remainingExpr: expr.substring(endIndex)
+          };
+        }
+      } catch (error) {
+        throw new Error(`Invalid repeating decimal: ${error.message}`);
+      }
     }
     
     let i = 0;

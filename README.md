@@ -11,6 +11,7 @@ A JavaScript library for exact rational arithmetic and interval arithmetic. The 
 - **Interval Arithmetic**: Supports operations on closed intervals with exact rational endpoints.
 - **Fraction Intervals**: Implements intervals with Fraction endpoints for exact representation without automatic reduction.
 - **Mediant Partitioning**: Create interval subdivisions using mediants (useful in continued fractions and number theory).
+- **Repeating Decimal Support**: Parse repeating decimals like "0.12#45" and convert them to exact rational representations.
 - **Expression Parser**: Parse and evaluate string expressions involving rational intervals and arithmetic operations.
 
 ## Installation
@@ -26,6 +27,38 @@ bun add ratmath
 ```
 
 ## Usage
+
+### Repeating Decimal Parsing
+
+Convert repeating decimals to exact rational numbers:
+
+```javascript
+import { parseRepeatingDecimal } from 'ratmath';
+
+// Basic repeating decimals
+const oneThird = parseRepeatingDecimal('0.#3');        // 1/3
+const twoThirds = parseRepeatingDecimal('0.#6');       // 2/3
+const complex = parseRepeatingDecimal('0.12#45');      // 137/1100
+
+// Terminating decimals (using #0)
+const exact = parseRepeatingDecimal('1.23#0');         // 123/100
+const half = parseRepeatingDecimal('0.5#0');           // 1/2
+
+// Negative repeating decimals
+const negThird = parseRepeatingDecimal('-0.#3');       // -1/3
+
+// Non-repeating decimals become intervals
+const uncertain = parseRepeatingDecimal('1.23');       // [1.225, 1.235]
+const negUncertain = parseRepeatingDecimal('-0.5');    // [-0.55, -0.45]
+
+// Mathematical verification
+const nineNines = parseRepeatingDecimal('0.#9');       // 1 (exactly)
+console.log(nineNines.equals(new Rational(1)));        // true
+
+// Common fractions
+const oneSeventh = parseRepeatingDecimal('0.#142857'); // 1/7
+const oneSixth = parseRepeatingDecimal('0.1#6');       // 1/6
+```
 
 ### Basic Rational Arithmetic
 
@@ -143,6 +176,11 @@ const result2m = Parser.parse('1..1/2:2..3/4 * 2:3');  // [3, 33/4]
 // Complex expressions with parentheses
 const result3 = Parser.parse('(1/2:3/4 + 1/4) * (3/2 - 1/2:1)');
 
+// Parse expressions with repeating decimals
+const repeatResult1 = Parser.parse('0.#3 + 0.#6');    // 1:1 (exact result)
+const repeatResult2 = Parser.parse('1.23#45 * 2');    // 679/275:679/275
+const intervalResult = Parser.parse('0.#3 : 0.8#3');  // 1/3:5/6
+
 // Results are RationalInterval objects
 console.log(result2.toString());     // "1:9/4"
 console.log(result2m.toMixedString()); // "3:8..1/4"
@@ -185,6 +223,83 @@ new Rational(numerator, denominator = 1)
 #### Static Methods
 
 - **from(value)**: Creates a Rational from a number, string, or another Rational
+
+### parseRepeatingDecimal Function
+
+The `parseRepeatingDecimal` function converts repeating decimal strings to exact rational representations.
+
+```javascript
+parseRepeatingDecimal(str)
+```
+
+- `str`: String representing a repeating decimal
+
+#### Supported Formats
+
+- **Repeating decimals**: `"0.12#45"` represents 0.12454545... = 137/1100
+- **Terminating decimals**: `"1.23#0"` represents exactly 1.23 = 123/100  
+- **Pure repeating**: `"0.#3"` represents 0.333... = 1/3
+- **Negative decimals**: `"-0.#6"` represents -0.666... = -2/3
+- **Non-repeating**: `"1.23"` becomes interval [1.225, 1.235]
+
+#### Return Values
+
+- Returns a `Rational` for repeating decimals with `#` notation
+- Returns a `RationalInterval` for non-repeating decimals (representing uncertainty in the last digit)
+
+#### Examples
+
+```javascript
+import { parseRepeatingDecimal } from 'ratmath';
+
+// Exact conversions
+parseRepeatingDecimal('0.#3');      // 1/3
+parseRepeatingDecimal('0.12#45');   // 137/1100
+parseRepeatingDecimal('733.#3');    // 2200/3
+parseRepeatingDecimal('1.23#0');    // 123/100
+
+// Intervals for uncertain decimals
+parseRepeatingDecimal('1.23');      // [49/40, 247/200]
+parseRepeatingDecimal('-0.5');      // [-11/20, -9/20]
+```</edits>
+
+</edits>
+
+<edits>
+
+<old_text>
+### Calculation with Exact Fractions
+
+```javascript
+import { Rational } from 'ratmath';
+
+// Calculate 1/3 + 1/4 - 1/5 exactly
+const a = new Rational(1, 3);
+const b = new Rational(1, 4);
+const c = new Rational(1, 5);
+
+const result = a.add(b).subtract(c);
+console.log(result.toString());  // "47/60"
+```
+
+### Repeating Decimal Examples
+
+```javascript
+import { parseRepeatingDecimal, Rational } from 'ratmath';
+
+// Convert repeating decimals to exact fractions
+const third = parseRepeatingDecimal('0.#3');           // 1/3
+const sixth = parseRepeatingDecimal('0.1#6');          // 1/6  
+const mixed = parseRepeatingDecimal('1.23#45');        // 679/550
+
+// Verify mathematical properties
+console.log(third.multiply(new Rational(3)));          // 1 (exactly)
+console.log(parseRepeatingDecimal('0.#9'));            // 1 (0.999... = 1)
+
+// Handle non-repeating decimals as intervals
+const uncertain = parseRepeatingDecimal('3.14');       // [3.135, 3.145]
+console.log(uncertain.toString());                     // "627/200:629/200"
+```
 
 ### Fraction Class
 
@@ -361,9 +476,41 @@ import { Parser } from 'ratmath';
 
 // Evaluate an expression with intervals
 const result = Parser.parse('(1/2:3/4 + 1/4:1/2)^2 / 2:3');
-
 console.log(result.toString());  // Will output the exact result as a rational interval
 ```
+
+## Implementation Notes
+
+### Repeating Decimal Algorithm
+
+The conversion from repeating decimals to fractions uses the standard mathematical approach:
+
+For a repeating decimal like `a.b#c` where:
+- `a` is the integer part
+- `b` is the non-repeating fractional part (length n)  
+- `c` is the repeating part (length m)
+
+The conversion formula is:
+```
+result = (abc - ab) / (10^(n+m) - 10^n)
+```
+
+Where `abc` is the concatenation of a, b, and c, and `ab` is the concatenation of a and b.
+
+### Interval Representation for Non-repeating Decimals
+
+When a decimal like "1.23" is provided without the `#` symbol, it's treated as having uncertainty in the last digit. The function creates an interval representing all possible values:
+
+- "1.23" becomes [1.225, 1.235]
+- "0.5" becomes [0.45, 0.55]
+- "-1.5" becomes [-1.55, -1.45]
+
+This approach acknowledges that finite decimal representations often have implicit uncertainty.
+- Division by interval containing zero: `"Cannot divide by an interval containing zero"`
+- Raising zero to power zero: `"Zero cannot be raised to the power of zero"`
+- Negative exponents with zero base: `"Zero cannot be raised to a negative power"`
+- Invalid repeating decimal format: `"Invalid repeating decimal format. Use format like '0.12#45'"`
+- Non-numeric characters in repeating part: `"Repeating part must contain only digits"`
 
 ## Error Handling
 
