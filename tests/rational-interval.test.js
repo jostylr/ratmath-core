@@ -366,4 +366,145 @@ describe("RationalInterval", () => {
       );
     });
   });
+
+  describe("new methods", () => {
+    describe("mediant", () => {
+      it("calculates the mediant of interval endpoints", () => {
+        const interval = new RationalInterval("1/2", "2/3");
+        const mediant = interval.mediant();
+        
+        // Mediant of 1/2 and 2/3 is (1+2)/(2+3) = 3/5
+        expect(mediant.equals(new Rational(3, 5))).toBe(true);
+      });
+
+      it("works with integer endpoints", () => {
+        const interval = new RationalInterval(1, 3);
+        const mediant = interval.mediant();
+        
+        // Mediant of 1/1 and 3/1 is (1+3)/(1+1) = 4/2 = 2/1
+        expect(mediant.equals(new Rational(2, 1))).toBe(true);
+      });
+    });
+
+    describe("midpoint", () => {
+      it("calculates the arithmetic midpoint", () => {
+        const interval = new RationalInterval("1/2", "3/2");
+        const midpoint = interval.midpoint();
+        
+        // Midpoint of 1/2 and 3/2 is (1/2 + 3/2)/2 = 2/2 / 2 = 1/2
+        expect(midpoint.equals(new Rational(1, 1))).toBe(true);
+      });
+
+      it("works with different denominators", () => {
+        const interval = new RationalInterval("1/3", "1/2");
+        const midpoint = interval.midpoint();
+        
+        // Midpoint of 1/3 and 1/2 is (1/3 + 1/2)/2 = (2/6 + 3/6)/2 = 5/6 / 2 = 5/12
+        expect(midpoint.equals(new Rational(5, 12))).toBe(true);
+      });
+    });
+
+    describe("shortestDecimal", () => {
+      it("finds integers when they exist in the interval", () => {
+        const interval = new RationalInterval("1/2", "3/2");
+        const shortest = interval.shortestDecimal();
+        
+        // Should find 1 (denominator = 10^0 = 1)
+        expect(shortest.equals(new Rational(1, 1))).toBe(true);
+      });
+
+      it("finds decimal fractions with base 10", () => {
+        const interval = new RationalInterval("1/5", "2/5");
+        const shortest = interval.shortestDecimal();
+        
+        // Should find 2/10 = 1/5 (first valid rational with denominator 10^1)
+        expect(shortest.equals(new Rational(1, 5))).toBe(true);
+      });
+
+      it("works with different bases", () => {
+        const interval = new RationalInterval("1/4", "3/4");
+        const shortest = interval.shortestDecimal(2);
+        
+        // With base 2, should find 1/2 (denominator = 2^1)
+        expect(shortest.equals(new Rational(1, 2))).toBe(true);
+      });
+
+      it("throws error for invalid base", () => {
+        const interval = new RationalInterval("1/2", "3/4");
+        expect(() => interval.shortestDecimal(1)).toThrow("Base must be greater than 1");
+        expect(() => interval.shortestDecimal(0)).toThrow("Base must be greater than 1");
+      });
+
+      it("uses mathematical bound efficiently for large intervals", () => {
+        // Large interval with length 1, should find integer quickly
+        const largeInterval = new RationalInterval("10", "11");
+        const shortest = largeInterval.shortestDecimal();
+        
+        // Should find 10 or 11 (denominator = 1)
+        expect(shortest.denominator).toBe(1n);
+        expect(shortest.numerator >= 10n && shortest.numerator <= 11n).toBe(true);
+      });
+
+      it("handles very small intervals correctly", () => {
+        // Very small interval: [1/1000, 1/999]
+        const smallInterval = new RationalInterval("1/1000", "1/999");
+        const shortest = smallInterval.shortestDecimal();
+        
+        // Should be within the interval
+        expect(smallInterval.containsValue(shortest)).toBe(true);
+      });
+
+      it("works with point intervals that have power-of-base representation", () => {
+        const pointInterval = new RationalInterval("1/4", "1/4");
+        const shortest = pointInterval.shortestDecimal(2);
+        
+        // Should return the exact value since 1/4 = 1/2^2
+        expect(shortest.equals(new Rational(1, 4))).toBe(true);
+      });
+
+      it("returns null for point intervals without power-of-base representation", () => {
+        const pointInterval = new RationalInterval("3/7", "3/7");
+        const shortest = pointInterval.shortestDecimal();
+        
+        // Should return null since 3/7 cannot be represented as p/10^k
+        expect(shortest).toBe(null);
+      });
+    });
+
+    describe("randomRational", () => {
+      it("returns a rational within the interval", () => {
+        const interval = new RationalInterval("1/4", "3/4");
+        const random = interval.randomRational(100);
+        
+        expect(interval.containsValue(random)).toBe(true);
+      });
+
+      it("returns different values on multiple calls (probabilistically)", () => {
+        const interval = new RationalInterval("0", "1");
+        const values = new Set();
+        
+        // Generate multiple random values
+        for (let i = 0; i < 10; i++) {
+          const random = interval.randomRational(50);
+          values.add(random.toString());
+        }
+        
+        // Should have some variety (this is probabilistic, so we check for at least 2 different values)
+        expect(values.size).toBeGreaterThan(1);
+      });
+
+      it("works with point intervals", () => {
+        const interval = new RationalInterval("1/2", "1/2");
+        const random = interval.randomRational(100);
+        
+        expect(random.equals(new Rational(1, 2))).toBe(true);
+      });
+
+      it("throws error for invalid maxDenominator", () => {
+        const interval = new RationalInterval("1/2", "3/4");
+        expect(() => interval.randomRational(0)).toThrow("maxDenominator must be positive");
+        expect(() => interval.randomRational(-1)).toThrow("maxDenominator must be positive");
+      });
+    });
+  });
 });

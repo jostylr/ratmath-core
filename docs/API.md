@@ -446,6 +446,44 @@ Converts this interval to a string in mixed number format "a..b/c:d..e/f" where 
 
 **Returns:** (string) Mixed number string representation of this interval
 
+#### `mediant()`
+
+Calculates the mediant of the interval endpoints. The mediant of fractions a/b and c/d is (a+c)/(b+d). This is useful in continued fraction approximations and the Stern-Brocot tree.
+
+**Returns:** (Rational) The mediant of the low and high endpoints
+
+#### `midpoint()`
+
+Calculates the arithmetic midpoint of the interval. The midpoint of [a, b] is (a + b) / 2.
+
+**Returns:** (Rational) The midpoint of the interval
+
+#### `shortestDecimal(base = 10)`
+
+Finds the rational number in the interval with the smallest denominator that is a power of the given base. The algorithm uses a mathematical bound based on the interval length to efficiently determine when to stop searching: for an interval of length L, it only needs to check denominators up to base^⌈log(1/L)/log(base)⌉.
+
+For point intervals (where low equals high), returns the value if it has a power-of-base denominator, or null if it doesn't.
+
+**Parameters:**
+- `base` (number|bigint): The base (default: 10)
+
+**Returns:** (Rational|null) The rational with smallest power-of-base denominator in the interval, or null if none exists
+
+**Throws:**
+- Error: If base is not a positive integer greater than 1
+
+#### `randomRational(maxDenominator = 1000)`
+
+Generates a uniformly random rational number from the closed interval. The randomness is uniform over all reduced fractions with denominators up to maxDenominator.
+
+**Parameters:**
+- `maxDenominator` (number|bigint): Maximum denominator to consider (default: 1000)
+
+**Returns:** (Rational) A random rational number from the interval
+
+**Throws:**
+- Error: If maxDenominator is not a positive integer
+
 ### Static Methods
 
 #### `RationalInterval.point(value)`

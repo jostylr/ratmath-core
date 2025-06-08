@@ -291,6 +291,7 @@ const frac = Fraction.fromRational(rat);  // 1/2 as Fraction
 ```
 
 ### Interval Arithmetic
+#### Examples
 
 ```javascript
 import { Rational, RationalInterval } from 'ratmath';
@@ -312,6 +313,19 @@ const i1 = new RationalInterval('1/2', '3/4');
 const i2 = new RationalInterval('2/3', '5/6');
 const intersection = i1.intersection(i2);          // [2/3, 3/4]
 const union = i1.union(i2);                        // [1/2, 5/6]
+
+// New methods for extracting special rationals
+const interval = new RationalInterval('1/3', '2/3');
+const mediant = interval.mediant();                // 3/6 = 1/2
+const midpoint = interval.midpoint();              // (1/3 + 2/3)/2 = 1/2
+
+// Find shortest decimal representation
+const decimalInterval = new RationalInterval('0.15', '0.35');
+const shortest = decimalInterval.shortestDecimal(); // 1/5 (denominator 10^1)
+const binary = decimalInterval.shortestDecimal(2);  // 1/4 (denominator 2^2)
+
+// Generate random rationals
+const random = interval.randomRational(100);       // Random rational with max denominator 100
 ```
 
 ### Parsing Expressions
@@ -630,6 +644,10 @@ new RationalInterval(a, b)
 - **equals(other)**: Returns true if this interval equals another
 - **intersection(other)**: Returns the intersection as a new RationalInterval, or null if disjoint
 - **union(other)**: Returns the union as a new RationalInterval, or null if disjoint and not adjacent
+- **mediant()**: Returns the mediant of the interval endpoints (useful in continued fractions)
+- **midpoint()**: Returns the arithmetic midpoint of the interval
+- **shortestDecimal(base)**: Returns the rational with smallest power-of-base denominator in the interval
+- **randomRational(maxDenominator)**: Returns a uniformly random rational from the interval
 - **toString()**: Returns a string representation ("low:high")
 - **toMixedString()**: Returns a mixed number representation ("whole1..num1/den1:whole2..num2/den2")
 - **toRepeatingDecimal()**: Returns a repeating decimal interval string (e.g., "0.#3:0.5#0")

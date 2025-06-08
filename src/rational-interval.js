@@ -648,5 +648,176 @@ export class RationalInterval {
     }
   }
 
+  /**
+   * Calculates the mediant of the interval endpoints.
+   * The mediant of fractions a/b and c/d is (a+c)/(b+d).
+   * This is useful in continued fraction approximations and the Stern-Brocot tree.
+   * 
+   * @returns {Rational} The mediant of the low and high endpoints
+   */
+  mediant() {
+    return new Rational(
+      this.#low.numerator + this.#high.numerator,
+      this.#low.denominator + this.#high.denominator
+    );
+  }
+
+  /**
+   * Calculates the arithmetic midpoint of the interval.
+   * The midpoint of [a, b] is (a + b) / 2.
+   * 
+   * @returns {Rational} The midpoint of the interval
+   */
+  midpoint() {
+    return this.#low.add(this.#high).divide(new Rational(2));
+  }
+
+  /**
+   * Finds the rational number in the interval with the smallest denominator
+   * that is a power of the given base.
+   * 
+   * @param {number|bigint} base - The base (default: 10)
+   * @returns {Rational} The rational with smallest power-of-base denominator in the interval
+   * @throws {Error} If base is not a positive integer greater than 1
+   */
+  shortestDecimal(base = 10) {
+    const baseBigInt = BigInt(base);
+    
+    if (baseBigInt <= 1n) {
+      throw new Error("Base must be greater than 1");
+    }
+
+    // Handle point intervals separately
+    if (this.#low.equals(this.#high)) {
+      // For point intervals, check if the single value can be represented with a power-of-base denominator
+      const value = this.#low;
+      
+      // Try each power of base to see if we can represent the value exactly
+      let k = 0;
+      let denominator = 1n;
+      
+      // Use a reasonable bound for point intervals
+      while (k <= 50) {
+        // Check if value * denominator is an integer
+        const numeratorCandidate = value.multiply(new Rational(denominator));
+        
+        if (numeratorCandidate.denominator === 1n) {
+          // We found an exact representation: value = numeratorCandidate.numerator / denominator
+          return new Rational(numeratorCandidate.numerator, denominator);
+        }
+        
+        k++;
+        denominator *= baseBigInt;
+      }
+      
+      // No power-of-base representation found
+      return null;
+    }
+
+    // Calculate the theoretical bound: ceil(log(1/L)/log(base)) where L is interval length
+    const intervalLength = this.#high.subtract(this.#low);
+    
+    // L = intervalLength, we need base^k <= 1/L
+    // So k <= log(1/L)/log(base) = log(L.denominator/L.numerator)/log(base)
+    const lengthAsNumber = Number(intervalLength.numerator) / Number(intervalLength.denominator);
+    const baseAsNumber = Number(baseBigInt);
+    let maxK = Math.ceil(Math.log(1 / lengthAsNumber) / Math.log(baseAsNumber));
+    
+    // Add a small safety margin for floating point precision issues
+    maxK = Math.max(0, maxK + 2);
+
+    // Start with k=0, so denominator = base^0 = 1
+    let k = 0;
+    let denominator = 1n;
+    
+    while (k <= maxK) {
+      // For denominator = base^k, find if there's a numerator p such that
+      // low <= p/denominator <= high
+      
+      // Calculate the range of valid numerators
+      // low <= p/denominator  =>  p >= low * denominator
+      // p/denominator <= high  =>  p <= high * denominator
+      
+      const minNumerator = this.#ceilRational(this.#low.multiply(new Rational(denominator)));
+      const maxNumerator = this.#floorRational(this.#high.multiply(new Rational(denominator)));
+      
+      // Check if there's at least one valid numerator
+      if (minNumerator.lessThanOrEqual(maxNumerator)) {
+        // Return the first valid rational (using minNumerator)
+        return new Rational(minNumerator.numerator, denominator);
+      }
+      
+      // Move to next power of base
+      k++;
+      denominator *= baseBigInt;
+    }
+    
+    // This should never happen mathematically, but provide a fallback
+    throw new Error("Failed to find shortest decimal representation (exceeded theoretical bound)");
+  }
+
+  /**
+   * Generates a uniformly random rational number from the closed interval.
+   * The randomness is uniform over all reduced fractions with denominators up to maxDenominator.
+   * 
+   * @param {number|bigint} maxDenominator - Maximum denominator to consider (default: 1000)
+   * @returns {Rational} A random rational number from the interval
+   * @throws {Error} If maxDenominator is not a positive integer
+   */
+  randomRational(maxDenominator = 1000) {
+    const maxDenom = BigInt(maxDenominator);
+    
+    if (maxDenom <= 0n) {
+      throw new Error("maxDenominator must be positive");
+    }
+
+    // Collect all valid rationals in reduced form within the interval
+    const validRationals = [];
+    
+    // Check each denominator from 1 to maxDenominator
+    for (let denom = 1n; denom <= maxDenom; denom++) {
+      // For this denominator, find the range of valid numerators
+      const minNum = this.#ceilRational(this.#low.multiply(new Rational(denom)));
+      const maxNum = this.#floorRational(this.#high.multiply(new Rational(denom)));
+      
+      // Add all valid rationals with this denominator
+      for (let num = minNum.numerator; num <= maxNum.numerator; num++) {
+        const candidate = new Rational(num, denom);
+        
+        // Only include if it's in reduced form (to avoid duplicates)
+        if (candidate.numerator === num && candidate.denominator === denom) {
+          validRationals.push(candidate);
+        }
+      }
+    }
+    
+    if (validRationals.length === 0) {
+      // Fallback to midpoint if no rationals found (shouldn't happen for reasonable maxDenominator)
+      return this.midpoint();
+    }
+    
+    // Select a random rational from the valid ones
+    const randomIndex = Math.floor(Math.random() * validRationals.length);
+    return validRationals[randomIndex];
+  }
+
+  /**
+   * Helper method to compute GCD using Euclidean algorithm
+   * @param {bigint} a - First number
+   * @param {bigint} b - Second number
+   * @returns {bigint} The GCD of a and b
+   * @private
+   */
+  #gcd(a, b) {
+    a = a < 0n ? -a : a;
+    b = b < 0n ? -b : b;
+    while (b !== 0n) {
+      const temp = b;
+      b = a % b;
+      a = temp;
+    }
+    return a;
+  }
+
 
 }
