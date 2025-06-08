@@ -29,6 +29,13 @@ function parseDecimalUncertainty(str) {
   const baseStr = uncertaintyMatch[1];
   const uncertaintyStr = uncertaintyMatch[2];
   
+  // Check if this is a range interval right after decimal point
+  // Format: 0.[#3,#6] or 1.[1,4] (only when base ends with decimal point and no digits after)
+  const afterDecimalMatch = baseStr.match(/^(-?\d+\.)$/);
+  if (afterDecimalMatch && !uncertaintyStr.startsWith('+-') && !uncertaintyStr.startsWith('-+')) {
+    return parseDecimalPointUncertainty(baseStr, uncertaintyStr);
+  }
+  
   // Parse the base decimal
   const baseRational = new Rational(baseStr);
   
@@ -62,25 +69,29 @@ function parseDecimalUncertainty(str) {
     return new RationalInterval(lowerBound, upperBound);
     
   } else if (uncertaintyStr.startsWith('+-') || uncertaintyStr.startsWith('-+')) {
-    // Symmetric notation: 1.23[+-5] or 1.23[-+5]
+    // Symmetric notation: 1.23[+-5] or 1.23[-+5] or 12[+-0.#3]
     const offsetStr = uncertaintyStr.substring(2);
-    if (!/^\d+\.?\d*$/.test(offsetStr) || offsetStr === '') {
+    if (!offsetStr) {
       throw new Error('Symmetric notation must have a valid number after +- or -+');
     }
       
-    const offset = new Rational(offsetStr);
+    const offset = parseRepeatingDecimalOrRegular(offsetStr);
       
-    // Calculate scale for the next decimal place after the base
-    const nextPlaceScale = new Rational(1).divide(new Rational(10).pow(baseDecimalPlaces + 1));
-      
-    // Scale the offset to the correct decimal place
-    const scaledOffset = offset.multiply(nextPlaceScale);
-      
-    // Calculate bounds: base ± offset
-    const upperBound = baseRational.add(scaledOffset);
-    const lowerBound = baseRational.subtract(scaledOffset);
-      
-    return new RationalInterval(lowerBound, upperBound);
+    // For integer bases, apply offset directly
+    // For decimal bases, scale to the next decimal place
+    if (baseDecimalPlaces === 0) {
+      // Integer base: apply offset directly in ones place
+      const upperBound = baseRational.add(offset);
+      const lowerBound = baseRational.subtract(offset);
+      return new RationalInterval(lowerBound, upperBound);
+    } else {
+      // Decimal base: scale to next decimal place  
+      const nextPlaceScale = new Rational(1).divide(new Rational(10).pow(baseDecimalPlaces + 1));
+      const scaledOffset = offset.multiply(nextPlaceScale);
+      const upperBound = baseRational.add(scaledOffset);
+      const lowerBound = baseRational.subtract(scaledOffset);
+      return new RationalInterval(lowerBound, upperBound);
+    }
   } else {
     // Relative notation: 1.23[+5,-6] or 1.23[-6,+5]
     const relativeParts = uncertaintyStr.split(',').map(s => s.trim());
@@ -97,19 +108,19 @@ function parseDecimalUncertainty(str) {
           throw new Error('Only one positive offset allowed');
         }
         const offsetStr = part.substring(1);
-        if (!/^\d+\.?\d*$/.test(offsetStr) || offsetStr === '') {
+        if (!offsetStr) {
           throw new Error('Offset must be a valid number');
         }
-        positiveOffset = new Rational(offsetStr);
+        positiveOffset = parseRepeatingDecimalOrRegular(offsetStr);
       } else if (part.startsWith('-')) {
         if (negativeOffset !== null) {
           throw new Error('Only one negative offset allowed');
         }
         const offsetStr = part.substring(1);
-        if (!/^\d+\.?\d*$/.test(offsetStr) || offsetStr === '') {
+        if (!offsetStr) {
           throw new Error('Offset must be a valid number');
         }
-        negativeOffset = new Rational(offsetStr);
+        negativeOffset = parseRepeatingDecimalOrRegular(offsetStr);
       } else {
         throw new Error('Relative notation values must start with + or -');
       }
@@ -119,19 +130,95 @@ function parseDecimalUncertainty(str) {
       throw new Error('Relative notation must have exactly one + and one - value');
     }
       
-    // Calculate scale for the next decimal place after the base
-    const nextPlaceScale = new Rational(1).divide(new Rational(10).pow(baseDecimalPlaces + 1));
-      
-    // Handle offsets: all values are treated as units in the next decimal place
-    // Scale both offsets to the correct decimal place
-    const scaledPositiveOffset = positiveOffset.multiply(nextPlaceScale);
-    const scaledNegativeOffset = negativeOffset.multiply(nextPlaceScale);
-      
-    // Calculate bounds: base + positive, base - negative
-    const upperBound = baseRational.add(scaledPositiveOffset);
-    const lowerBound = baseRational.subtract(scaledNegativeOffset);
+    // For integer bases, apply offsets directly
+    // For decimal bases, scale to the next decimal place
+    let upperBound, lowerBound;
+    
+    if (baseDecimalPlaces === 0) {
+      // Integer base: apply offsets directly in ones place
+      upperBound = baseRational.add(positiveOffset);
+      lowerBound = baseRational.subtract(negativeOffset);
+    } else {
+      // Decimal base: scale to next decimal place
+      const nextPlaceScale = new Rational(1).divide(new Rational(10).pow(baseDecimalPlaces + 1));
+      const scaledPositiveOffset = positiveOffset.multiply(nextPlaceScale);
+      const scaledNegativeOffset = negativeOffset.multiply(nextPlaceScale);
+      upperBound = baseRational.add(scaledPositiveOffset);
+      lowerBound = baseRational.subtract(scaledNegativeOffset);
+    }
       
     return new RationalInterval(lowerBound, upperBound);
+  }
+}
+
+function parseDecimalPointUncertainty(baseStr, uncertaintyStr) {
+  // Handle range notation right after decimal point
+  // baseStr is like "0." or "-1."
+  
+  if (uncertaintyStr.includes(':')) {
+    // Range notation: 0.[#3:#6] or 0.[1:4]
+    const rangeParts = uncertaintyStr.split(':');
+    if (rangeParts.length !== 2) {
+      throw new Error('Range notation must have exactly two values separated by colon');
+    }
+    
+    const lowerStr = rangeParts[0].trim();
+    const upperStr = rangeParts[1].trim();
+    
+    // Parse each endpoint, handling repeating decimals
+    const lowerBound = parseDecimalPointEndpoint(baseStr, lowerStr);
+    const upperBound = parseDecimalPointEndpoint(baseStr, upperStr);
+    
+    return new RationalInterval(lowerBound, upperBound);
+    
+  } else if (uncertaintyStr.includes(',')) {
+    // Range notation: 0.[#3,#6] or 0.[1,4]
+    const rangeParts = uncertaintyStr.split(',');
+    if (rangeParts.length !== 2) {
+      throw new Error('Range notation must have exactly two values separated by comma');
+    }
+    
+    const lowerStr = rangeParts[0].trim();
+    const upperStr = rangeParts[1].trim();
+    
+    // Parse each endpoint, handling repeating decimals
+    const lowerBound = parseDecimalPointEndpoint(baseStr, lowerStr);
+    const upperBound = parseDecimalPointEndpoint(baseStr, upperStr);
+    
+    return new RationalInterval(lowerBound, upperBound);
+    
+  } else {
+    throw new Error('Invalid uncertainty format for decimal point notation');
+  }
+}
+
+function parseDecimalPointEndpoint(baseStr, endpointStr) {
+  // baseStr is like "0." or "-1."
+  // endpointStr is like "#3", "1", "4", etc.
+  
+  if (endpointStr.startsWith('#')) {
+    // Repeating decimal: combine base with repeating part
+    const fullStr = baseStr + endpointStr;
+    return parseRepeatingDecimal(fullStr);
+  } else if (/^\d+$/.test(endpointStr)) {
+    // Simple digits: append to base
+    const fullStr = baseStr + endpointStr;
+    return new Rational(fullStr);
+  } else {
+    throw new Error(`Invalid endpoint format: ${endpointStr}`);
+  }
+}
+
+function parseRepeatingDecimalOrRegular(str) {
+  // Parse a string that might be a repeating decimal or regular decimal
+  if (str.includes('#')) {
+    return parseRepeatingDecimal(str);
+  } else {
+    // Validate that str is a valid number format before creating Rational
+    if (!/^-?(\d+\.?\d*|\.\d+)$/.test(str)) {
+      throw new Error('Symmetric notation must have a valid number after +- or -+');
+    }
+    return new Rational(str);
   }
 }
 

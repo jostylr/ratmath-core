@@ -66,6 +66,42 @@ console.log(oneThird.toRepeatingDecimal());            // "0.#3"
 console.log(oneSeventh.toRepeatingDecimal());          // "0.#142857"
 ```
 
+### Repeating Decimal Intervals
+
+Parse intervals with repeating decimal endpoints and offsets:
+
+```javascript
+import { parseRepeatingDecimal, Parser } from 'ratmath';
+
+// Range notation after decimal point: 0.[#3,#6] or 1.[1,4]
+const range1 = parseRepeatingDecimal('0.[#3,#6]');     // 1/3 to 2/3
+const range2 = parseRepeatingDecimal('1.[1,4]');       // 1.1 to 1.4
+const range3 = parseRepeatingDecimal('0.[#142857,#285714]'); // 1/7 to 2/7
+
+// Mixed repeating and terminating decimals
+const mixed = parseRepeatingDecimal('0.[2,#6]');       // 0.2 to 2/3
+
+// Integer base with any offsets (applied directly)
+const offset1 = parseRepeatingDecimal('12[+4.3,-2]'); // [10, 16.3]
+const offset2 = parseRepeatingDecimal('12[+0.43,-13]'); // [-1, 12.43]
+const integerOffset = parseRepeatingDecimal('78[+-10]'); // [68, 88]
+
+// Integer base with repeating decimal offsets
+const repeatOffset = parseRepeatingDecimal('1[+-0.#3]'); // [2/3, 4/3]
+const relativeRepeat = parseRepeatingDecimal('5[+0.#3,-0.#6]'); // [13/3, 16/3]
+
+// Decimal base with any offsets (scaled to next decimal place)
+const decimalBase = parseRepeatingDecimal('0.5[+-33.#3]'); // scaled offset
+const decimalInt = parseRepeatingDecimal('1.23[+-5]'); // [1.225, 1.235] (5 scaled to 0.005)
+
+// Colon notation also supported
+const colonRange = parseRepeatingDecimal('0.[#3:#6]');  // Same as 0.[#3,#6]
+
+// Use in expressions
+const expr = Parser.parse('(0.[#1,#2] + 1.[#3,#4]) / 2'); // Complex arithmetic
+console.log(expr.low.toString(), 'to', expr.high.toString()); // "13/18 to 5/6"
+```
+
 ### Decimal Uncertainty Parsing
 
 Parse decimal numbers with uncertainty notation:
@@ -107,7 +143,7 @@ console.log(interval.relativeMidDecimalInterval());   // "1.23615[+-0.00055]"
 
 // Arithmetic with uncertainty intervals
 const sum = Parser.parse('1.23[+0.5,-0.3] + 2.45[+0.2,-0.1]');  // [3.6796, 3.6807]
-const product = Parser.parse('2[+0.1,-0.1] * 3[+0.2,-0.2]');     // [5.9302, 6.0702]
+const product = Parser.parse('2[+-0.1] * 3[-+0.2]');     // [5.32, 6.72] (integer bases)
 ```
 
 ### Basic Rational Arithmetic

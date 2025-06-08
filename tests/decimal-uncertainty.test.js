@@ -128,9 +128,9 @@ describe("Decimal Uncertainty Parsing", () => {
       expect(result1.low.equals(new Rational("1.225"))).toBe(true);
       expect(result1.high.equals(new Rational("1.235"))).toBe(true);
       
-      // 78 ± 1 = 77:79
-      expect(result2.low.equals(new Rational("77"))).toBe(true);
-      expect(result2.high.equals(new Rational("79"))).toBe(true);
+      // 78 ± 10 = 68:88 (integer base applies offset directly)
+      expect(result2.low.equals(new Rational("68"))).toBe(true);
+      expect(result2.high.equals(new Rational("88"))).toBe(true);
     });
   });
 
@@ -181,9 +181,9 @@ describe("Decimal Uncertainty Parsing", () => {
     it("performs multiplication with uncertainty intervals", () => {
       const result = Parser.parse("2[+0.1,-0.1] * 3[+0.2,-0.2]");
       
-      // [1.99, 2.01] * [2.98, 3.02] = [5.9302, 6.0702]
-      expect(result.low.equals(new Rational("5.9302"))).toBe(true);
-      expect(result.high.equals(new Rational("6.0702"))).toBe(true);
+      // [1.9, 2.1] * [2.8, 3.2] = [5.32, 6.72] (integer bases apply offsets directly)
+      expect(result.low.equals(new Rational("133/25"))).toBe(true);
+      expect(result.high.equals(new Rational("168/25"))).toBe(true);
     });
   });
 });

@@ -527,11 +527,19 @@ export class RationalInterval {
     // Determine the scale factor based on decimal places in the base number
     const decimalStr = shortestDecimal.toDecimal();
     const decimalPlaces = decimalStr.includes('.') ? decimalStr.split('.')[1].length : 0;
-    const scaleFactor = new Rational(10).pow(decimalPlaces + 1);
     
-    // Scale offsets to next decimal place convention
-    const scaledOffsetLow = offsetLow.multiply(scaleFactor);
-    const scaledOffsetHigh = offsetHigh.multiply(scaleFactor);
+    let scaledOffsetLow, scaledOffsetHigh;
+    
+    if (decimalPlaces === 0) {
+      // Integer base: new parser applies offsets directly, so export them directly
+      scaledOffsetLow = offsetLow;
+      scaledOffsetHigh = offsetHigh;
+    } else {
+      // Decimal base: new parser scales offsets, so export them scaled
+      const scaleFactor = new Rational(10).pow(decimalPlaces + 1);
+      scaledOffsetLow = offsetLow.multiply(scaleFactor);
+      scaledOffsetHigh = offsetHigh.multiply(scaleFactor);
+    }
     
     const offsetLowStr = scaledOffsetLow.toDecimal();
     const offsetHighStr = scaledOffsetHigh.toDecimal();
