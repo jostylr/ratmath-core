@@ -48,19 +48,44 @@ export class Rational {
           : (wholePart * fracDenominator + fracNumerator);
         this.#denominator = fracDenominator;
       } else {
-        // Standard fraction notation
-        const parts = numerator.trim().split("/");
-
-        if (parts.length === 1) {
-          // Just a number like "3"
-          this.#numerator = BigInt(parts[0]);
-          this.#denominator = BigInt(denominator);
-        } else if (parts.length === 2) {
-          // Fraction like "3/4"
-          this.#numerator = BigInt(parts[0]);
-          this.#denominator = BigInt(parts[1]);
+        // Check if it's a decimal string like "1.23"
+        if (numerator.includes('.')) {
+          const decimalParts = numerator.trim().split('.');
+          if (decimalParts.length === 2) {
+            const integerPart = decimalParts[0] || '0';
+            const fractionalPart = decimalParts[1];
+            
+            // Validate parts contain only digits (and optional minus for integer part)
+            if (!/^-?\d*$/.test(integerPart) || !/^\d*$/.test(fractionalPart)) {
+              throw new Error('Invalid decimal format');
+            }
+            
+            // Convert decimal to fraction
+            const wholePart = BigInt(integerPart);
+            const fractionalValue = BigInt(fractionalPart);
+            const denomValue = 10n ** BigInt(fractionalPart.length);
+            
+            // Combine: wholePart + fractionalPart/denomValue
+            this.#numerator = wholePart * denomValue + (wholePart < 0n ? -fractionalValue : fractionalValue);
+            this.#denominator = denomValue;
+          } else {
+            throw new Error("Invalid decimal format - multiple decimal points");
+          }
         } else {
-          throw new Error("Invalid rational format. Use 'a/b', 'a', or 'a..b/c'");
+          // Standard fraction notation
+          const parts = numerator.trim().split("/");
+
+          if (parts.length === 1) {
+            // Just a number like "3"
+            this.#numerator = BigInt(parts[0]);
+            this.#denominator = BigInt(denominator);
+          } else if (parts.length === 2) {
+            // Fraction like "3/4"
+            this.#numerator = BigInt(parts[0]);
+            this.#denominator = BigInt(parts[1]);
+          } else {
+            throw new Error("Invalid rational format. Use 'a/b', 'a', or 'a..b/c'");
+          }
         }
       }
     } else {
@@ -469,6 +494,50 @@ export class Rational {
       } else {
         result += '.#' + repeatingPart.join('');
       }
+    }
+
+    return result;
+  }
+
+  /**
+   * Converts this rational to a standard decimal string representation
+   * For terminating decimals, returns the exact decimal. For repeating decimals,
+   * returns an approximation with sufficient precision.
+   * @returns {string} Decimal string representation
+   */
+  toDecimal() {
+    // Handle special cases
+    if (this.#numerator === 0n) {
+      return '0';
+    }
+
+    const isNegative = this.#numerator < 0n;
+    const num = isNegative ? -this.#numerator : this.#numerator;
+    const den = this.#denominator;
+
+    // Get integer part
+    const integerPart = num / den;
+    let remainder = num % den;
+
+    // If no remainder, it's a whole number
+    if (remainder === 0n) {
+      return (isNegative ? '-' : '') + integerPart.toString();
+    }
+
+    // Calculate decimal digits
+    const digits = [];
+    const maxDigits = 20; // Limit precision for practical output
+    
+    for (let i = 0; i < maxDigits && remainder !== 0n; i++) {
+      remainder *= 10n;
+      const digit = remainder / den;
+      digits.push(digit.toString());
+      remainder = remainder % den;
+    }
+
+    let result = (isNegative ? '-' : '') + integerPart.toString();
+    if (digits.length > 0) {
+      result += '.' + digits.join('');
     }
 
     return result;

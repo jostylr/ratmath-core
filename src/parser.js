@@ -3,10 +3,137 @@
  * 
  * A parser for rational interval arithmetic expressions.
  * Handles expressions with intervals, arithmetic operations, and parentheses.
+ * Supports decimal uncertainty notation including range [56:67], relative [+5,-6], and symmetric [+-1] formats.
  */
 
 import { Rational } from './rational.js';
 import { RationalInterval } from './rational-interval.js';
+
+/**
+ * Parses a decimal with uncertainty notation and returns a RationalInterval
+ * Supports formats like:
+ * - 1.23[56:67] → 1.2356:1.2367 (range notation)
+ * - 1.23[+5,-6] → 1.224:1.235 (relative notation)
+ * - 1.3[+-1] → 1.29:1.31 (symmetric notation)
+ * 
+ * @param {string} str - String with uncertainty notation
+ * @returns {RationalInterval} The interval representation
+ * @throws {Error} If the string format is invalid
+ */
+function parseDecimalUncertainty(str) {
+  const uncertaintyMatch = str.match(/^(-?\d*\.?\d*)\[([^\]]+)\]$/);
+  if (!uncertaintyMatch) {
+    throw new Error('Invalid uncertainty format');
+  }
+  
+  const baseStr = uncertaintyMatch[1];
+  const uncertaintyStr = uncertaintyMatch[2];
+  
+  // Parse the base decimal
+  const baseRational = new Rational(baseStr);
+  
+  // Determine decimal places in base for proper alignment
+  const decimalMatch = baseStr.match(/\.(\d+)$/);
+  const baseDecimalPlaces = decimalMatch ? decimalMatch[1].length : 0;
+  
+  // Check if it's range notation [num:num], relative notation [+num,-num], or symmetric notation [+-num]
+  if (uncertaintyStr.includes(':')) {
+    // Range notation: 1.23[56:67] → 1.2356:1.2367
+    const rangeParts = uncertaintyStr.split(':');
+    if (rangeParts.length !== 2) {
+      throw new Error('Range notation must have exactly two values separated by colon');
+    }
+    
+    const lowerUncertainty = rangeParts[0].trim();
+    const upperUncertainty = rangeParts[1].trim();
+    
+    // Validate that both are just digits
+    if (!/^\d+$/.test(lowerUncertainty) || !/^\d+$/.test(upperUncertainty)) {
+      throw new Error('Range values must be digits only');
+    }
+    
+    // Create the bounds by appending the uncertainty digits
+    const lowerBoundStr = baseStr + lowerUncertainty;
+    const upperBoundStr = baseStr + upperUncertainty;
+    
+    const lowerBound = new Rational(lowerBoundStr);
+    const upperBound = new Rational(upperBoundStr);
+    
+    return new RationalInterval(lowerBound, upperBound);
+    
+  } else if (uncertaintyStr.startsWith('+-') || uncertaintyStr.startsWith('-+')) {
+    // Symmetric notation: 1.23[+-5] or 1.23[-+5]
+    const offsetStr = uncertaintyStr.substring(2);
+    if (!/^\d+\.?\d*$/.test(offsetStr) || offsetStr === '') {
+      throw new Error('Symmetric notation must have a valid number after +- or -+');
+    }
+      
+    const offset = new Rational(offsetStr);
+      
+    // Calculate scale for the next decimal place after the base
+    const nextPlaceScale = new Rational(1).divide(new Rational(10).pow(baseDecimalPlaces + 1));
+      
+    // Scale the offset to the correct decimal place
+    const scaledOffset = offset.multiply(nextPlaceScale);
+      
+    // Calculate bounds: base ± offset
+    const upperBound = baseRational.add(scaledOffset);
+    const lowerBound = baseRational.subtract(scaledOffset);
+      
+    return new RationalInterval(lowerBound, upperBound);
+  } else {
+    // Relative notation: 1.23[+5,-6] or 1.23[-6,+5]
+    const relativeParts = uncertaintyStr.split(',').map(s => s.trim());
+    if (relativeParts.length !== 2) {
+      throw new Error('Relative notation must have exactly two values separated by comma');
+    }
+      
+    let positiveOffset = null;
+    let negativeOffset = null;
+      
+    for (const part of relativeParts) {
+      if (part.startsWith('+')) {
+        if (positiveOffset !== null) {
+          throw new Error('Only one positive offset allowed');
+        }
+        const offsetStr = part.substring(1);
+        if (!/^\d+\.?\d*$/.test(offsetStr) || offsetStr === '') {
+          throw new Error('Offset must be a valid number');
+        }
+        positiveOffset = new Rational(offsetStr);
+      } else if (part.startsWith('-')) {
+        if (negativeOffset !== null) {
+          throw new Error('Only one negative offset allowed');
+        }
+        const offsetStr = part.substring(1);
+        if (!/^\d+\.?\d*$/.test(offsetStr) || offsetStr === '') {
+          throw new Error('Offset must be a valid number');
+        }
+        negativeOffset = new Rational(offsetStr);
+      } else {
+        throw new Error('Relative notation values must start with + or -');
+      }
+    }
+      
+    if (positiveOffset === null || negativeOffset === null) {
+      throw new Error('Relative notation must have exactly one + and one - value');
+    }
+      
+    // Calculate scale for the next decimal place after the base
+    const nextPlaceScale = new Rational(1).divide(new Rational(10).pow(baseDecimalPlaces + 1));
+      
+    // Handle offsets: all values are treated as units in the next decimal place
+    // Scale both offsets to the correct decimal place
+    const scaledPositiveOffset = positiveOffset.multiply(nextPlaceScale);
+    const scaledNegativeOffset = negativeOffset.multiply(nextPlaceScale);
+      
+    // Calculate bounds: base + positive, base - negative
+    const upperBound = baseRational.add(scaledPositiveOffset);
+    const lowerBound = baseRational.subtract(scaledNegativeOffset);
+      
+    return new RationalInterval(lowerBound, upperBound);
+  }
+}
 
 /**
  * Parses a repeating decimal string and returns the exact rational equivalent
@@ -21,6 +148,11 @@ export function parseRepeatingDecimal(str) {
   }
 
   str = str.trim();
+  
+  // Check if this is uncertainty notation (contains brackets)
+  if (str.includes('[') && str.includes(']')) {
+    return parseDecimalUncertainty(str);
+  }
   
   // Check if this is an interval notation (contains colon)
   if (str.includes(':')) {
@@ -339,8 +471,27 @@ export class Parser {
       return result;
     }
     
-    // Check for negation
-    if (expr[0] === '-') {
+    // Check for uncertainty notation first (including negative numbers)
+    if (expr.includes('[') && expr.includes(']')) {
+      // Look for pattern like number[...] at the start of expression
+      const uncertaintyMatch = expr.match(/^(-?\d*\.?\d*)\[([^\]]+)\]/);
+      if (uncertaintyMatch) {
+        const fullMatch = uncertaintyMatch[0];
+        try {
+          const result = parseDecimalUncertainty(fullMatch);
+          return {
+            value: result,
+            remainingExpr: expr.substring(fullMatch.length)
+          };
+        } catch (error) {
+          // If it looks like uncertainty notation but is malformed, throw the error
+          throw error;
+        }
+      }
+    }
+
+    // Check for negation (but only if it's not part of uncertainty notation)
+    if (expr[0] === '-' && !expr.includes('[')) {
       const factorResult = Parser.#parseFactor(expr.substring(1));
       
       // Create a negative interval by multiplying by -1
@@ -433,6 +584,19 @@ export class Parser {
    * @private
    */
   static #parseInterval(expr) {
+    // Check if this is uncertainty notation first
+    if (expr.includes('[') && expr.includes(']') && /^-?\d*\.?\d*\[/.test(expr)) {
+      try {
+        const result = parseDecimalUncertainty(expr);
+        return {
+          value: result,
+          remainingExpr: ''
+        };
+      } catch {
+        // Fall through to other parsing methods
+      }
+    }
+    
     // Check if this might be a repeating decimal interval first
     // Only try repeating decimal parsing if the string starts with a digit or decimal point
     // and contains both # and : symbols, indicating it's likely a repeating decimal interval
@@ -559,6 +723,44 @@ export class Parser {
           }
         } catch (error) {
           throw new Error(`Invalid repeating decimal: ${error.message}`);
+        }
+      }
+    }
+    
+    // Check for regular decimal notation (contains single decimal point but no # and not mixed number ..)
+    let decimalIndex = expr.indexOf('.');
+    if (decimalIndex !== -1 && decimalIndex + 1 < expr.length && expr[decimalIndex + 1] !== '.') {
+      // Find the end of the decimal number
+      let endIndex = 0;
+      let hasDecimalPoint = false;
+      
+      // Handle optional negative sign
+      if (expr[endIndex] === '-') {
+        endIndex++;
+      }
+      
+      // Parse digits and decimal point
+      while (endIndex < expr.length) {
+        if (/\d/.test(expr[endIndex])) {
+          endIndex++;
+        } else if (expr[endIndex] === '.' && !hasDecimalPoint && endIndex + 1 < expr.length && expr[endIndex + 1] !== '.') {
+          hasDecimalPoint = true;
+          endIndex++;
+        } else {
+          break;
+        }
+      }
+      
+      if (hasDecimalPoint && endIndex > (expr[0] === '-' ? 2 : 1)) {
+        const decimalStr = expr.substring(0, endIndex);
+        try {
+          const result = new Rational(decimalStr);
+          return {
+            value: result,
+            remainingExpr: expr.substring(endIndex)
+          };
+        } catch (error) {
+          // Fall through to regular parsing if decimal parsing fails
         }
       }
     }

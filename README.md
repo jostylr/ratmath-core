@@ -13,6 +13,7 @@ A JavaScript library for exact rational arithmetic and interval arithmetic. The 
 - **Fraction Intervals**: Implements intervals with Fraction endpoints for exact representation without automatic reduction.
 - **Mediant Partitioning**: Create interval subdivisions using mediants (useful in continued fractions and number theory).
 - **Repeating Decimal Support**: Parse repeating decimals like "0.12#45" and convert them to exact rational representations.
+- **Decimal Uncertainty Parsing**: Parse decimal numbers with uncertainty notation like "1.23[56:67]" (range), "1.23[+5,-6]" (relative), or "1.3[+-1]" (symmetric).
 - **Expression Parser**: Parse and evaluate string expressions involving rational intervals and arithmetic operations.
 
 ## Installation
@@ -63,6 +64,50 @@ const oneSixth = parseRepeatingDecimal('0.1#6');       // 1/6
 // Convert rationals back to repeating decimals
 console.log(oneThird.toRepeatingDecimal());            // "0.#3"
 console.log(oneSeventh.toRepeatingDecimal());          // "0.#142857"
+```
+
+### Decimal Uncertainty Parsing
+
+Parse decimal numbers with uncertainty notation:
+
+```javascript
+import { Parser } from 'ratmath';
+
+// Range notation: base[lower_digits:upper_digits]
+const range1 = Parser.parse('1.23[56:67]');           // 1.2356 to 1.2367
+const range2 = Parser.parse('78.3[15:24]');           // 78.315 to 78.324
+const range3 = Parser.parse('42[15:25]');             // 4215 to 4225
+
+// Relative notation: base[+positive_offset,-negative_offset]
+const rel1 = Parser.parse('1.23[+5,-6]');             // 1.224 to 1.235
+const rel2 = Parser.parse('78.3[+15,-0.6]');          // 78.294 to 78.45
+const rel3 = Parser.parse('1.5[+0.25,-0.15]');        // 1.4985 to 1.5025
+
+// Symmetric notation: base[+-offset] (equivalent to base[-+offset])
+const sym1 = Parser.parse('1.3[+-1]');                // 1.29 to 1.31
+const sym2 = Parser.parse('2.5[+-0.25]');             // 2.4975 to 2.5025
+const sym3 = Parser.parse('1.3[-+1]');                // Same as sym1
+console.log(sym1.equals(sym3));                       // true
+
+// Order independence in relative notation
+const rel4a = Parser.parse('2.0[+0.1,-0.2]');         // 1.998 to 2.001
+const rel4b = Parser.parse('2.0[-0.2,+0.1]');         // Same as above
+console.log(rel4a.equals(rel4b));                     // true
+
+// Negative base numbers
+const neg1 = Parser.parse('-1.23[56:67]');            // -1.2367 to -1.2356
+const neg2 = Parser.parse('-2.5[+0.1,-0.2]');         // -2.502 to -2.499
+
+// Export intervals to uncertainty notation
+import { RationalInterval, Rational } from 'ratmath';
+
+const interval = new RationalInterval(new Rational('1.2356'), new Rational('1.2367'));
+console.log(interval.compactedDecimalInterval());     // "1.23[56:67]"
+console.log(interval.relativeMidDecimalInterval());   // "1.23615[+-0.00055]"
+
+// Arithmetic with uncertainty intervals
+const sum = Parser.parse('1.23[+0.5,-0.3] + 2.45[+0.2,-0.1]');  // [3.6796, 3.6807]
+const product = Parser.parse('2[+0.1,-0.1] * 3[+0.2,-0.2]');     // [5.9302, 6.0702]
 ```
 
 ### Basic Rational Arithmetic
@@ -258,6 +303,10 @@ const repeatResult1 = Parser.parse('0.#3 + 0.#6');    // 1:1 (exact result)
 const repeatResult2 = Parser.parse('1.23#45 * 2');    // 679/275:679/275
 const intervalResult = Parser.parse('0.#3 : 0.8#3');  // 1/3:5/6
 
+// Exact decimal intervals (treated as terminating decimals)
+const exactInterval = Parser.parse('1.23:1.34');      // [123/100, 67/50]
+const mixedInterval = Parser.parse('1.5:0.#3');       // [1/3, 3/2]
+
 // Results are RationalInterval objects
 console.log(result2.toString());     // "1:9/4"
 console.log(result2m.toMixedString()); // "3:8..1/4"
@@ -358,11 +407,15 @@ parseRepeatingDecimal(str)
 - **Pure repeating**: `"0.#3"` represents 0.333... = 1/3
 - **Negative decimals**: `"-0.#6"` represents -0.666... = -2/3
 - **Non-repeating**: `"1.23"` becomes interval [1.225, 1.235]
+- **Uncertainty notation (range)**: `"1.23[56:67]"` represents interval [1.2356, 1.2367]
+- **Uncertainty notation (relative)**: `"1.23[+5,-6]"` represents interval [1.224, 1.235]
+- **Uncertainty notation (symmetric)**: `"1.3[+-1]"` represents interval [1.29, 1.31]
+- **Repeating decimal intervals**: `"0.#3:0.5#0"` represents interval [1/3, 1/2]
 
 #### Return Values
 
 - Returns a `Rational` for repeating decimals with `#` notation
-- Returns a `RationalInterval` for non-repeating decimals (representing uncertainty in the last digit)
+- Returns a `RationalInterval` for non-repeating decimals, uncertainty notation, or interval notation
 
 #### Examples
 
@@ -370,10 +423,18 @@ parseRepeatingDecimal(str)
 import { parseRepeatingDecimal } from 'ratmath';
 
 // Exact conversions
-parseRepeatingDecimal('0.#3');      // 1/3
-parseRepeatingDecimal('0.12#45');   // 137/1100
-parseRepeatingDecimal('733.#3');    // 2200/3
-parseRepeatingDecimal('1.23#0');    // 123/100
+parseRepeatingDecimal('0.#3');        // 1/3
+parseRepeatingDecimal('0.12#45');     // 137/1100
+parseRepeatingDecimal('733.#3');      // 2200/3
+parseRepeatingDecimal('1.23#0');      // 123/100
+
+// Uncertainty notation
+parseRepeatingDecimal('1.23[56:67]'); // RationalInterval [1.2356, 1.2367]
+parseRepeatingDecimal('78.3[+15,-0.6]'); // RationalInterval [78.294, 78.45]
+parseRepeatingDecimal('1.3[+-1]'); // RationalInterval [1.29, 1.31]
+
+// Interval notation
+parseRepeatingDecimal('0.#3:0.5#0');  // RationalInterval [1/3, 1/2]
 
 // Intervals for uncertain decimals
 parseRepeatingDecimal('1.23');      // [49/40, 247/200]
@@ -535,6 +596,10 @@ new RationalInterval(a, b)
 - **union(other)**: Returns the union as a new RationalInterval, or null if disjoint and not adjacent
 - **toString()**: Returns a string representation ("low:high")
 - **toMixedString()**: Returns a mixed number representation ("whole1..num1/den1:whole2..num2/den2")
+- **toRepeatingDecimal()**: Returns a repeating decimal interval string (e.g., "0.#3:0.5#0")
+- **compactedDecimalInterval()**: Returns a compacted decimal interval notation (e.g., "1.23[56:67]")
+- **relativeMidDecimalInterval()**: Returns a relative midpoint decimal interval notation using symmetric notation (e.g., "1.2295[+-0.0055]")
+- **relativeDecimalInterval()**: Deprecated alias for relativeMidDecimalInterval()
 
 #### Static Methods
 

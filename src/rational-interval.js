@@ -445,5 +445,79 @@ export class RationalInterval {
     return `${lowDecimal}:${highDecimal}`;
   }
 
+  /**
+   * Exports this interval as a compacted decimal interval notation
+   * Finds a common base and expresses the interval as base[low_uncertainty:high_uncertainty]
+   * @returns {string} Compacted decimal interval string (e.g., "1.2356:1.2367" becomes "1.23[56:67]")
+   */
+  compactedDecimalInterval() {
+    // Convert both endpoints to decimal strings
+    const lowStr = this.#low.toDecimal();
+    const highStr = this.#high.toDecimal();
+    
+    // Find the longest common prefix
+    let commonPrefix = '';
+    const minLength = Math.min(lowStr.length, highStr.length);
+    
+    for (let i = 0; i < minLength; i++) {
+      if (lowStr[i] === highStr[i]) {
+        commonPrefix += lowStr[i];
+      } else {
+        break;
+      }
+    }
+    
+    // If there's no common prefix beyond just a sign or single digit, return regular interval
+    if (commonPrefix.length <= 1 || (commonPrefix.startsWith('-') && commonPrefix.length <= 2)) {
+      return `${lowStr}:${highStr}`;
+    }
+    
+    // Extract the differing parts
+    const lowSuffix = lowStr.substring(commonPrefix.length);
+    const highSuffix = highStr.substring(commonPrefix.length);
+    
+    // If either suffix is empty or they're not the same length, use regular format
+    if (!lowSuffix || !highSuffix || lowSuffix.length !== highSuffix.length) {
+      return `${lowStr}:${highStr}`;
+    }
+    
+    // Check if both suffixes are purely numeric (no decimal point)
+    if (!/^\d+$/.test(lowSuffix) || !/^\d+$/.test(highSuffix)) {
+      return `${lowStr}:${highStr}`;
+    }
+    
+    // For the compacted notation, we want the range to go from low to high
+    // So use lowSuffix:highSuffix (which represents the actual low:high order)
+    return `${commonPrefix}[${lowSuffix}:${highSuffix}]`;
+  }
+
+  /**
+   * Exports this interval as a relative midpoint decimal interval notation
+   * Expresses the interval as midpoint[+-offset] where midpoint is the center of the interval
+   * @returns {string} Relative midpoint decimal interval string (e.g., "1.224:1.235" becomes "1.2295[+-0.0055]")
+   */
+  relativeMidDecimalInterval() {
+    // Calculate the midpoint
+    const midpoint = this.#low.add(this.#high).divide(new Rational(2));
+    
+    // Calculate offset from midpoint (should be same for both directions in symmetric case)
+    const offset = this.#high.subtract(midpoint);
+    
+    // Convert to decimal strings
+    const midpointStr = midpoint.toDecimal();
+    const offsetStr = offset.toDecimal();
+    
+    return `${midpointStr}[+-${offsetStr}]`;
+  }
+
+  /**
+   * @deprecated Use relativeMidDecimalInterval() instead
+   * Backward compatibility alias for the old method name
+   * @returns {string} Relative midpoint decimal interval string
+   */
+  relativeDecimalInterval() {
+    return this.relativeMidDecimalInterval();
+  }
+
 
 }
