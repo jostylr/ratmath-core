@@ -115,10 +115,17 @@ try {
   console.log(`Division by zero error: ${e.message}`);
 }
 
+// Negative exponents return Rational numbers
+const negPow = new Integer(2).pow(-1);
+console.log(`2^(-1) = ${negPow} (${negPow.constructor.name})`);
+
+const negPow2 = new Integer(3).pow(-2);
+console.log(`3^(-2) = ${negPow2} (${negPow2.constructor.name})`);
+
 try {
-  const negPow = new Integer(2).pow(-1);
+  const zeroPow = new Integer(0).pow(-1);
 } catch (e) {
-  console.log(`Negative exponent error: ${e.message}`);
+  console.log(`Zero negative exponent error: ${e.message}`);
 }
 
 try {

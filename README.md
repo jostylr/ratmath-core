@@ -115,6 +115,10 @@ const sum = a.add(c);            // 8
 const product = a.multiply(c);   // -105
 const power = a.pow(3);          // 3375
 
+// Negative exponents return Rational numbers
+const reciprocal = a.pow(-1);    // 1/15 (Rational)
+const negSquare = a.pow(-2);     // 1/225 (Rational)
+
 // Division - returns Integer or Rational automatically
 const exactDiv = a.divide(new Integer(3));  // 5 (Integer)
 const inexactDiv = a.divide(new Integer(4)); // 15/4 (Rational)
@@ -318,7 +322,7 @@ new Integer(value)
 - **divide(other)**: Returns an Integer if exact division, otherwise a Rational
 - **modulo(other)**: Returns the remainder as a new Integer
 - **negate()**: Returns the negation as a new Integer
-- **pow(exponent)**: Raises this integer to a non-negative integer power
+- **pow(exponent)**: Raises this integer to an integer power (returns Rational for negative exponents)
 - **equals(other)**: Returns true if this integer equals another
 - **compareTo(other)**: Returns -1, 0, or 1 for less than, equal, or greater than
 - **lessThan(other)**, **lessThanOrEqual(other)**, **greaterThan(other)**, **greaterThanOrEqual(other)**

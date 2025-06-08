@@ -110,19 +110,28 @@ export class Integer {
 
   /**
    * Raises this integer to an integer power
-   * @param {number|bigint|Integer} exponent - The exponent (must be non-negative)
-   * @returns {Integer} The result as a new Integer
-   * @throws {Error} If exponent is negative
+   * @param {number|bigint|Integer} exponent - The exponent
+   * @returns {Integer|Rational} Integer for non-negative exponents, Rational for negative exponents
+   * @throws {Error} If this integer is zero and exponent is negative
    */
   pow(exponent) {
     const exp = exponent instanceof Integer ? exponent.value : BigInt(exponent);
     
-    if (exp < 0n) {
-      throw new Error("Negative exponents not supported for integers");
+    if (exp === 0n) {
+      if (this.#value === 0n) {
+        throw new Error("Zero cannot be raised to the power of zero");
+      }
+      return new Integer(1);
     }
 
-    if (exp === 0n) {
-      return new Integer(1);
+    if (exp < 0n) {
+      if (this.#value === 0n) {
+        throw new Error("Zero cannot be raised to a negative power");
+      }
+      // For negative exponents, compute 1/(this^|exp|) as a Rational
+      const positiveExp = -exp;
+      const positiveResult = this.pow(positiveExp);
+      return new Rational(1, positiveResult.value);
     }
 
     // Use binary exponentiation for efficiency

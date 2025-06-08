@@ -248,6 +248,64 @@ describe('Integer-Rational Integration', () => {
     });
   });
 
+  describe('negative exponents', () => {
+    it('returns rational for negative exponents', () => {
+      const base = new Integer(2);
+      const result = base.pow(-1);
+      
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.numerator).toBe(1n);
+      expect(result.denominator).toBe(2n);
+    });
+
+    it('handles larger negative exponents', () => {
+      const base = new Integer(3);
+      const result = base.pow(-2);
+      
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.numerator).toBe(1n);
+      expect(result.denominator).toBe(9n);
+    });
+
+    it('maintains mathematical relationship: n^k * n^(-k) = 1', () => {
+      const n = new Integer(5);
+      const k = 3;
+      
+      const positiveExp = n.pow(k);  // 5^3 = 125
+      const negativeExp = n.pow(-k); // 5^(-3) = 1/125
+      
+      expect(positiveExp).toBeInstanceOf(Integer);
+      expect(negativeExp).toBeInstanceOf(Rational);
+      
+      // Convert integer to rational for multiplication
+      const product = positiveExp.toRational().multiply(negativeExp);
+      expect(product.equals(new Rational(1))).toBe(true);
+    });
+
+    it('works with large integers', () => {
+      const large = new Integer('123456789');
+      const reciprocal = large.pow(-1);
+      
+      expect(reciprocal).toBeInstanceOf(Rational);
+      expect(reciprocal.numerator).toBe(1n);
+      expect(reciprocal.denominator).toBe(123456789n);
+    });
+
+    it('throws error for zero with negative exponent', () => {
+      const zero = new Integer(0);
+      expect(() => zero.pow(-1)).toThrow('Zero cannot be raised to a negative power');
+    });
+
+    it('handles negative bases with negative exponents', () => {
+      const negativeBase = new Integer(-2);
+      const result = negativeBase.pow(-2);
+      
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.numerator).toBe(1n);
+      expect(result.denominator).toBe(4n);
+    });
+  });
+
   describe('performance and memory efficiency', () => {
     it('handles repeated operations efficiently', () => {
       let result = new Integer(1);

@@ -209,9 +209,30 @@ describe('Integer', () => {
         expect(result.value).toBe(0n);
       });
 
-      it('throws error for negative exponent', () => {
+      it('returns rational for negative exponent', () => {
         const a = new Integer(2);
-        expect(() => a.pow(-1)).toThrow('Negative exponents not supported');
+        const result = a.pow(-1);
+        expect(result).toBeInstanceOf(Rational);
+        expect(result.numerator).toBe(1n);
+        expect(result.denominator).toBe(2n);
+      });
+
+      it('returns rational for larger negative exponent', () => {
+        const a = new Integer(3);
+        const result = a.pow(-2);
+        expect(result).toBeInstanceOf(Rational);
+        expect(result.numerator).toBe(1n);
+        expect(result.denominator).toBe(9n);
+      });
+
+      it('throws error for zero raised to negative power', () => {
+        const a = new Integer(0);
+        expect(() => a.pow(-1)).toThrow('Zero cannot be raised to a negative power');
+      });
+
+      it('throws error for zero raised to power zero', () => {
+        const a = new Integer(0);
+        expect(() => a.pow(0)).toThrow('Zero cannot be raised to the power of zero');
       });
 
       it('handles large exponents', () => {
