@@ -237,13 +237,31 @@ describe("RationalInterval Export Methods", () => {
     });
   });
 
-  describe("relativeDecimalInterval (deprecated)", () => {
-    it("provides backward compatibility", () => {
+  describe("relativeDecimalInterval", () => {
+    it("uses shortest precise decimal within interval", () => {
       const interval = new RationalInterval(new Rational("1.224"), new Rational("1.235"));
-      const newResult = interval.relativeMidDecimalInterval();
-      const oldResult = interval.relativeDecimalInterval();
+      const result = interval.relativeDecimalInterval();
       
-      expect(oldResult).toBe(newResult);
+      // Should find 1.23 as the shortest precise decimal in [1.224, 1.235]
+      // and create relative interval around it using next decimal place convention
+      expect(result).toMatch(/1\.23\[\+5,-6\]/);
+    });
+
+    it("handles intervals where shortest decimal is closer to one bound", () => {
+      const interval = new RationalInterval(new Rational("1.22"), new Rational("1.24"));
+      const result = interval.relativeDecimalInterval();
+      
+      // Should find 1.23 as the shortest precise decimal in [1.22, 1.24]
+      expect(result).toMatch(/1\.23\[\+-10\]/);
+    });
+
+    it("finds shortest decimal closest to midpoint when multiple options exist", () => {
+      const interval = new RationalInterval(new Rational("1.225"), new Rational("1.275"));
+      const result = interval.relativeDecimalInterval();
+      
+      // Both 1.23, 1.24, 1.25, 1.26, 1.27 are valid 2-decimal places
+      // Midpoint is 1.25, so 1.25 should be chosen
+      expect(result).toMatch(/1\.25\[\+-25\]/);
     });
   });
 });

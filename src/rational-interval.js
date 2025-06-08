@@ -511,12 +511,133 @@ export class RationalInterval {
   }
 
   /**
-   * @deprecated Use relativeMidDecimalInterval() instead
-   * Backward compatibility alias for the old method name
-   * @returns {string} Relative midpoint decimal interval string
+   * Exports this interval as a relative decimal interval notation using the shortest precise decimal
+   * Finds the shortest decimal number within the interval (closest to midpoint if tied, lower if still tied)
+   * and expresses the interval relative to that decimal using next decimal place convention
+   * @returns {string} Relative decimal interval string (e.g., "1.224:1.235" becomes "1.23[+5,-6]")
    */
   relativeDecimalInterval() {
-    return this.relativeMidDecimalInterval();
+    // Find the shortest precise decimal within the interval
+    const shortestDecimal = this.#findShortestPreciseDecimal();
+    
+    // Calculate the actual offsets from this decimal to the interval bounds
+    const offsetLow = shortestDecimal.subtract(this.#low);   // positive if decimal > low
+    const offsetHigh = this.#high.subtract(shortestDecimal); // positive if high > decimal
+    
+    // Determine the scale factor based on decimal places in the base number
+    const decimalStr = shortestDecimal.toDecimal();
+    const decimalPlaces = decimalStr.includes('.') ? decimalStr.split('.')[1].length : 0;
+    const scaleFactor = new Rational(10).pow(decimalPlaces + 1);
+    
+    // Scale offsets to next decimal place convention
+    const scaledOffsetLow = offsetLow.multiply(scaleFactor);
+    const scaledOffsetHigh = offsetHigh.multiply(scaleFactor);
+    
+    const offsetLowStr = scaledOffsetLow.toDecimal();
+    const offsetHighStr = scaledOffsetHigh.toDecimal();
+    
+    // Check if offsets are symmetric (within small tolerance)
+    if (offsetLow.subtract(offsetHigh).abs().compareTo(new Rational(1, 1000000)) < 0) {
+      // Use symmetric notation for nearly equal offsets
+      const avgOffset = scaledOffsetLow.add(scaledOffsetHigh).divide(new Rational(2));
+      return `${decimalStr}[+-${avgOffset.toDecimal()}]`;
+    } else {
+      // Use asymmetric notation
+      return `${decimalStr}[+${offsetHighStr},-${offsetLowStr}]`;
+    }
+  }
+
+  /**
+   * Helper method to find the shortest precise decimal within the interval
+   * @returns {Rational} The shortest precise decimal as a Rational
+   * @private
+   */
+  #findShortestPreciseDecimal() {
+    const midpoint = this.#low.add(this.#high).divide(new Rational(2));
+    
+    // Try increasing precision levels until we find decimals within the interval
+    for (let precision = 0; precision <= 20; precision++) {
+      const scale = new Rational(10).pow(precision);
+      
+      // Find the range of integers that, when divided by scale, fall within our interval
+      const lowScaled = this.#low.multiply(scale);
+      const highScaled = this.#high.multiply(scale);
+      
+      // Get the ceiling of low and floor of high to find integer bounds
+      const minInt = this.#ceilRational(lowScaled);
+      const maxInt = this.#floorRational(highScaled);
+      
+      if (minInt.compareTo(maxInt) <= 0) {
+        // We have at least one integer in the range
+        const candidates = [];
+        
+        // Collect all integers in the range
+        let current = minInt;
+        while (current.compareTo(maxInt) <= 0) {
+          candidates.push(current.divide(scale));
+          current = current.add(new Rational(1));
+        }
+        
+        if (candidates.length > 0) {
+          // Find the candidate closest to midpoint (lower if tied)
+          let best = candidates[0];
+          let bestDistance = best.subtract(midpoint).abs();
+          
+          for (let i = 1; i < candidates.length; i++) {
+            const distance = candidates[i].subtract(midpoint).abs();
+            const comparison = distance.compareTo(bestDistance);
+            
+            if (comparison < 0 || (comparison === 0 && candidates[i].compareTo(best) < 0)) {
+              best = candidates[i];
+              bestDistance = distance;
+            }
+          }
+          
+          return best;
+        }
+      }
+    }
+    
+    // Fallback to midpoint if no precise decimal found (shouldn't happen in practice)
+    return midpoint;
+  }
+
+  /**
+   * Helper method to compute ceiling of a rational number
+   * @param {Rational} rational - The rational number
+   * @returns {Rational} The ceiling as a rational
+   * @private
+   */
+  #ceilRational(rational) {
+    if (rational.denominator === 1n) {
+      return rational; // Already an integer
+    }
+    
+    const quotient = rational.numerator / rational.denominator;
+    if (rational.numerator >= 0n) {
+      return new Rational(quotient + 1n, 1n);
+    } else {
+      return new Rational(quotient, 1n);
+    }
+  }
+
+  /**
+   * Helper method to compute floor of a rational number
+   * @param {Rational} rational - The rational number
+   * @returns {Rational} The floor as a rational
+   * @private
+   */
+  #floorRational(rational) {
+    if (rational.denominator === 1n) {
+      return rational; // Already an integer
+    }
+    
+    const quotient = rational.numerator / rational.denominator;
+    if (rational.numerator >= 0n) {
+      return new Rational(quotient, 1n);
+    } else {
+      return new Rational(quotient - 1n, 1n);
+    }
   }
 
 
