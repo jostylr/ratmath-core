@@ -139,12 +139,11 @@ describe('parseRepeatingDecimal', () => {
       expect(result.high.denominator).toBe(200n);
     });
 
-    it('parses 5 as point interval', () => {
+    it('parses 5 as exact rational', () => {
       const result = parseRepeatingDecimal('5');
-      expect(result).toBeInstanceOf(RationalInterval);
-      expect(result.low.equals(result.high)).toBe(true);
-      expect(result.low.numerator).toBe(5n);
-      expect(result.low.denominator).toBe(1n);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.numerator).toBe(5n);
+      expect(result.denominator).toBe(1n);
     });
 
     it('parses 0.5 as interval', () => {

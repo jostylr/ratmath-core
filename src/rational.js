@@ -412,6 +412,69 @@ export class Rational {
   }
 
   /**
+   * Converts this rational to its repeating decimal string representation
+   * @returns {string} Repeating decimal string (e.g., "1/3" becomes "0.#3")
+   */
+  toRepeatingDecimal() {
+    // Handle special cases
+    if (this.#numerator === 0n) {
+      return '0';
+    }
+
+    // Handle negative numbers
+    const isNegative = this.#numerator < 0n;
+    const num = isNegative ? -this.#numerator : this.#numerator;
+    const den = this.#denominator;
+
+    // Get integer part
+    const integerPart = num / den;
+    let remainder = num % den;
+
+    // If no remainder, it's a terminating decimal
+    if (remainder === 0n) {
+      return (isNegative ? '-' : '') + integerPart.toString();
+    }
+
+    // Perform long division to find the repeating pattern
+    const seenRemainders = new Map();
+    const digits = [];
+    let position = 0;
+
+    while (remainder !== 0n && !seenRemainders.has(remainder.toString())) {
+      seenRemainders.set(remainder.toString(), position);
+      remainder *= 10n;
+      const digit = remainder / den;
+      digits.push(digit.toString());
+      remainder = remainder % den;
+      position++;
+    }
+
+    let result = (isNegative ? '-' : '') + integerPart.toString();
+
+    if (remainder === 0n) {
+      // Terminating decimal
+      if (digits.length > 0) {
+        result += '.' + digits.join('') + '#0';
+      } else {
+        result += '#0';
+      }
+    } else {
+      // Repeating decimal
+      const repeatStart = seenRemainders.get(remainder.toString());
+      const nonRepeatingPart = digits.slice(0, repeatStart);
+      const repeatingPart = digits.slice(repeatStart);
+
+      if (nonRepeatingPart.length > 0) {
+        result += '.' + nonRepeatingPart.join('') + '#' + repeatingPart.join('');
+      } else {
+        result += '.#' + repeatingPart.join('');
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * Creates a Rational from a number, string, or another Rational
    * @param {number|string|bigint|Rational} value - The value to convert
    * @returns {Rational} A new Rational instance

@@ -58,6 +58,10 @@ console.log(nineNines.equals(new Rational(1)));        // true
 // Common fractions
 const oneSeventh = parseRepeatingDecimal('0.#142857'); // 1/7
 const oneSixth = parseRepeatingDecimal('0.1#6');       // 1/6
+
+// Convert rationals back to repeating decimals
+console.log(oneThird.toRepeatingDecimal());            // "0.#3"
+console.log(oneSeventh.toRepeatingDecimal());          // "0.#142857"
 ```
 
 ### Basic Rational Arithmetic
@@ -219,6 +223,7 @@ new Rational(numerator, denominator = 1)
 - **toString()**: Returns a string representation ("numerator/denominator")
 - **toMixedString()**: Returns a mixed number representation ("whole..numerator/denominator")
 - **toNumber()**: Returns a floating-point approximation
+- **toRepeatingDecimal()**: Returns a repeating decimal string representation
 
 #### Static Methods
 
@@ -261,13 +266,35 @@ parseRepeatingDecimal('1.23#0');    // 123/100
 // Intervals for uncertain decimals
 parseRepeatingDecimal('1.23');      // [49/40, 247/200]
 parseRepeatingDecimal('-0.5');      // [-11/20, -9/20]
-```</edits>
+```
 
-</edits>
+#### Converting Rationals to Repeating Decimals
 
-<edits>
+```javascript
+import { Rational } from 'ratmath';
 
-<old_text>
+// The toRepeatingDecimal() method converts any rational to its exact decimal representation
+const oneThird = new Rational(1, 3);
+console.log(oneThird.toRepeatingDecimal());     // "0.#3"
+
+const twentyTwoSevenths = new Rational(22, 7);
+console.log(twentyTwoSevenths.toRepeatingDecimal()); // "3.#142857"
+
+const half = new Rational(1, 2); 
+console.log(half.toRepeatingDecimal());         // "0.5#0" (terminating)
+
+const five = new Rational(5);
+console.log(five.toRepeatingDecimal());         // "5" (integer)
+
+// All conversions are exact and preserve mathematical precision
+const complex = new Rational(123, 37);
+const decimal = complex.toRepeatingDecimal();
+const parsed = parseRepeatingDecimal(decimal);
+console.log(complex.equals(parsed));            // true
+```
+
+## Examples
+
 ### Calculation with Exact Fractions
 
 ```javascript
@@ -299,6 +326,42 @@ console.log(parseRepeatingDecimal('0.#9'));            // 1 (0.999... = 1)
 // Handle non-repeating decimals as intervals
 const uncertain = parseRepeatingDecimal('3.14');       // [3.135, 3.145]
 console.log(uncertain.toString());                     // "627/200:629/200"
+
+// Convert back to repeating decimal notation
+const half = new Rational(1, 2);
+console.log(half.toRepeatingDecimal());                // "0.5#0"
+
+const piApprox = new Rational(22, 7);
+console.log(piApprox.toRepeatingDecimal());            // "3.#142857"
+```
+
+### Roundtrip Conversion
+
+The library supports perfect roundtrip conversion between rational numbers and repeating decimal strings:
+
+```javascript
+import { Rational, parseRepeatingDecimal } from 'ratmath';
+
+// Original rational → repeating decimal → back to rational
+const original = new Rational(1, 3);
+const decimal = original.toRepeatingDecimal();         // "0.#3"
+const roundtrip = parseRepeatingDecimal(decimal);      // 1/3
+
+console.log(original.equals(roundtrip));               // true (exact match)
+
+// Works with all types of numbers
+const cases = [
+  new Rational(1, 7),    // "0.#142857"
+  new Rational(22, 7),   // "3.#142857" 
+  new Rational(3, 4),    // "0.75#0"
+  new Rational(-1, 3)    // "-0.#3"
+];
+
+cases.forEach(rational => {
+  const decimal = rational.toRepeatingDecimal();
+  const parsed = parseRepeatingDecimal(decimal);
+  console.log(`${rational} ↔ ${decimal} ↔ ${parsed} ✓`);
+});
 ```
 
 ### Fraction Class

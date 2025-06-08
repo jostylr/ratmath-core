@@ -143,7 +143,7 @@ function parseNonRepeatingDecimal(str, isNegative) {
   // If there's no fractional part, treat as exact integer
   if (!fractionalPart) {
     const rational = new Rational(integerPart);
-    return RationalInterval.point(isNegative ? rational.negate() : rational);
+    return isNegative ? rational.negate() : rational;
   }
 
   // Create interval [x.yyy5, x.yyy5) where the last digit is treated as ±0.5
