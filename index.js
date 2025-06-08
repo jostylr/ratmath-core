@@ -10,6 +10,7 @@ import { RationalInterval } from "./src/rational-interval.js";
 import { Parser, parseRepeatingDecimal } from "./src/parser.js";
 import { Fraction } from "./src/fraction.js";
 import { FractionInterval } from "./src/fraction-interval.js";
+import { Integer } from "./src/integer.js";
 
 // Export named exports
 export {
@@ -19,6 +20,7 @@ export {
   parseRepeatingDecimal,
   Fraction,
   FractionInterval,
+  Integer,
 };
 
 // Default export for convenient importing
@@ -29,4 +31,5 @@ export default {
   parseRepeatingDecimal,
   Fraction,
   FractionInterval,
+  Integer,
 };

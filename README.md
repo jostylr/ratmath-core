@@ -5,6 +5,7 @@ A JavaScript library for exact rational arithmetic and interval arithmetic. The 
 ## Features
 
 - **Exact Arithmetic**: All calculations are performed exactly, with no floating-point approximation errors.
+- **Integer Arithmetic**: BigInt-based integer class with exact arithmetic. Division returns Integer for exact results or Rational for non-exact results.
 - **Rational Numbers**: Represents fractions in lowest terms with arbitrary precision using JavaScript's built-in BigInt.
 - **Mixed Number Notation**: Supports both standard fraction notation (a/b) and mixed number notation (a..b/c).
 - **Fraction Representation**: Provides a Fraction class that maintains the exact numerator and denominator without automatic reduction.
@@ -95,6 +96,74 @@ const reciprocal = a.pow(-1);    // 2/1
 console.log(sum.toString());     // "5/4"
 console.log(sum.toNumber());     // 1.25 (approximate)
 console.log(d.toMixedString());  // "5..2/3"
+```
+
+### Integer Arithmetic
+
+The Integer class provides exact arithmetic with BigInt precision. Division automatically returns a Rational when the result is not a whole number:
+
+```javascript
+import { Integer, Rational } from 'ratmath';
+
+// Create integers
+const a = new Integer(15);
+const b = new Integer('123456789012345678901234567890'); // Large numbers
+const c = new Integer(-7);
+
+// Arithmetic operations
+const sum = a.add(c);            // 8
+const product = a.multiply(c);   // -105
+const power = a.pow(3);          // 3375
+
+// Division - returns Integer or Rational automatically
+const exactDiv = a.divide(new Integer(3));  // 5 (Integer)
+const inexactDiv = a.divide(new Integer(4)); // 15/4 (Rational)
+
+console.log(`15 ÷ 3 = ${exactDiv} (${exactDiv.constructor.name})`);
+console.log(`15 ÷ 4 = ${inexactDiv} (${inexactDiv.constructor.name})`);
+
+// Utility methods
+console.log(c.abs());            // 7
+console.log(a.isEven());         // false
+console.log(a.gcd(new Integer(10))); // 5
+
+// Conversion
+console.log(a.toRational());     // 15/1 (Rational)
+console.log(Integer.fromRational(new Rational(42, 1))); // 42 (Integer)
+```
+
+### Integer-Rational Integration
+
+The Integer and Rational classes work seamlessly together, with automatic type conversion:
+
+```javascript
+import { Integer, Rational } from 'ratmath';
+
+// Start with integers, automatic rational conversion when needed
+const shares = new Integer(1000);
+const people = new Integer(7);
+const perPerson = shares.divide(people);  // Returns Rational(1000, 7)
+
+console.log(`$${shares} ÷ ${people} = $${perPerson} each`);
+console.log(`As decimal: $${perPerson.toNumber().toFixed(2)}`);
+
+// Verify exact arithmetic: 7 × (1000/7) = 1000
+const verification = perPerson.multiply(people.toRational());
+console.log(`Verification: ${people} × ${perPerson} = $${verification}`);
+
+// Mathematical calculations with mixed types
+const fibonacci = (n) => {
+    let a = new Integer(0), b = new Integer(1);
+    for (let i = 2; i <= n; i++) {
+        [a, b] = [b, a.add(b)];
+    }
+    return b;
+};
+
+const f20 = fibonacci(20);
+const f19 = fibonacci(19);
+const goldenRatio = f20.divide(f19);  // Automatic rational result
+console.log(`Golden ratio ≈ ${goldenRatio} = ${goldenRatio.toNumber()}`);
 ```
 
 ### Fraction Arithmetic
@@ -228,6 +297,45 @@ new Rational(numerator, denominator = 1)
 #### Static Methods
 
 - **from(value)**: Creates a Rational from a number, string, or another Rational
+
+### Integer Class
+
+The `Integer` class represents an exact integer using BigInt for arbitrary precision arithmetic. Division automatically returns an Integer for exact results or a Rational for non-exact results.
+
+#### Constructor
+
+```javascript
+new Integer(value)
+```
+
+- `value`: Number, string, or BigInt representing the integer value
+
+#### Methods
+
+- **add(other)**: Returns the sum as a new Integer
+- **subtract(other)**: Returns the difference as a new Integer
+- **multiply(other)**: Returns the product as a new Integer
+- **divide(other)**: Returns an Integer if exact division, otherwise a Rational
+- **modulo(other)**: Returns the remainder as a new Integer
+- **negate()**: Returns the negation as a new Integer
+- **pow(exponent)**: Raises this integer to a non-negative integer power
+- **equals(other)**: Returns true if this integer equals another
+- **compareTo(other)**: Returns -1, 0, or 1 for less than, equal, or greater than
+- **lessThan(other)**, **lessThanOrEqual(other)**, **greaterThan(other)**, **greaterThanOrEqual(other)**
+- **abs()**: Returns the absolute value as a new Integer
+- **sign()**: Returns -1, 0, or 1 for negative, zero, or positive
+- **isEven()**, **isOdd()**: Returns true if the integer is even/odd
+- **isZero()**, **isPositive()**, **isNegative()**: Returns true if the integer matches the condition
+- **gcd(other)**: Returns the greatest common divisor as a new Integer
+- **lcm(other)**: Returns the least common multiple as a new Integer
+- **toString()**: Returns a string representation
+- **toNumber()**: Returns a floating-point approximation
+- **toRational()**: Returns this integer as a Rational with denominator 1
+
+#### Static Methods
+
+- **from(value)**: Creates an Integer from a number, string, bigint, or another Integer
+- **fromRational(rational)**: Creates an Integer from a Rational that represents a whole number
 
 ### parseRepeatingDecimal Function
 
