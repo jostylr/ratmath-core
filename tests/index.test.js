@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { Rational, RationalInterval, Parser } from "../src/index.js";
+import { Rational, RationalInterval, Parser } from "../index.js";
 
 describe("Main Integration Tests", () => {
   it("performs a complex calculation correctly", () => {
@@ -59,7 +59,9 @@ describe("Main Integration Tests", () => {
 
   it("throws appropriate errors", () => {
     // Demonstrating error handling for invalid expressions
-    expect(() => Parser.parse("1/2 / 0")).toThrow("Cannot divide by an interval containing zero");
+    expect(() => Parser.parse("1/2 / 0")).toThrow(
+      "Cannot divide by an interval containing zero",
+    );
 
     // Zero raised to zero
     expect(() => Parser.parse("0^0")).toThrow(

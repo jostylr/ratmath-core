@@ -434,4 +434,16 @@ export class RationalInterval {
     }
     return new RationalInterval(parts[0], parts[1]);
   }
+
+  /**
+   * Converts this rational interval to its repeating decimal string representation
+   * @returns {string} Repeating decimal interval string (e.g., "1/3:1/2" becomes "0.#3:0.5#0")
+   */
+  toRepeatingDecimal() {
+    const lowDecimal = this.#low.toRepeatingDecimal();
+    const highDecimal = this.#high.toRepeatingDecimal();
+    return `${lowDecimal}:${highDecimal}`;
+  }
+
+
 }

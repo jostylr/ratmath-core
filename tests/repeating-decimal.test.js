@@ -291,4 +291,143 @@ describe('parseRepeatingDecimal', () => {
       expect(sum.equals(expected)).toBe(true);
     });
   });
+
+  describe('repeating decimal intervals', () => {
+    it('parses basic repeating decimal intervals', () => {
+      const interval = parseRepeatingDecimal('0.#3:0.5#0');
+      expect(interval).toBeInstanceOf(RationalInterval);
+      expect(interval.low.equals(new Rational(1, 3))).toBe(true);
+      expect(interval.high.equals(new Rational(1, 2))).toBe(true);
+    });
+
+    it('parses intervals with both repeating endpoints', () => {
+      const interval = parseRepeatingDecimal('0.#3:0.#6');
+      expect(interval).toBeInstanceOf(RationalInterval);
+      expect(interval.low.equals(new Rational(1, 3))).toBe(true);
+      expect(interval.high.equals(new Rational(2, 3))).toBe(true);
+    });
+
+    it('parses intervals with mixed repeating and terminating decimals', () => {
+      const interval = parseRepeatingDecimal('0.125#0:0.#3');
+      expect(interval).toBeInstanceOf(RationalInterval);
+      expect(interval.low.equals(new Rational(1, 8))).toBe(true);
+      expect(interval.high.equals(new Rational(1, 3))).toBe(true);
+    });
+
+    it('parses intervals with negative endpoints', () => {
+      const interval = parseRepeatingDecimal('-0.#6:-0.#3');
+      expect(interval).toBeInstanceOf(RationalInterval);
+      expect(interval.low.equals(new Rational(-2, 3))).toBe(true);
+      expect(interval.high.equals(new Rational(-1, 3))).toBe(true);
+    });
+
+    it('parses intervals with complex repeating patterns', () => {
+      const interval = parseRepeatingDecimal('0.#142857:3.#142857');
+      expect(interval).toBeInstanceOf(RationalInterval);
+      expect(interval.low.equals(new Rational(1, 7))).toBe(true);
+      expect(interval.high.equals(new Rational(22, 7))).toBe(true);
+    });
+
+    it('handles whitespace in interval notation', () => {
+      const interval = parseRepeatingDecimal('  0.#3 : 0.5#0  ');
+      expect(interval).toBeInstanceOf(RationalInterval);
+      expect(interval.low.equals(new Rational(1, 3))).toBe(true);
+      expect(interval.high.equals(new Rational(1, 2))).toBe(true);
+    });
+
+    it('throws error for invalid interval format', () => {
+      expect(() => parseRepeatingDecimal('0.#3:0.5#0:1.#0')).toThrow('Invalid interval format');
+    });
+
+    it('throws error for nested intervals', () => {
+      // This would be caught by the parsing logic since non-repeating decimals become intervals
+      expect(() => parseRepeatingDecimal('1.23:0.#3')).toThrow();
+    });
+  });
+
+  describe('interval roundtrip conversion', () => {
+    it('converts rational intervals to repeating decimal intervals and back', () => {
+      // Create original interval
+      const original = new RationalInterval(new Rational(1, 3), new Rational(1, 2));
+      
+      // Convert to repeating decimal
+      const decimalInterval = original.toRepeatingDecimal();
+      expect(decimalInterval).toBe('0.#3:0.5#0');
+      
+      // Convert back to rational interval
+      const roundtrip = parseRepeatingDecimal(decimalInterval);
+      expect(roundtrip).toBeInstanceOf(RationalInterval);
+      expect(original.low.equals(roundtrip.low)).toBe(true);
+      expect(original.high.equals(roundtrip.high)).toBe(true);
+    });
+
+    it('handles intervals with both repeating endpoints', () => {
+      const original = new RationalInterval(new Rational(1, 3), new Rational(2, 3));
+      const decimalInterval = original.toRepeatingDecimal();
+      expect(decimalInterval).toBe('0.#3:0.#6');
+      
+      const roundtrip = parseRepeatingDecimal(decimalInterval);
+      expect(original.low.equals(roundtrip.low)).toBe(true);
+      expect(original.high.equals(roundtrip.high)).toBe(true);
+    });
+
+    it('handles intervals with terminating decimals', () => {
+      const original = new RationalInterval(new Rational(1, 4), new Rational(3, 4));
+      const decimalInterval = original.toRepeatingDecimal();
+      expect(decimalInterval).toBe('0.25#0:0.75#0');
+      
+      const roundtrip = parseRepeatingDecimal(decimalInterval);
+      expect(original.low.equals(roundtrip.low)).toBe(true);
+      expect(original.high.equals(roundtrip.high)).toBe(true);
+    });
+
+    it('handles intervals with negative endpoints', () => {
+      const original = new RationalInterval(new Rational(-1, 2), new Rational(-1, 4));
+      const decimalInterval = original.toRepeatingDecimal();
+      expect(decimalInterval).toBe('-0.5#0:-0.25#0');
+      
+      const roundtrip = parseRepeatingDecimal(decimalInterval);
+      expect(original.low.equals(roundtrip.low)).toBe(true);
+      expect(original.high.equals(roundtrip.high)).toBe(true);
+    });
+
+    it('handles intervals spanning zero', () => {
+      const original = new RationalInterval(new Rational(-1, 3), new Rational(1, 3));
+      const decimalInterval = original.toRepeatingDecimal();
+      expect(decimalInterval).toBe('-0.#3:0.#3');
+      
+      const roundtrip = parseRepeatingDecimal(decimalInterval);
+      expect(original.low.equals(roundtrip.low)).toBe(true);
+      expect(original.high.equals(roundtrip.high)).toBe(true);
+    });
+
+    it('handles point intervals (where low equals high)', () => {
+      const original = new RationalInterval(new Rational(1, 7), new Rational(1, 7));
+      const decimalInterval = original.toRepeatingDecimal();
+      expect(decimalInterval).toBe('0.#142857:0.#142857');
+      
+      const roundtrip = parseRepeatingDecimal(decimalInterval);
+      expect(original.low.equals(roundtrip.low)).toBe(true);
+      expect(original.high.equals(roundtrip.high)).toBe(true);
+    });
+
+    it('performs roundtrip conversion with complex patterns', () => {
+      const testCases = [
+        new RationalInterval(new Rational(1, 11), new Rational(2, 11)),
+        new RationalInterval(new Rational(1, 13), new Rational(1, 7)),
+        new RationalInterval(new Rational(22, 7), new Rational(355, 113)),
+        new RationalInterval(new Rational(0), new Rational(1)),
+        new RationalInterval(new Rational(-5, 6), new Rational(5, 6))
+      ];
+
+      testCases.forEach(original => {
+        const decimalInterval = original.toRepeatingDecimal();
+        const roundtrip = parseRepeatingDecimal(decimalInterval);
+        
+        expect(roundtrip).toBeInstanceOf(RationalInterval);
+        expect(original.low.equals(roundtrip.low)).toBe(true);
+        expect(original.high.equals(roundtrip.high)).toBe(true);
+      });
+    });
+  });
 });

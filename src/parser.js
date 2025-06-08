@@ -11,7 +11,7 @@ import { RationalInterval } from './rational-interval.js';
 /**
  * Parses a repeating decimal string and returns the exact rational equivalent
  * 
- * @param {string} str - String like "0.12#45" or "733.#3" or "1.23#0"
+ * @param {string} str - String like "0.12#45" or "733.#3" or "1.23#0" or "0.#3:0.5#0"
  * @returns {Rational|RationalInterval} The exact rational representation, or interval for non-repeating decimals
  * @throws {Error} If the string format is invalid
  */
@@ -21,6 +21,11 @@ export function parseRepeatingDecimal(str) {
   }
 
   str = str.trim();
+  
+  // Check if this is an interval notation (contains colon)
+  if (str.includes(':')) {
+    return parseRepeatingDecimalInterval(str);
+  }
   
   // Handle negative numbers
   const isNegative = str.startsWith('-');
@@ -173,6 +178,32 @@ function parseNonRepeatingDecimal(str, isNegative) {
   }
 
   return new RationalInterval(lower, upper);
+}
+
+/**
+ * Parses a repeating decimal interval string like "0.#3:0.5#0"
+ * 
+ * @private
+ * @param {string} str - Interval string with colon separator
+ * @returns {RationalInterval} The interval representation
+ */
+function parseRepeatingDecimalInterval(str) {
+  const parts = str.split(':');
+  if (parts.length !== 2) {
+    throw new Error('Invalid interval format. Use format like "0.#3:0.5#0"');
+  }
+
+  // Parse each endpoint separately
+  const leftEndpoint = parseRepeatingDecimal(parts[0].trim());
+  const rightEndpoint = parseRepeatingDecimal(parts[1].trim());
+
+  // If either endpoint is an interval, we need to handle that
+  if (leftEndpoint instanceof RationalInterval || rightEndpoint instanceof RationalInterval) {
+    throw new Error('Nested intervals are not supported');
+  }
+
+  // Create interval from the two rational endpoints
+  return new RationalInterval(leftEndpoint, rightEndpoint);
 }
 
 export class Parser {
@@ -398,10 +429,72 @@ export class Parser {
   }
 
   /**
-   * Parses an interval of the form "a/b:c/d" or a single rational "a/b"
+   * Parses an interval of the form "a/b:c/d", "0.#3:0.5#0", or a single rational "a/b"
    * @private
    */
   static #parseInterval(expr) {
+    // Check if this might be a repeating decimal interval first
+    // Only try repeating decimal parsing if the string starts with a digit or decimal point
+    // and contains both # and : symbols, indicating it's likely a repeating decimal interval
+    if (expr.includes('#') && expr.includes(':') && /^-?[\d.]/.test(expr)) {
+      // Find the colon position - need to be careful not to confuse with negative signs
+      const colonIndex = expr.indexOf(':');
+      if (colonIndex > 0) {
+        // Check if the part before the colon looks like a repeating decimal (contains # or just digits/decimal)
+        const beforeColon = expr.substring(0, colonIndex);
+        const afterColonStart = expr.substring(colonIndex + 1);
+        
+        // Only try repeating decimal parsing if both parts look like they could be repeating decimals
+        // (contain only digits, decimal points, # symbols, and optional minus sign)
+        if (/^-?[\d.#]+$/.test(beforeColon) && /^-?[\d.#]/.test(afterColonStart)) {
+          try {
+            // Try to parse as repeating decimal interval
+            const possibleInterval = parseRepeatingDecimal(expr);
+            if (possibleInterval instanceof RationalInterval) {
+              // Find how much of the expression this consumed
+              let endIndex = expr.length;
+              for (let i = 1; i < expr.length; i++) {
+                const testExpr = expr.substring(0, i);
+                try {
+                  const testResult = parseRepeatingDecimal(testExpr);
+                  if (testResult instanceof RationalInterval) {
+                    // Check if this is followed by a non-digit character or end
+                    if (i === expr.length || !/[\d#.\-]/.test(expr[i])) {
+                      endIndex = i;
+                      const finalResult = parseRepeatingDecimal(expr.substring(0, endIndex));
+                      if (finalResult instanceof RationalInterval) {
+                        return {
+                          value: finalResult,
+                          remainingExpr: expr.substring(endIndex)
+                        };
+                      }
+                    }
+                  }
+                } catch {
+                  // Continue searching
+                }
+              }
+              
+              // Try parsing the whole expression as interval
+              try {
+                const result = parseRepeatingDecimal(expr);
+                if (result instanceof RationalInterval) {
+                  return {
+                    value: result,
+                    remainingExpr: ''
+                  };
+                }
+              } catch {
+                // Fall through to regular parsing
+              }
+            }
+          } catch {
+            // Fall through to regular rational parsing
+          }
+        }
+      }
+    }
+    
     // Parse the first rational number
     const firstResult = Parser.#parseRational(expr);
     
@@ -436,32 +529,37 @@ export class Parser {
     // Check for repeating decimal notation first
     let hashIndex = expr.indexOf('#');
     if (hashIndex !== -1) {
-      // Find the end of the repeating decimal
-      let endIndex = hashIndex + 1;
-      while (endIndex < expr.length && /\d/.test(expr[endIndex])) {
-        endIndex++;
-      }
-      
-      const repeatingDecimalStr = expr.substring(0, endIndex);
-      try {
-        const result = parseRepeatingDecimal(repeatingDecimalStr);
-        
-        // If result is an interval, treat it as a point interval for the rational
-        if (result instanceof RationalInterval) {
-          // For parsing in expressions, use the midpoint of the interval
-          const midpoint = result.low.add(result.high).divide(new Rational(2));
-          return {
-            value: midpoint,
-            remainingExpr: expr.substring(endIndex)
-          };
-        } else {
-          return {
-            value: result,
-            remainingExpr: expr.substring(endIndex)
-          };
+      // Only try repeating decimal parsing if the part before # looks like a decimal number
+      // (contains only digits, decimal point, and optional minus sign)
+      const beforeHash = expr.substring(0, hashIndex);
+      if (/^-?(\d+\.?\d*|\.\d+)$/.test(beforeHash)) {
+        // Find the end of the repeating decimal
+        let endIndex = hashIndex + 1;
+        while (endIndex < expr.length && /\d/.test(expr[endIndex])) {
+          endIndex++;
         }
-      } catch (error) {
-        throw new Error(`Invalid repeating decimal: ${error.message}`);
+        
+        const repeatingDecimalStr = expr.substring(0, endIndex);
+        try {
+          const result = parseRepeatingDecimal(repeatingDecimalStr);
+          
+          // If result is an interval, treat it as a point interval for the rational
+          if (result instanceof RationalInterval) {
+            // For parsing in expressions, use the midpoint of the interval
+            const midpoint = result.low.add(result.high).divide(new Rational(2));
+            return {
+              value: midpoint,
+              remainingExpr: expr.substring(endIndex)
+            };
+          } else {
+            return {
+              value: result,
+              remainingExpr: expr.substring(endIndex)
+            };
+          }
+        } catch (error) {
+          throw new Error(`Invalid repeating decimal: ${error.message}`);
+        }
       }
     }
     
