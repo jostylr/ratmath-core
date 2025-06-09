@@ -2,7 +2,7 @@
   "name": "ratmath",
   "version": "0.1.0",
   "description": "Exact rational arithmetic and interval arithmetic library",
-  "main": "src/index.js",
+  "main": "index.js",
   "type": "module",
   "scripts": {
     "test": "bun test"

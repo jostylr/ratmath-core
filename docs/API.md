@@ -5,10 +5,11 @@ This document provides comprehensive API documentation for the RatMath library.
 ## Table of Contents
 
 1. [Rational Class](#rational-class)
-2. [Fraction Class](#fraction-class)
-3. [RationalInterval Class](#rationalinterval-class)
-4. [FractionInterval Class](#fractioninterval-class)
-5. [Parser Class](#parser-class)
+2. [Integer Class](#integer-class)
+3. [Fraction Class](#fraction-class)
+4. [RationalInterval Class](#rationalinterval-class)
+5. [FractionInterval Class](#fractioninterval-class)
+6. [Parser Class](#parser-class)
 
 ## Rational Class
 
@@ -120,48 +121,11 @@ Raises this rational to an integer power.
 
 #### `equals(other)`
 
-Checks if this fraction equals another.
+Checks if this rational equals another.
 
 **Parameters:**
-- `other` (Fraction): The fraction to compare with
+- `other` (Rational): The rational to compare with
 
-**Returns:** (boolean) True if the fractions are equal (same numerator and denominator)
-
-#### `lessThan(other)`
-
-Checks if this fraction is less than another.
-
-**Parameters:**
-- `other` (Fraction): The fraction to compare with
-
-**Returns:** (boolean) True if this fraction is less than the other
-
-#### `lessThanOrEqual(other)`
-
-Checks if this fraction is less than or equal to another.
-
-**Parameters:**
-- `other` (Fraction): The fraction to compare with
-
-**Returns:** (boolean) True if this fraction is less than or equal to the other
-
-#### `greaterThan(other)`
-
-Checks if this fraction is greater than another.
-
-**Parameters:**
-- `other` (Fraction): The fraction to compare with
-
-**Returns:** (boolean) True if this fraction is greater than the other
-
-#### `greaterThanOrEqual(other)`
-
-Checks if this fraction is greater than or equal to another.
-
-**Parameters:**
-- `other` (Fraction): The fraction to compare with
-
-**Returns:** (boolean) True if this fraction is greater than or equal to the other
 **Returns:** (boolean) True if the rationals are equal
 
 #### `compareTo(other)`
@@ -233,6 +197,18 @@ Approximates this rational as a JavaScript number.
 
 **Returns:** (number) Floating-point approximation
 
+#### `toRepeatingDecimal()`
+
+Converts this rational to its repeating decimal string representation.
+
+**Returns:** (string) Repeating decimal string (e.g., "1/3" becomes "0.#3")
+
+#### `toDecimal()`
+
+Converts this rational to a standard decimal string representation. For terminating decimals, returns the exact decimal. For repeating decimals, returns an approximation with sufficient precision.
+
+**Returns:** (string) Decimal string representation
+
 ### Static Methods
 
 #### `Rational.from(value)`
@@ -257,6 +233,462 @@ A constant representing the rational number 0/1.
 A constant representing the rational number 1/1.
 
 **Returns:** (Rational) The one rational
+
+## Integer Class
+
+The `Integer` class represents an exact integer using BigInt for arbitrary precision arithmetic. Division automatically returns an Integer for exact results or a Rational for non-exact results.
+
+### Constructor
+
+#### `new Integer(value)`
+
+Creates a new Integer.
+
+**Parameters:**
+- `value` (number|string|bigint): The integer value
+
+**Throws:**
+- Error: If the input is not a valid integer
+
+**Examples:**
+```javascript
+const i1 = new Integer(42);         // 42
+const i2 = new Integer("123");      // 123
+const i3 = new Integer(-7n);        // -7
+```
+
+### Properties
+
+#### `value`
+
+Gets the value of the integer.
+
+**Returns:** (bigint) The integer value
+
+### Methods
+
+#### `add(other)`
+
+Adds another integer to this one.
+
+**Parameters:**
+- `other` (Integer): The integer to add
+
+**Returns:** (Integer) The sum as a new Integer
+
+#### `subtract(other)`
+
+Subtracts another integer from this one.
+
+**Parameters:**
+- `other` (Integer): The integer to subtract
+
+**Returns:** (Integer) The difference as a new Integer
+
+#### `multiply(other)`
+
+Multiplies this integer by another.
+
+**Parameters:**
+- `other` (Integer): The integer to multiply by
+
+**Returns:** (Integer) The product as a new Integer
+
+#### `divide(other)`
+
+Divides this integer by another.
+
+**Parameters:**
+- `other` (Integer): The integer to divide by
+
+**Returns:** (Integer|Rational) The quotient as an Integer if exact, otherwise a Rational
+
+**Throws:**
+- Error: If other is zero
+
+#### `modulo(other)`
+
+Computes the remainder when dividing this integer by another.
+
+**Parameters:**
+- `other` (Integer): The integer to divide by
+
+**Returns:** (Integer) The remainder as a new Integer
+
+**Throws:**
+- Error: If other is zero
+
+#### `negate()`
+
+Returns the negation of this integer.
+
+**Returns:** (Integer) The negation as a new Integer
+
+#### `pow(exponent)`
+
+Raises this integer to an integer power.
+
+**Parameters:**
+- `exponent` (number|bigint|Integer): The exponent
+
+**Returns:** (Integer|Rational) Integer for non-negative exponents, Rational for negative exponents
+
+**Throws:**
+- Error: If this integer is zero and exponent is negative
+
+#### `equals(other)`
+
+Checks if this integer equals another.
+
+**Parameters:**
+- `other` (Integer): The integer to compare with
+
+**Returns:** (boolean) True if the integers are equal
+
+#### `compareTo(other)`
+
+Compares this integer with another.
+
+**Parameters:**
+- `other` (Integer): The integer to compare with
+
+**Returns:** (number) -1 if this < other, 0 if equal, 1 if this > other
+
+#### `lessThan(other)`
+
+Checks if this integer is less than another.
+
+**Parameters:**
+- `other` (Integer): The integer to compare with
+
+**Returns:** (boolean) True if this integer is less than other
+
+#### `lessThanOrEqual(other)`
+
+Checks if this integer is less than or equal to another.
+
+**Parameters:**
+- `other` (Integer): The integer to compare with
+
+**Returns:** (boolean) True if this integer is less than or equal to other
+
+#### `greaterThan(other)`
+
+Checks if this integer is greater than another.
+
+**Parameters:**
+- `other` (Integer): The integer to compare with
+
+**Returns:** (boolean) True if this integer is greater than other
+
+#### `greaterThanOrEqual(other)`
+
+Checks if this integer is greater than or equal to another.
+
+**Parameters:**
+- `other` (Integer): The integer to compare with
+
+**Returns:** (boolean) True if this integer is greater than or equal to other
+
+#### `abs()`
+
+Returns the absolute value of this integer.
+
+**Returns:** (Integer) The absolute value as a new Integer
+
+#### `sign()`
+
+Returns the sign of this integer.
+
+**Returns:** (Integer) -1 for negative, 0 for zero, 1 for positive
+
+#### `isEven()`
+
+Checks if this integer is even.
+
+**Returns:** (boolean) True if the integer is even
+
+#### `isOdd()`
+
+Checks if this integer is odd.
+
+**Returns:** (boolean) True if the integer is odd
+
+#### `isZero()`
+
+Checks if this integer is zero.
+
+**Returns:** (boolean) True if the integer is zero
+
+#### `isPositive()`
+
+Checks if this integer is positive.
+
+**Returns:** (boolean) True if the integer is positive
+
+#### `isNegative()`
+
+Checks if this integer is negative.
+
+**Returns:** (boolean) True if the integer is negative
+
+#### `gcd(other)`
+
+Computes the greatest common divisor with another integer.
+
+**Parameters:**
+- `other` (Integer): The other integer
+
+**Returns:** (Integer) The GCD as a new Integer
+
+#### `lcm(other)`
+
+Computes the least common multiple with another integer.
+
+**Parameters:**
+- `other` (Integer): The other integer
+
+**Returns:** (Integer) The LCM as a new Integer
+
+#### `toString()`
+
+Converts this integer to a string.
+
+**Returns:** (string) String representation of this integer
+
+#### `toNumber()`
+
+Converts this integer to a JavaScript number.
+
+**Returns:** (number) Floating-point approximation
+
+#### `toRational()`
+
+Converts this integer to a Rational.
+
+**Returns:** (Rational) This integer as a Rational with denominator 1
+
+### Static Methods
+
+#### `Integer.from(value)`
+
+Creates an Integer from a number, string, bigint, or another Integer.
+
+**Parameters:**
+- `value` (number|string|bigint|Integer): The value to convert
+
+**Returns:** (Integer) A new Integer instance
+
+#### `Integer.fromRational(rational)`
+
+Creates an Integer from a Rational if it represents a whole number.
+
+**Parameters:**
+- `rational` (Rational): The rational to convert
+
+**Returns:** (Integer) A new Integer instance
+
+**Throws:**
+- Error: If the rational is not a whole number
+
+### Static Properties
+
+#### `Integer.zero`
+
+A constant representing the integer 0.
+
+**Returns:** (Integer) The zero integer
+
+#### `Integer.one`
+
+A constant representing the integer 1.
+
+**Returns:** (Integer) The one integer
+
+## Fraction Class
+
+The `Fraction` class represents fractions as pairs of BigInt numerator and denominator. Unlike Rational, fractions are not automatically reduced - 1/2 and 2/4 are distinct. This class is useful for applications that need to maintain the exact representation of a fraction rather than its mathematically equivalent reduced form.
+
+### Constructor
+
+#### `new Fraction(numerator, denominator = 1)`
+
+Creates a new Fraction.
+
+**Parameters:**
+- `numerator` (number|string|bigint): The numerator, or a string like "3/4"
+- `denominator` (number|bigint): The denominator (optional if numerator is a string)
+
+**Throws:** Error if denominator is zero or if the input format is invalid
+
+**Examples:**
+```javascript
+const frac1 = new Fraction(1, 2);        // 1/2
+const frac2 = new Fraction("3/4");       // 3/4
+const frac3 = new Fraction(5);           // 5/1
+```
+
+### Properties
+
+#### `numerator`
+
+Gets the numerator of the fraction.
+
+**Returns:** (bigint) The numerator
+
+#### `denominator`
+
+Gets the denominator of the fraction.
+
+**Returns:** (bigint) The denominator
+
+### Methods
+
+#### `add(other)`
+
+Adds another fraction to this one. Only works if denominators are the same.
+
+**Parameters:**
+- `other` (Fraction): The fraction to add
+
+**Returns:** (Fraction) The sum as a new Fraction
+
+**Throws:** Error if denominators are not equal
+
+#### `subtract(other)`
+
+Subtracts another fraction from this one. Only works if denominators are the same.
+
+**Parameters:**
+- `other` (Fraction): The fraction to subtract
+
+**Returns:** (Fraction) The difference as a new Fraction
+
+**Throws:** Error if denominators are not equal
+
+#### `multiply(other)`
+
+Multiplies this fraction by another.
+
+**Parameters:**
+- `other` (Fraction): The fraction to multiply by
+
+**Returns:** (Fraction) The product as a new Fraction
+
+#### `divide(other)`
+
+Divides this fraction by another.
+
+**Parameters:**
+- `other` (Fraction): The fraction to divide by
+
+**Returns:** (Fraction) The quotient as a new Fraction
+
+**Throws:** Error if other has a zero numerator
+
+#### `pow(exponent)`
+
+Raises this fraction to an integer power.
+
+**Parameters:**
+- `exponent` (number|bigint): The exponent (must be an integer)
+
+**Returns:** (Fraction) The result as a new Fraction
+
+**Throws:** Error if this fraction is zero and exponent is negative, or if 0^0
+
+#### `scale(factor)`
+
+Scales both numerator and denominator by a factor.
+
+**Parameters:**
+- `factor` (number|bigint): The scaling factor
+
+**Returns:** (Fraction) A new scaled Fraction
+
+#### `reduce()`
+
+Returns a reduced version of this fraction.
+
+**Returns:** (Fraction) A new Fraction in lowest terms
+
+#### `toRational()`
+
+Converts this Fraction to a Rational. The result will be automatically reduced as per Rational's behavior.
+
+**Returns:** (Rational) Equivalent Rational (automatically reduced)
+
+#### `toString()`
+
+Converts this fraction to a string in the format "numerator/denominator" or just "numerator" if denominator is 1.
+
+**Returns:** (string) String representation of this fraction
+
+#### `equals(other)`
+
+Checks if this fraction equals another. Note that this checks for exact equality of numerator and denominator, not mathematical equivalence.
+
+**Parameters:**
+- `other` (Fraction): The fraction to compare with
+
+**Returns:** (boolean) True if the fractions are equal (same numerator and denominator)
+
+#### `lessThan(other)`
+
+Checks if this fraction is less than another.
+
+**Parameters:**
+- `other` (Fraction): The fraction to compare with
+
+**Returns:** (boolean) True if this fraction is less than the other
+
+#### `lessThanOrEqual(other)`
+
+Checks if this fraction is less than or equal to another.
+
+**Parameters:**
+- `other` (Fraction): The fraction to compare with
+
+**Returns:** (boolean) True if this fraction is less than or equal to the other
+
+#### `greaterThan(other)`
+
+Checks if this fraction is greater than another.
+
+**Parameters:**
+- `other` (Fraction): The fraction to compare with
+
+**Returns:** (boolean) True if this fraction is greater than the other
+
+#### `greaterThanOrEqual(other)`
+
+Checks if this fraction is greater than or equal to another.
+
+**Parameters:**
+- `other` (Fraction): The fraction to compare with
+
+**Returns:** (boolean) True if this fraction is greater than or equal to the other
+
+### Static Methods
+
+#### `Fraction.mediant(a, b)`
+
+Calculates the mediant of two fractions. The mediant of fractions a/b and c/d is (a+c)/(b+d).
+
+**Parameters:**
+- `a` (Fraction): First fraction
+- `b` (Fraction): Second fraction
+
+**Returns:** (Fraction) The mediant (a.numerator + b.numerator) / (a.denominator + b.denominator)
+
+#### `Fraction.fromRational(rational)`
+
+Creates a Fraction from a Rational.
+
+**Parameters:**
+- `rational` (Rational): The rational to convert
+
+**Returns:** (Fraction) Equivalent Fraction
 
 ## RationalInterval Class
 
@@ -483,6 +915,12 @@ Generates a uniformly random rational number from the closed interval. The rando
 
 **Throws:**
 - Error: If maxDenominator is not a positive integer
+
+#### `toRepeatingDecimal()`
+
+Converts this interval to its repeating decimal string representation.
+
+**Returns:** (string) Repeating decimal interval string (e.g., "1/3:1/2" becomes "0.#3:0.5#0")
 
 ### Static Methods
 
