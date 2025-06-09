@@ -3,7 +3,7 @@
  * 
  * A parser for rational interval arithmetic expressions.
  * Handles expressions with intervals, arithmetic operations, and parentheses.
- * Supports decimal uncertainty notation including range [56:67], relative [+5,-6], and symmetric [+-1] formats.
+ * Supports decimal uncertainty notation including range [56,67], relative [+5,-6], and symmetric [+-1] formats.
  */
 
 import { Rational } from './rational.js';
@@ -12,7 +12,7 @@ import { RationalInterval } from './rational-interval.js';
 /**
  * Parses a decimal with uncertainty notation and returns a RationalInterval
  * Supports formats like:
- * - 1.23[56:67] → 1.2356:1.2367 (range notation)
+ * - 1.23[56,67] → 1.2356:1.2367 (range notation)
  * - 1.23[+5,-6] → 1.224:1.235 (relative notation)
  * - 1.3[+-1] → 1.29:1.31 (symmetric notation)
  * 
@@ -43,12 +43,12 @@ function parseDecimalUncertainty(str) {
   const decimalMatch = baseStr.match(/\.(\d+)$/);
   const baseDecimalPlaces = decimalMatch ? decimalMatch[1].length : 0;
   
-  // Check if it's range notation [num:num], relative notation [+num,-num], or symmetric notation [+-num]
-  if (uncertaintyStr.includes(':')) {
-    // Range notation: 1.23[56:67] → 1.2356:1.2367
-    const rangeParts = uncertaintyStr.split(':');
+  // Check if it's range notation [num,num], relative notation [+num,-num], or symmetric notation [+-num]
+  if (uncertaintyStr.includes(',') && !uncertaintyStr.includes('+') && !uncertaintyStr.includes('-')) {
+    // Range notation: 1.23[56,67] → 1.2356:1.2367
+    const rangeParts = uncertaintyStr.split(',');
     if (rangeParts.length !== 2) {
-      throw new Error('Range notation must have exactly two values separated by colon');
+      throw new Error('Range notation must have exactly two values separated by comma');
     }
     
     const lowerUncertainty = rangeParts[0].trim();
@@ -155,23 +155,7 @@ function parseDecimalPointUncertainty(baseStr, uncertaintyStr) {
   // Handle range notation right after decimal point
   // baseStr is like "0." or "-1."
   
-  if (uncertaintyStr.includes(':')) {
-    // Range notation: 0.[#3:#6] or 0.[1:4]
-    const rangeParts = uncertaintyStr.split(':');
-    if (rangeParts.length !== 2) {
-      throw new Error('Range notation must have exactly two values separated by colon');
-    }
-    
-    const lowerStr = rangeParts[0].trim();
-    const upperStr = rangeParts[1].trim();
-    
-    // Parse each endpoint, handling repeating decimals
-    const lowerBound = parseDecimalPointEndpoint(baseStr, lowerStr);
-    const upperBound = parseDecimalPointEndpoint(baseStr, upperStr);
-    
-    return new RationalInterval(lowerBound, upperBound);
-    
-  } else if (uncertaintyStr.includes(',')) {
+  if (uncertaintyStr.includes(',')) {
     // Range notation: 0.[#3,#6] or 0.[1,4]
     const rangeParts = uncertaintyStr.split(',');
     if (rangeParts.length !== 2) {

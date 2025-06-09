@@ -13,7 +13,7 @@ A JavaScript library for exact rational arithmetic and interval arithmetic. The 
 - **Fraction Intervals**: Implements intervals with Fraction endpoints for exact representation without automatic reduction.
 - **Mediant Partitioning**: Create interval subdivisions using mediants (useful in continued fractions and number theory).
 - **Repeating Decimal Support**: Parse repeating decimals like "0.12#45" and convert them to exact rational representations.
-- **Decimal Uncertainty Parsing**: Parse decimal numbers with uncertainty notation like "1.23[56:67]" (range), "1.23[+5,-6]" (relative), or "1.3[+-1]" (symmetric).
+- **Decimal Uncertainty Parsing**: Parse decimal numbers with uncertainty notation like "1.23[56,67]" (range), "1.23[+5,-6]" (relative), or "1.3[+-1]" (symmetric).
 - **Expression Parser**: Parse and evaluate string expressions involving rational intervals and arithmetic operations.
 
 ## Installation
@@ -94,8 +94,7 @@ const relativeRepeat = parseRepeatingDecimal('5[+0.#3,-0.#6]'); // [13/3, 16/3]
 const decimalBase = parseRepeatingDecimal('0.5[+-33.#3]'); // scaled offset
 const decimalInt = parseRepeatingDecimal('1.23[+-5]'); // [1.225, 1.235] (5 scaled to 0.005)
 
-// Colon notation also supported
-const colonRange = parseRepeatingDecimal('0.[#3:#6]');  // Same as 0.[#3,#6]
+
 
 // Use in expressions
 const expr = Parser.parse('(0.[#1,#2] + 1.[#3,#4]) / 2'); // Complex arithmetic
@@ -109,10 +108,10 @@ Parse decimal numbers with uncertainty notation:
 ```javascript
 import { Parser } from 'ratmath';
 
-// Range notation: base[lower_digits:upper_digits]
-const range1 = Parser.parse('1.23[56:67]');           // 1.2356 to 1.2367
-const range2 = Parser.parse('78.3[15:24]');           // 78.315 to 78.324
-const range3 = Parser.parse('42[15:25]');             // 4215 to 4225
+// Range notation: base[lower_digits,upper_digits]
+const range1 = Parser.parse('1.23[56,67]');           // 1.2356 to 1.2367
+const range2 = Parser.parse('78.3[15,24]');           // 78.315 to 78.324
+const range3 = Parser.parse('42[15,25]');             // 4215 to 4225
 
 // Relative notation: base[+positive_offset,-negative_offset]
 const rel1 = Parser.parse('1.23[+5,-6]');             // 1.224 to 1.235
@@ -131,14 +130,14 @@ const rel4b = Parser.parse('2.0[-0.2,+0.1]');         // Same as above
 console.log(rel4a.equals(rel4b));                     // true
 
 // Negative base numbers
-const neg1 = Parser.parse('-1.23[56:67]');            // -1.2367 to -1.2356
+const neg1 = Parser.parse('-1.23[56,67]');            // -1.2367 to -1.2356
 const neg2 = Parser.parse('-2.5[+0.1,-0.2]');         // -2.502 to -2.499
 
 // Export intervals to uncertainty notation
 import { RationalInterval, Rational } from 'ratmath';
 
 const interval = new RationalInterval(new Rational('1.2356'), new Rational('1.2367'));
-console.log(interval.compactedDecimalInterval());     // "1.23[56:67]"
+console.log(interval.compactedDecimalInterval());     // "1.23[56,67]"
 console.log(interval.relativeMidDecimalInterval());   // "1.23615[+-0.00055]"
 
 // Arithmetic with uncertainty intervals
@@ -351,7 +350,7 @@ const result3 = Parser.parse('(1/2:3/4 + 1/4) * (3/2 - 1/2:1)');
 // Parse expressions with repeating decimals
 const repeatResult1 = Parser.parse('0.#3 + 0.#6');    // 1:1 (exact result)
 const repeatResult2 = Parser.parse('1.23#45 * 2');    // 679/275:679/275
-const intervalResult = Parser.parse('0.#3 : 0.8#3');  // 1/3:5/6
+const intervalResult = Parser.parse('0.#3:0.8#3');  // 1/3:5/6
 
 // Exact decimal intervals (treated as terminating decimals)
 const exactInterval = Parser.parse('1.23:1.34');      // [123/100, 67/50]
