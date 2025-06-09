@@ -3,29 +3,29 @@ import { Parser, Rational, RationalInterval } from "../index.js";
 
 describe("Decimal Uncertainty Parsing", () => {
   describe("range notation", () => {
-    it("parses basic range notation 1.23[56:67]", () => {
-      const result = Parser.parse("1.23[56:67]");
+    it("parses basic range notation 1.23[56,67]", () => {
+      const result = Parser.parse("1.23[56,67]");
       
       expect(result.low.equals(new Rational("1.2356"))).toBe(true);
       expect(result.high.equals(new Rational("1.2367"))).toBe(true);
     });
 
     it("parses range notation with different digit counts", () => {
-      const result = Parser.parse("78.3[15:24]");
+      const result = Parser.parse("78.3[15,24]");
       
       expect(result.low.equals(new Rational("78.315"))).toBe(true);
       expect(result.high.equals(new Rational("78.324"))).toBe(true);
     });
 
     it("handles negative base numbers", () => {
-      const result = Parser.parse("-1.23[56:67]");
+      const result = Parser.parse("-1.23[56,67]");
       
       expect(result.low.equals(new Rational("-1.2367"))).toBe(true);
       expect(result.high.equals(new Rational("-1.2356"))).toBe(true);
     });
 
     it("handles integer base numbers", () => {
-      const result = Parser.parse("42[15:25]");
+      const result = Parser.parse("42[15,25]");
       
       expect(result.low.equals(new Rational("4215"))).toBe(true);
       expect(result.high.equals(new Rational("4225"))).toBe(true);
@@ -137,24 +137,24 @@ describe("Decimal Uncertainty Parsing", () => {
   describe("error handling", () => {
     it("throws error for missing brackets", () => {
       expect(() => Parser.parse("1.23")).not.toThrow();
-      expect(() => Parser.parse("1.23[56:67")).toThrow();
+      expect(() => Parser.parse("1.23[56,67")).toThrow();
     });
 
     it("throws error for invalid range format", () => {
       expect(() => Parser.parse("1.23[56]")).toThrow();
-      expect(() => Parser.parse("1.23[56:67:89]")).toThrow();
+      expect(() => Parser.parse("1.23[56,67,89]")).toThrow();
     });
 
     it("throws error for invalid relative format", () => {
       expect(() => Parser.parse("1.23[+5]")).toThrow();
       expect(() => Parser.parse("1.23[+5,+6]")).toThrow();
       expect(() => Parser.parse("1.23[-5,-6]")).toThrow();
-      expect(() => Parser.parse("1.23[5,6]")).toThrow();
+      // Note: 1.23[5,6] is now valid range notation with comma separator
     });
 
     it("throws error for non-numeric range values", () => {
-      expect(() => Parser.parse("1.23[5a:67]")).toThrow();
-      expect(() => Parser.parse("1.23[56:6.7]")).toThrow();
+      expect(() => Parser.parse("1.23[5a,67]")).toThrow();
+      expect(() => Parser.parse("1.23[56,6.7]")).toThrow();
     });
 
     it("throws error for invalid offset values", () => {
@@ -192,7 +192,7 @@ describe("RationalInterval Export Methods", () => {
   describe("compactedDecimalInterval", () => {
     it("converts simple intervals to compacted notation", () => {
       const interval = new RationalInterval(new Rational("1.2356"), new Rational("1.2367"));
-      expect(interval.compactedDecimalInterval()).toBe("1.23[56:67]");
+      expect(interval.compactedDecimalInterval()).toBe("1.23[56,67]");
     });
 
     it("handles intervals with no common prefix", () => {
@@ -207,7 +207,7 @@ describe("RationalInterval Export Methods", () => {
 
     it("handles negative intervals", () => {
       const interval = new RationalInterval(new Rational("-1.2367"), new Rational("-1.2356"));
-      expect(interval.compactedDecimalInterval()).toBe("-1.23[67:56]");
+      expect(interval.compactedDecimalInterval()).toBe("-1.23[67,56]");
     });
   });
 

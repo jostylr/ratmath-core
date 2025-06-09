@@ -108,10 +108,15 @@ Parse decimal numbers with uncertainty notation:
 ```javascript
 import { Parser } from 'ratmath';
 
-// Range notation: base[lower_digits,upper_digits]
+// Range notation: base[lower_digits,upper_digits] (concatenation)
 const range1 = Parser.parse('1.23[56,67]');           // 1.2356 to 1.2367
 const range2 = Parser.parse('78.3[15,24]');           // 78.315 to 78.324
 const range3 = Parser.parse('42[15,25]');             // 4215 to 4225
+
+// Integer base range notation (concatenates digits)
+const basic = Parser.parse('1[2,3]');                 // 12 to 13
+const decimal = Parser.parse('1[2.34,9]');            // 12.34 to 19
+const ordered = Parser.parse('1[3,2]');               // 12 to 13 (auto-ordered)
 
 // Relative notation: base[+positive_offset,-negative_offset]
 const rel1 = Parser.parse('1.23[+5,-6]');             // 1.224 to 1.235
@@ -143,6 +148,9 @@ console.log(interval.relativeMidDecimalInterval());   // "1.23615[+-0.00055]"
 // Arithmetic with uncertainty intervals
 const sum = Parser.parse('1.23[+0.5,-0.3] + 2.45[+0.2,-0.1]');  // [3.6796, 3.6807]
 const product = Parser.parse('2[+-0.1] * 3[-+0.2]');     // [5.32, 6.72] (integer bases)
+
+// Note: Range notation 1[2,3] creates intervals 12:13 via concatenation
+// This is different from offset notation 1[+2,-3] which adds/subtracts values
 ```
 
 ### Basic Rational Arithmetic
@@ -351,6 +359,12 @@ const result3 = Parser.parse('(1/2:3/4 + 1/4) * (3/2 - 1/2:1)');
 const repeatResult1 = Parser.parse('0.#3 + 0.#6');    // 1:1 (exact result)
 const repeatResult2 = Parser.parse('1.23#45 * 2');    // 679/275:679/275
 const intervalResult = Parser.parse('0.#3:0.8#3');  // 1/3:5/6
+
+// Parse expressions with bracket notation (uncertainty/range)
+const bracketBasic = Parser.parse('1[2,3]');          // 12:13 (concatenation)
+const bracketDecimal = Parser.parse('1[2.34,9]');     // 617/50:19 (12.34:19)
+const bracketOrdered = Parser.parse('1[3,2]');        // 12:13 (auto-ordered)
+const bracketOffset = Parser.parse('1[+-0.5]');       // 1/2:3/2 (offset notation)
 
 // Exact decimal intervals (treated as terminating decimals)
 const exactInterval = Parser.parse('1.23:1.34');      // [123/100, 67/50]

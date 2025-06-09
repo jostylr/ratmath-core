@@ -20,7 +20,7 @@ import { RationalInterval } from './rational-interval.js';
  * @returns {RationalInterval} The interval representation
  * @throws {Error} If the string format is invalid
  */
-function parseDecimalUncertainty(str) {
+function parseDecimalUncertainty(str, allowIntegerRangeNotation = true) {
   const uncertaintyMatch = str.match(/^(-?\d*\.?\d*)\[([^\]]+)\]$/);
   if (!uncertaintyMatch) {
     throw new Error('Invalid uncertainty format');
@@ -45,7 +45,12 @@ function parseDecimalUncertainty(str) {
   
   // Check if it's range notation [num,num], relative notation [+num,-num], or symmetric notation [+-num]
   if (uncertaintyStr.includes(',') && !uncertaintyStr.includes('+') && !uncertaintyStr.includes('-')) {
-    // Range notation: 1.23[56,67] → 1.2356:1.2367
+    // Range notation: 1.23[56,67] → 1.2356:1.2367 or 42[15,25] → 4215:4225
+    // But only allow for integer bases if allowIntegerRangeNotation is true
+    if (baseDecimalPlaces === 0 && !allowIntegerRangeNotation) {
+      throw new Error('Range notation on integer bases is not supported in this context');
+    }
+    
     const rangeParts = uncertaintyStr.split(',');
     if (rangeParts.length !== 2) {
       throw new Error('Range notation must have exactly two values separated by comma');
@@ -54,9 +59,9 @@ function parseDecimalUncertainty(str) {
     const lowerUncertainty = rangeParts[0].trim();
     const upperUncertainty = rangeParts[1].trim();
     
-    // Validate that both are just digits
-    if (!/^\d+$/.test(lowerUncertainty) || !/^\d+$/.test(upperUncertainty)) {
-      throw new Error('Range values must be digits only');
+    // Validate that both are valid decimal numbers (digits and optional decimal point)
+    if (!/^\d+(\.\d+)?$/.test(lowerUncertainty) || !/^\d+(\.\d+)?$/.test(upperUncertainty)) {
+      throw new Error('Range values must be valid decimal numbers');
     }
     
     // Create the bounds by appending the uncertainty digits
@@ -65,6 +70,11 @@ function parseDecimalUncertainty(str) {
     
     const lowerBound = new Rational(lowerBoundStr);
     const upperBound = new Rational(upperBoundStr);
+    
+    // Automatically order the bounds (allow either order in input)
+    if (lowerBound.greaterThan(upperBound)) {
+      return new RationalInterval(upperBound, lowerBound);
+    }
     
     return new RationalInterval(lowerBound, upperBound);
     
@@ -222,7 +232,7 @@ export function parseRepeatingDecimal(str) {
   
   // Check if this is uncertainty notation (contains brackets)
   if (str.includes('[') && str.includes(']')) {
-    return parseDecimalUncertainty(str);
+    return parseDecimalUncertainty(str, false); // Don't allow integer range notation in parseRepeatingDecimal
   }
   
   // Check if this is an interval notation (contains colon)
@@ -549,7 +559,7 @@ export class Parser {
       if (uncertaintyMatch) {
         const fullMatch = uncertaintyMatch[0];
         try {
-          const result = parseDecimalUncertainty(fullMatch);
+          const result = parseDecimalUncertainty(fullMatch, true); // Allow integer range notation in Parser
           return {
             value: result,
             remainingExpr: expr.substring(fullMatch.length)

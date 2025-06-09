@@ -326,6 +326,48 @@ describe("Parser", () => {
     });
   });
 
+  describe("bracket notation (uncertainty)", () => {
+    it("parses basic bracket notation as concatenation", () => {
+      const result = Parser.parse("1[2,3]");
+      expect(result.low.equals(new Rational(12))).toBe(true);
+      expect(result.high.equals(new Rational(13))).toBe(true);
+    });
+
+    it("parses larger numbers with bracket notation", () => {
+      const result = Parser.parse("42[15,25]");
+      expect(result.low.equals(new Rational(4215))).toBe(true);
+      expect(result.high.equals(new Rational(4225))).toBe(true);
+    });
+
+    it("handles decimal values in bracket notation", () => {
+      const result = Parser.parse("1[2.34,9]");
+      expect(result.low.equals(new Rational(1234, 100))).toBe(true); // 12.34
+      expect(result.high.equals(new Rational(19))).toBe(true);
+    });
+
+    it("automatically orders bracket values regardless of input order", () => {
+      const result1 = Parser.parse("1[2,3]");
+      const result2 = Parser.parse("1[3,2]");
+      
+      expect(result1.low.equals(result2.low)).toBe(true);
+      expect(result1.high.equals(result2.high)).toBe(true);
+      expect(result1.low.equals(new Rational(12))).toBe(true);
+      expect(result1.high.equals(new Rational(13))).toBe(true);
+    });
+
+    it("works with negative base numbers", () => {
+      const result = Parser.parse("-5[1,7]");
+      expect(result.low.equals(new Rational(-57))).toBe(true);
+      expect(result.high.equals(new Rational(-51))).toBe(true);
+    });
+
+    it("handles decimal base numbers with bracket notation", () => {
+      const result = Parser.parse("2.5[1,3]");
+      expect(result.low.equals(new Rational(251, 100))).toBe(true); // 2.51
+      expect(result.high.equals(new Rational(253, 100))).toBe(true); // 2.53
+    });
+  });
+
   describe("error handling", () => {
     it("throws an error for empty expressions", () => {
       expect(() => Parser.parse("")).toThrow("Expression cannot be empty");

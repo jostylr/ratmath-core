@@ -447,8 +447,8 @@ export class RationalInterval {
 
   /**
    * Exports this interval as a compacted decimal interval notation
-   * Finds a common base and expresses the interval as base[low_uncertainty:high_uncertainty]
-   * @returns {string} Compacted decimal interval string (e.g., "1.2356:1.2367" becomes "1.23[56:67]")
+   * Finds a common base and expresses the interval as base[low_uncertainty,high_uncertainty]
+   * @returns {string} Compacted decimal interval string (e.g., "1.2356:1.2367" becomes "1.23[56,67]")
    */
   compactedDecimalInterval() {
     // Convert both endpoints to decimal strings
@@ -487,8 +487,8 @@ export class RationalInterval {
     }
     
     // For the compacted notation, we want the range to go from low to high
-    // So use lowSuffix:highSuffix (which represents the actual low:high order)
-    return `${commonPrefix}[${lowSuffix}:${highSuffix}]`;
+    // So use lowSuffix,highSuffix (which represents the actual low:high order)
+    return `${commonPrefix}[${lowSuffix},${highSuffix}]`;
   }
 
   /**
