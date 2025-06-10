@@ -205,4 +205,27 @@ export class FractionInterval {
   equals(other) {
     return this.#low.equals(other.low) && this.#high.equals(other.high);
   }
+
+  /**
+   * Applies E notation to this fraction interval by multiplying both endpoints by 10^exponent.
+   * This is equivalent to shifting the decimal point by the specified number of places.
+   * 
+   * @param {number|bigint} exponent - The exponent for the power of 10
+   * @returns {FractionInterval} A new FractionInterval representing this interval * 10^exponent
+   * @throws {Error} If the exponent is not an integer
+   * @example
+   * // Basic usage
+   * new FractionInterval(new Fraction(1, 2), new Fraction(3, 4)).E(2)  // [50, 75] (as fractions: [100/2, 300/4])
+   * new FractionInterval(new Fraction(5, 2), new Fraction(7, 2)).E(-1) // [0.25, 0.35] (as fractions: [5/20, 7/20])
+   * 
+   * // Equivalent to scientific notation applied to interval
+   * new FractionInterval(new Fraction(1, 3), new Fraction(2, 3)).E(3) // [1000/3, 2000/3]
+   */
+  E(exponent) {
+    // Apply E notation to both endpoints
+    const newLow = this.#low.E(exponent);
+    const newHigh = this.#high.E(exponent);
+    
+    return new FractionInterval(newLow, newHigh);
+  }
 }

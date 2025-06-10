@@ -544,6 +544,36 @@ export class Rational {
   }
 
   /**
+   * Applies E notation to this rational number by multiplying by 10^exponent.
+   * This is equivalent to shifting the decimal point by the specified number of places.
+   * 
+   * @param {number|bigint} exponent - The exponent for the power of 10
+   * @returns {Rational} A new Rational representing this * 10^exponent
+   * @throws {Error} If the exponent is not an integer
+   * @example
+   * // Basic usage
+   * new Rational(5).E(2)        // 500 (5 * 10^2)
+   * new Rational(1, 4).E(-1)    // 0.025 (0.25 * 10^-1)
+   * new Rational(123).E(-2)     // 1.23 (123 * 10^-2)
+   * 
+   * // Equivalent to scientific notation
+   * new Rational(1, 3).E(3)     // Same as 1/3 * 10^3 = 1000/3
+   */
+  E(exponent) {
+    const exp = BigInt(exponent);
+    
+    // Create 10^exponent as a rational
+    let powerOf10;
+    if (exp >= 0n) {
+      powerOf10 = new Rational(10n ** exp, 1n);
+    } else {
+      powerOf10 = new Rational(1n, 10n ** (-exp));
+    }
+    
+    return this.multiply(powerOf10);
+  }
+
+  /**
    * Creates a Rational from a number, string, or another Rational
    * @param {number|string|bigint|Rational} value - The value to convert
    * @returns {Rational} A new Rational instance

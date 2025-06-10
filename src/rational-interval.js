@@ -819,5 +819,38 @@ export class RationalInterval {
     return a;
   }
 
+  /**
+   * Applies E notation to this rational interval by multiplying both endpoints by 10^exponent.
+   * This is equivalent to shifting the decimal point by the specified number of places.
+   * 
+   * @param {number|bigint} exponent - The exponent for the power of 10
+   * @returns {RationalInterval} A new RationalInterval representing this interval * 10^exponent
+   * @throws {Error} If the exponent is not an integer
+   * @example
+   * // Basic usage
+   * new RationalInterval(1, 2).E(2)        // [100, 200] (interval [1,2] * 10^2)
+   * new RationalInterval(1.5, 2.5).E(-1)   // [0.15, 0.25] (interval [1.5,2.5] * 10^-1)
+   * new RationalInterval(10, 20).E(-1)     // [1, 2] (interval [10,20] * 10^-1)
+   * 
+   * // Equivalent to scientific notation applied to interval
+   * new RationalInterval("1/3", "2/3").E(3) // [1000/3, 2000/3]
+   */
+  E(exponent) {
+    const exp = BigInt(exponent);
+    
+    // Create 10^exponent as a rational
+    let powerOf10;
+    if (exp >= 0n) {
+      powerOf10 = new Rational(10n ** exp, 1n);
+    } else {
+      powerOf10 = new Rational(1n, 10n ** (-exp));
+    }
+    
+    // Apply E notation to both endpoints
+    const newLow = this.#low.multiply(powerOf10);
+    const newHigh = this.#high.multiply(powerOf10);
+    
+    return new RationalInterval(newLow, newHigh);
+  }
 
 }

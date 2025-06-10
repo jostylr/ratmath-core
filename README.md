@@ -375,6 +375,39 @@ console.log(result2.toString());     // "1:9/4"
 console.log(result2m.toMixedString()); // "3:8..1/4"
 ```
 
+### E Notation Methods
+
+All number classes (`Rational`, `RationalInterval`, `Fraction`, `FractionInterval`, `Integer`) include an `E()` method for applying scientific notation scaling:
+
+```javascript
+import { Rational, RationalInterval, Fraction, Integer } from 'ratmath';
+
+// Rational E notation
+const r1 = new Rational(5).E(2);        // 500 (5 * 10^2)
+const r2 = new Rational(123).E(-2);     // 1.23 (123 * 10^-2) 
+const r3 = new Rational(1, 3).E(3);     // 1000/3 (1/3 * 10^3)
+
+// RationalInterval E notation
+const i1 = new RationalInterval(1, 2).E(2);     // [100, 200]
+const i2 = new RationalInterval(15, 25).E(-1);  // [1.5, 2.5]
+
+// Fraction E notation (preserves unreduced form)
+const f1 = new Fraction(5, 4).E(2);     // 500/4 (not reduced)
+const f2 = new Fraction(3, 8).E(-1);    // 3/80
+
+// Integer E notation (returns Integer or Rational)
+const int1 = new Integer(5).E(2);       // 500 (Integer)
+const int2 = new Integer(45).E(-1);     // 4.5 (Rational)
+
+// Chain E method calls
+const chained = new Rational(2).E(2).E(1);  // 2000
+
+// Use with arithmetic
+const sum = new Rational(3).E(2).add(new Rational(2).E(1));  // 320
+```
+
+The `E()` method is equivalent to the E notation in the parser (`5E2`), but provides a programmatic interface for applying scientific notation scaling to existing number objects.
+
 ## API Documentation
 
 For full API documentation, please refer to the [API documentation](docs/API.md).

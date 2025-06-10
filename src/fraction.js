@@ -409,4 +409,35 @@ export class Fraction {
     const rightSide = this.#denominator * other.numerator;
     return leftSide >= rightSide;
   }
+
+  /**
+   * Applies E notation to this fraction by multiplying by 10^exponent.
+   * This is equivalent to shifting the decimal point by the specified number of places.
+   * 
+   * @param {number|bigint} exponent - The exponent for the power of 10
+   * @returns {Fraction} A new Fraction representing this * 10^exponent
+   * @throws {Error} If the exponent is not an integer
+   * @example
+   * // Basic usage
+   * new Fraction(5, 4).E(2)        // 500/4 (5/4 * 10^2)
+   * new Fraction(3, 8).E(-1)       // 3/80 (3/8 * 10^-1)
+   * new Fraction(123, 100).E(-2)   // 123/10000 (123/100 * 10^-2)
+   * 
+   * // Equivalent to scientific notation
+   * new Fraction(1, 3).E(3)        // 1000/3 (1/3 * 10^3)
+   */
+  E(exponent) {
+    const exp = BigInt(exponent);
+    
+    // Apply 10^exponent by modifying numerator or denominator
+    if (exp >= 0n) {
+      // Positive exponent: multiply numerator by 10^exp
+      const newNumerator = this.#numerator * (10n ** exp);
+      return new Fraction(newNumerator, this.#denominator);
+    } else {
+      // Negative exponent: multiply denominator by 10^(-exp)
+      const newDenominator = this.#denominator * (10n ** (-exp));
+      return new Fraction(this.#numerator, newDenominator);
+    }
+  }
 }

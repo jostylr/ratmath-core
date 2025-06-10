@@ -334,7 +334,7 @@ export class Integer {
   }
 
   /**
-   * Creates an Integer from a Rational if it represents a whole number
+   * Creates an Integer from a Rational
    * @param {Rational} rational - The rational to convert
    * @returns {Integer} A new Integer instance
    * @throws {Error} If the rational is not a whole number
@@ -344,5 +344,38 @@ export class Integer {
       throw new Error("Rational is not a whole number");
     }
     return new Integer(rational.numerator);
+  }
+
+  /**
+   * Applies E notation to this integer by multiplying by 10^exponent.
+   * This is equivalent to shifting the decimal point by the specified number of places.
+   * For negative exponents, returns a Rational since the result may not be an integer.
+   * 
+   * @param {number|bigint} exponent - The exponent for the power of 10
+   * @returns {Integer|Rational} A new Integer for non-negative exponents, or Rational for negative exponents
+   * @throws {Error} If the exponent is not an integer
+   * @example
+   * // Basic usage
+   * new Integer(5).E(2)        // 500 (Integer: 5 * 10^2)
+   * new Integer(123).E(0)      // 123 (Integer: 123 * 10^0)
+   * new Integer(45).E(-1)      // 4.5 (Rational: 45 * 10^-1)
+   * new Integer(100).E(-2)     // 1 (Rational: 100 * 10^-2)
+   * 
+   * // Equivalent to scientific notation
+   * new Integer(3).E(4)        // 30000 (Integer: 3 * 10^4)
+   */
+  E(exponent) {
+    const exp = BigInt(exponent);
+    
+    if (exp >= 0n) {
+      // Non-negative exponent: result is an integer
+      const newValue = this.#value * (10n ** exp);
+      return new Integer(newValue);
+    } else {
+      // Negative exponent: result might not be an integer, return Rational
+      const powerOf10 = new Rational(1n, 10n ** (-exp));
+      const thisAsRational = new Rational(this.#value, 1n);
+      return thisAsRational.multiply(powerOf10);
+    }
   }
 }

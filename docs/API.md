@@ -209,6 +209,26 @@ Converts this rational to a standard decimal string representation. For terminat
 
 **Returns:** (string) Decimal string representation
 
+#### `E(exponent)`
+
+Applies E notation to this rational number by multiplying by 10^exponent. This is equivalent to shifting the decimal point by the specified number of places.
+
+**Parameters:**
+- `exponent` (number|bigint): The exponent for the power of 10
+
+**Returns:** (Rational) A new Rational representing this * 10^exponent
+
+**Throws:**
+- Error: If the exponent is not an integer
+
+**Examples:**
+```javascript
+new Rational(5).E(2)        // 500 (5 * 10^2)
+new Rational(1, 4).E(-1)    // 0.025 (0.25 * 10^-1)
+new Rational(123).E(-2)     // 1.23 (123 * 10^-2)
+new Rational(1, 3).E(3)     // Same as 1/3 * 10^3 = 1000/3
+```
+
 ### Static Methods
 
 #### `Rational.from(value)`
@@ -252,9 +272,9 @@ Creates a new Integer.
 
 **Examples:**
 ```javascript
-const i1 = new Integer(42);         // 42
-const i2 = new Integer("123");      // 123
-const i3 = new Integer(-7n);        // -7
+const i1 = new Integer(42);
+const i2 = new Integer('123');
+const i3 = new Integer(-456n);
 ```
 
 ### Properties
@@ -266,6 +286,27 @@ Gets the value of the integer.
 **Returns:** (bigint) The integer value
 
 ### Methods
+
+#### `E(exponent)`
+
+Applies E notation to this integer by multiplying by 10^exponent. This is equivalent to shifting the decimal point by the specified number of places. For negative exponents, returns a Rational since the result may not be an integer.
+
+**Parameters:**
+- `exponent` (number|bigint): The exponent for the power of 10
+
+**Returns:** (Integer|Rational) A new Integer for non-negative exponents, or Rational for negative exponents
+
+**Throws:**
+- Error: If the exponent is not an integer
+
+**Examples:**
+```javascript
+new Integer(5).E(2)        // 500 (Integer: 5 * 10^2)
+new Integer(123).E(0)      // 123 (Integer: 123 * 10^0)
+new Integer(45).E(-1)      // 4.5 (Rational: 45 * 10^-1)
+new Integer(100).E(-2)     // 1 (Rational: 100 * 10^-2)
+new Integer(3).E(4)        // 30000 (Integer: 3 * 10^4)
+```
 
 #### `add(other)`
 
@@ -507,7 +548,7 @@ A constant representing the integer 1.
 
 ## Fraction Class
 
-The `Fraction` class represents fractions as pairs of BigInt numerator and denominator. Unlike Rational, fractions are not automatically reduced - 1/2 and 2/4 are distinct. This class is useful for applications that need to maintain the exact representation of a fraction rather than its mathematically equivalent reduced form.
+The `Fraction` class represents fractions as pairs of BigInt numerator and denominator. Unlike Rational, fractions are not automatically reduced - 1/2 and 2/4 are distinct.
 
 ### Constructor
 
@@ -517,15 +558,17 @@ Creates a new Fraction.
 
 **Parameters:**
 - `numerator` (number|string|bigint): The numerator, or a string like "3/4"
-- `denominator` (number|bigint): The denominator (optional if numerator is a string)
+- `denominator` (number|bigint, optional): The denominator (default: 1)
 
-**Throws:** Error if denominator is zero or if the input format is invalid
+**Throws:**
+- Error: If denominator is zero or if the input format is invalid
 
 **Examples:**
 ```javascript
-const frac1 = new Fraction(1, 2);        // 1/2
-const frac2 = new Fraction("3/4");       // 3/4
-const frac3 = new Fraction(5);           // 5/1
+const f1 = new Fraction(1, 2);     // 1/2
+const f2 = new Fraction('3/4');    // 3/4
+const f3 = new Fraction(5);        // 5/1
+const f4 = new Fraction(2, 4);     // 2/4 (not reduced)
 ```
 
 ### Properties
@@ -543,6 +586,26 @@ Gets the denominator of the fraction.
 **Returns:** (bigint) The denominator
 
 ### Methods
+
+#### `E(exponent)`
+
+Applies E notation to this fraction by multiplying by 10^exponent. This is equivalent to shifting the decimal point by the specified number of places.
+
+**Parameters:**
+- `exponent` (number|bigint): The exponent for the power of 10
+
+**Returns:** (Fraction) A new Fraction representing this * 10^exponent
+
+**Throws:**
+- Error: If the exponent is not an integer
+
+**Examples:**
+```javascript
+new Fraction(5, 4).E(2)        // 500/4 (5/4 * 10^2)
+new Fraction(3, 8).E(-1)       // 3/80 (3/8 * 10^-1)
+new Fraction(123, 100).E(-2)   // 123/10000 (123/100 * 10^-2)
+new Fraction(1, 3).E(3)        // 1000/3 (1/3 * 10^3)
+```
 
 #### `add(other)`
 
@@ -692,7 +755,7 @@ Creates a Fraction from a Rational.
 
 ## RationalInterval Class
 
-The `RationalInterval` class represents a closed interval of rational numbers [a, b].
+The `RationalInterval` class represents closed intervals of rational numbers. Each interval is represented as [a, b] where a and b are Rational numbers.
 
 ### Constructor
 
@@ -709,13 +772,9 @@ Creates a new RationalInterval.
 
 **Examples:**
 ```javascript
-const i1 = new RationalInterval('1/2', '3/4');     // [1/2, 3/4]
-const i2 = new RationalInterval(1, 2);             // [1, 2]
-const i3 = new RationalInterval(
-  new Rational(1, 3),
-  new Rational(2, 3)
-);                                                 // [1/3, 2/3]
-const i4 = new RationalInterval('1..1/2', '2..3/4'); // [3/2, 11/4]
+const i1 = new RationalInterval(1, 2);           // [1, 2]
+const i2 = new RationalInterval('1/3', '2/3');   // [1/3, 2/3]
+const i3 = new RationalInterval(new Rational(1, 4), new Rational(3, 4));
 ```
 
 ### Properties
@@ -733,6 +792,26 @@ Gets the higher endpoint of the interval.
 **Returns:** (Rational) The higher endpoint
 
 ### Methods
+
+#### `E(exponent)`
+
+Applies E notation to this rational interval by multiplying both endpoints by 10^exponent. This is equivalent to shifting the decimal point by the specified number of places.
+
+**Parameters:**
+- `exponent` (number|bigint): The exponent for the power of 10
+
+**Returns:** (RationalInterval) A new RationalInterval representing this interval * 10^exponent
+
+**Throws:**
+- Error: If the exponent is not an integer
+
+**Examples:**
+```javascript
+new RationalInterval(1, 2).E(2)        // [100, 200] (interval [1,2] * 10^2)
+new RationalInterval(1.5, 2.5).E(-1)   // [0.15, 0.25] (interval [1.5,2.5] * 10^-1)
+new RationalInterval(10, 20).E(-1)     // [1, 2] (interval [10,20] * 10^-1)
+new RationalInterval("1/3", "2/3").E(3) // [1000/3, 2000/3]
+```
 
 #### `add(other)`
 
@@ -968,7 +1047,7 @@ A constant representing the interval [0, 1].
 
 ## FractionInterval Class
 
-The `FractionInterval` class represents a closed interval of fractions [a, b], preserving the exact representation of fractions without automatic reduction.
+The `FractionInterval` class represents closed intervals of fractions. Each interval is represented as [a, b] where a and b are Fraction objects. Unlike RationalInterval, this preserves the exact representation of fractions without automatic reduction.
 
 ### Constructor
 
@@ -985,9 +1064,9 @@ Creates a new FractionInterval.
 
 **Examples:**
 ```javascript
-const a = new Fraction(1, 3);
-const b = new Fraction(2, 3);
-const interval = new FractionInterval(a, b);  // [1/3, 2/3]
+const f1 = new Fraction(1, 3);
+const f2 = new Fraction(2, 3);
+const interval = new FractionInterval(f1, f2); // [1/3, 2/3]
 ```
 
 ### Properties
@@ -1005,6 +1084,25 @@ Gets the higher endpoint of the interval.
 **Returns:** (Fraction) The higher endpoint
 
 ### Methods
+
+#### `E(exponent)`
+
+Applies E notation to this fraction interval by multiplying both endpoints by 10^exponent. This is equivalent to shifting the decimal point by the specified number of places.
+
+**Parameters:**
+- `exponent` (number|bigint): The exponent for the power of 10
+
+**Returns:** (FractionInterval) A new FractionInterval representing this interval * 10^exponent
+
+**Throws:**
+- Error: If the exponent is not an integer
+
+**Examples:**
+```javascript
+new FractionInterval(new Fraction(1, 2), new Fraction(3, 4)).E(2)  // [50, 75] (as fractions: [100/2, 300/4])
+new FractionInterval(new Fraction(5, 2), new Fraction(7, 2)).E(-1) // [0.25, 0.35] (as fractions: [5/20, 7/20])
+new FractionInterval(new Fraction(1, 3), new Fraction(2, 3)).E(3) // [1000/3, 2000/3]
+```
 
 #### `mediantSplit()`
 
