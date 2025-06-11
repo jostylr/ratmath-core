@@ -6,27 +6,31 @@ describe("Parser", () => {
     it("parses a single rational number", () => {
       const result = Parser.parse("3/4");
 
-      expect(result.low.equals(new Rational(3, 4))).toBe(true);
-      expect(result.high.equals(new Rational(3, 4))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.numerator).toBe(3n);
+      expect(result.denominator).toBe(4n);
     });
 
     it("parses a mixed number", () => {
       const result = Parser.parse("5..2/3");
 
-      expect(result.low.equals(new Rational(17, 3))).toBe(true);
-      expect(result.high.equals(new Rational(17, 3))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.numerator).toBe(17n);
+      expect(result.denominator).toBe(3n);
     });
 
     it("parses a negative mixed number", () => {
       const result = Parser.parse("-2..1/4");
 
-      expect(result.low.equals(new Rational(-9, 4))).toBe(true);
-      expect(result.high.equals(new Rational(-9, 4))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.numerator).toBe(-9n);
+      expect(result.denominator).toBe(4n);
     });
 
     it("parses a rational interval", () => {
       const result = Parser.parse("1/2:3/4");
 
+      expect(result).toBeInstanceOf(RationalInterval);
       expect(result.low.equals(new Rational(1, 2))).toBe(true);
       expect(result.high.equals(new Rational(3, 4))).toBe(true);
     });
@@ -34,6 +38,7 @@ describe("Parser", () => {
     it("handles reversed intervals", () => {
       const result = Parser.parse("3/4:1/2");
 
+      expect(result).toBeInstanceOf(RationalInterval);
       expect(result.low.equals(new Rational(1, 2))).toBe(true);
       expect(result.high.equals(new Rational(3, 4))).toBe(true);
     });
@@ -41,29 +46,33 @@ describe("Parser", () => {
     it("ignores whitespace", () => {
       const result = Parser.parse(" 1/2 : 3/4 ");
 
+      expect(result).toBeInstanceOf(RationalInterval);
       expect(result.low.equals(new Rational(1, 2))).toBe(true);
       expect(result.high.equals(new Rational(3, 4))).toBe(true);
     });
   });
 
   describe("constants", () => {
-    it("parses expressions using Rational", () => {
-      // Test with numeric values
+    it("parses expressions using type-aware parsing", () => {
+      // Test with numeric values - should return Integer
       const parsed = Parser.parse("0+1");
-      expect(parsed.low.numerator).toBe(1n);
-      expect(parsed.high.numerator).toBe(1n);
+      expect(parsed).toBeInstanceOf(Integer);
+      expect(parsed.value).toBe(1n);
     });
 
     it("works with interval notation", () => {
       const result1 = Parser.parse("0:1");
+      expect(result1).toBeInstanceOf(RationalInterval);
       expect(result1.low.equals(Rational.zero)).toBe(true);
       expect(result1.high.equals(Rational.one)).toBe(true);
 
       const result2 = Parser.parse("0:0");
+      expect(result2).toBeInstanceOf(RationalInterval);
       expect(result2.low.equals(Rational.zero)).toBe(true);
       expect(result2.high.equals(Rational.zero)).toBe(true);
 
       const result3 = Parser.parse("1:1");
+      expect(result3).toBeInstanceOf(RationalInterval);
       expect(result3.low.equals(Rational.one)).toBe(true);
       expect(result3.high.equals(Rational.one)).toBe(true);
     });
@@ -73,57 +82,64 @@ describe("Parser", () => {
     it("parses addition", () => {
       const result = Parser.parse("1/2 + 1/4");
 
-      expect(result.low.equals(new Rational(3, 4))).toBe(true);
-      expect(result.high.equals(new Rational(3, 4))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.numerator).toBe(3n);
+      expect(result.denominator).toBe(4n);
     });
 
     it("parses subtraction", () => {
       const result = Parser.parse("1/2 - 1/4");
 
-      expect(result.low.equals(new Rational(1, 4))).toBe(true);
-      expect(result.high.equals(new Rational(1, 4))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.numerator).toBe(1n);
+      expect(result.denominator).toBe(4n);
     });
 
     it("parses multiplication", () => {
       const result = Parser.parse("1/2 * 1/4");
 
-      expect(result.low.equals(new Rational(1, 8))).toBe(true);
-      expect(result.high.equals(new Rational(1, 8))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.numerator).toBe(1n);
+      expect(result.denominator).toBe(8n);
     });
 
     it("parses division", () => {
       const result = Parser.parse("1/2 / 1/4");
 
-      expect(result.low.equals(new Rational(2))).toBe(true);
-      expect(result.high.equals(new Rational(2))).toBe(true);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(2n);
     });
 
     it("parses exponentiation", () => {
-      const result = Parser.parse("1/2^3");
+      const result = Parser.parse("(1/2)^3");
 
-      expect(result.low.equals(new Rational(1, 8))).toBe(true);
-      expect(result.high.equals(new Rational(1, 8))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.numerator).toBe(1n);
+      expect(result.denominator).toBe(8n);
     });
 
     it("parses negative exponentiation", () => {
       const result = Parser.parse("2^-1");
 
-      expect(result.low.equals(new Rational(1, 2))).toBe(true);
-      expect(result.high.equals(new Rational(1, 2))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.numerator).toBe(1n);
+      expect(result.denominator).toBe(2n);
     });
 
     it("parses negative numbers", () => {
       const result = Parser.parse("-3/4");
 
-      expect(result.low.equals(new Rational(-3, 4))).toBe(true);
-      expect(result.high.equals(new Rational(-3, 4))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.numerator).toBe(-3n);
+      expect(result.denominator).toBe(4n);
     });
 
     it("handles negation of expressions", () => {
       const result = Parser.parse("-(1/2+1/4)");
 
-      expect(result.low.equals(new Rational(-3, 4))).toBe(true);
-      expect(result.high.equals(new Rational(-3, 4))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.numerator).toBe(-3n);
+      expect(result.denominator).toBe(4n);
     });
   });
 
@@ -167,6 +183,7 @@ describe("Parser", () => {
     it("adds intervals", () => {
       const result = Parser.parse("1/2:3/4 + 1/4:1/2");
 
+      expect(result).toBeInstanceOf(RationalInterval);
       expect(result.low.equals(new Rational(3, 4))).toBe(true);
       expect(result.high.equals(new Rational(5, 4))).toBe(true);
     });
@@ -174,6 +191,7 @@ describe("Parser", () => {
     it("subtracts intervals", () => {
       const result = Parser.parse("1/2:3/4 - 1/4:1/2");
 
+      expect(result).toBeInstanceOf(RationalInterval);
       expect(result.low.equals(new Rational(0))).toBe(true);
       expect(result.high.equals(new Rational(1, 2))).toBe(true);
     });
@@ -181,6 +199,7 @@ describe("Parser", () => {
     it("multiplies intervals", () => {
       const result = Parser.parse("1/2:3/4 * 2/3:4/3");
 
+      expect(result).toBeInstanceOf(RationalInterval);
       // Min and max of products: 1/2 * 2/3, 1/2 * 4/3, 3/4 * 2/3, 3/4 * 4/3
       expect(result.low.equals(new Rational(1, 3))).toBe(true);
       expect(result.high.equals(new Rational(1))).toBe(true);
@@ -189,6 +208,7 @@ describe("Parser", () => {
     it("divides intervals", () => {
       const result = Parser.parse("1/2:3/4 / 2/3:4/3");
 
+      expect(result).toBeInstanceOf(RationalInterval);
       // Min and max of divisions: 1/2 ÷ 2/3, 1/2 ÷ 4/3, 3/4 ÷ 2/3, 3/4 ÷ 4/3
       expect(result.low.equals(new Rational(3, 8))).toBe(true);
       expect(result.high.equals(new Rational(9, 8))).toBe(true);
@@ -197,6 +217,7 @@ describe("Parser", () => {
     it("raises intervals to powers", () => {
       const result = Parser.parse("1/2:3/4^2");
 
+      expect(result).toBeInstanceOf(RationalInterval);
       expect(result.low.equals(new Rational(1, 4))).toBe(true);
       expect(result.high.equals(new Rational(9, 16))).toBe(true);
     });
@@ -206,22 +227,22 @@ describe("Parser", () => {
     it("follows operator precedence", () => {
       const result = Parser.parse("1/2 + 1/4 * 2/3");
       // Expected: 1/2 + (1/4 * 2/3) = 1/2 + 1/6 = 2/3
-      expect(result.low.equals(new Rational(2, 3))).toBe(true);
-      expect(result.high.equals(new Rational(2, 3))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.equals(new Rational(2, 3))).toBe(true);
     });
 
     it("respects parentheses", () => {
       const result = Parser.parse("(1/2 + 1/4) * 2/3");
       // Expected: (1/2 + 1/4) * 2/3 = 3/4 * 2/3 = 1/2
-      expect(result.low.equals(new Rational(1, 2))).toBe(true);
-      expect(result.high.equals(new Rational(1, 2))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.equals(new Rational(1, 2))).toBe(true);
     });
 
     it("handles nested parentheses", () => {
       const result = Parser.parse("(1/2 + (1/4 * 2)) / 2");
       // Expected: (1/2 + (1/4 * 2)) / 2 = (1/2 + 1/2) / 2 = 1/2
-      expect(result.low.equals(new Rational(1, 2))).toBe(true);
-      expect(result.high.equals(new Rational(1, 2))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.equals(new Rational(1, 2))).toBe(true);
     });
 
     it("handles complex expressions", () => {
@@ -248,10 +269,9 @@ describe("Parser", () => {
       // Test with a simpler case
       const result = Parser.parse("1/2");
 
-      expect(result.low.numerator).toBe(1n);
-      expect(result.low.denominator).toBe(2n);
-      expect(result.high.numerator).toBe(1n);
-      expect(result.high.denominator).toBe(2n);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.numerator).toBe(1n);
+      expect(result.denominator).toBe(2n);
     });
   });
 
@@ -266,15 +286,15 @@ describe("Parser", () => {
     it("performs arithmetic with mixed numbers", () => {
       const result = Parser.parse("1..1/2 + 2..1/4");
 
-      expect(result.low.equals(new Rational(15, 4))).toBe(true);
-      expect(result.high.equals(new Rational(15, 4))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.equals(new Rational(15, 4))).toBe(true);
     });
 
     it("handles mixed numbers with negative whole parts", () => {
       const result = Parser.parse("-3..1/4 + 1..1/2");
 
-      expect(result.low.equals(new Rational(-7, 4))).toBe(true);
-      expect(result.high.equals(new Rational(-7, 4))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.equals(new Rational(-7, 4))).toBe(true);
     });
 
     it("converts mixed numbers to string representation", () => {
@@ -295,22 +315,22 @@ describe("Parser", () => {
   describe("repeating decimal integration", () => {
     it("parses simple repeating decimals in expressions", () => {
       const result1 = Parser.parse("0.#3");
-      expect(result1.low.equals(new Rational(1, 3))).toBe(true);
-      expect(result1.high.equals(new Rational(1, 3))).toBe(true);
+      expect(result1).toBeInstanceOf(Rational);
+      expect(result1.equals(new Rational(1, 3))).toBe(true);
     });
 
     it("performs arithmetic with repeating decimals", () => {
       const result = Parser.parse("0.#3 + 0.#6");
       // 1/3 + 2/3 = 1
-      expect(result.low.equals(new Rational(1))).toBe(true);
-      expect(result.high.equals(new Rational(1))).toBe(true);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.equals(new Integer(1))).toBe(true);
     });
 
     it("handles complex repeating decimal expressions", () => {
       const result = Parser.parse("1.23#45 * 2");
       const expected = new Rational(679, 550).multiply(new Rational(2));
-      expect(result.low.equals(expected)).toBe(true);
-      expect(result.high.equals(expected)).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.equals(expected)).toBe(true);
     });
 
     it("works with repeating decimals in intervals", () => {
@@ -321,8 +341,8 @@ describe("Parser", () => {
 
     it("handles terminating decimals with #0", () => {
       const result = Parser.parse("1.5#0");
-      expect(result.low.equals(new Rational(3, 2))).toBe(true);
-      expect(result.high.equals(new Rational(3, 2))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.equals(new Rational(3, 2))).toBe(true);
     });
   });
 
@@ -444,71 +464,78 @@ describe("Parser", () => {
   });
 
   describe("factorial operations", () => {
-    it("parses single factorial with type-aware parsing", () => {
-      const result = Parser.parse("5!", { typeAware: true });
+    it("parses single factorial (now type-aware by default)", () => {
+      const result = Parser.parse("5!");
       expect(result).toBeInstanceOf(Integer);
       expect(result.value).toBe(120n);
     });
 
-    it("parses double factorial with type-aware parsing", () => {
-      const result = Parser.parse("5!!", { typeAware: true });
+    it("parses double factorial (now type-aware by default)", () => {
+      const result = Parser.parse("5!!");
       expect(result).toBeInstanceOf(Integer);
       expect(result.value).toBe(15n); // 5 * 3 * 1 = 15
     });
 
-    it("parses double factorial for even numbers with type-aware parsing", () => {
-      const result = Parser.parse("6!!", { typeAware: true });
+    it("parses double factorial for even numbers (now type-aware by default)", () => {
+      const result = Parser.parse("6!!");
       expect(result).toBeInstanceOf(Integer);
       expect(result.value).toBe(48n); // 6 * 4 * 2 = 48
     });
 
-    it("handles factorial of zero with type-aware parsing", () => {
-      const result = Parser.parse("0!", { typeAware: true });
+    it("handles factorial of zero (now type-aware by default)", () => {
+      const result = Parser.parse("0!");
       expect(result).toBeInstanceOf(Integer);
       expect(result.value).toBe(1n);
     });
 
-    it("handles double factorial of zero with type-aware parsing", () => {
-      const result = Parser.parse("0!!", { typeAware: true });
+    it("handles double factorial of zero (now type-aware by default)", () => {
+      const result = Parser.parse("0!!");
       expect(result).toBeInstanceOf(Integer);
       expect(result.value).toBe(1n);
     });
 
-    it("handles factorial in expressions with type-aware parsing", () => {
-      const result = Parser.parse("3! + 2!", { typeAware: true });
+    it("handles factorial in expressions (now type-aware by default)", () => {
+      const result = Parser.parse("3! + 2!");
       // 6 + 2 = 8
       expect(result).toBeInstanceOf(Integer);
       expect(result.value).toBe(8n);
     });
 
-    it("handles double factorial in expressions with type-aware parsing", () => {
-      const result = Parser.parse("5!! + 4!!", { typeAware: true });
+    it("handles double factorial in expressions (now type-aware by default)", () => {
+      const result = Parser.parse("5!! + 4!!");
       // 15 + 8 = 23
       expect(result).toBeInstanceOf(Integer);
       expect(result.value).toBe(23n);
     });
 
-    it("handles factorial with parentheses with type-aware parsing", () => {
-      const result = Parser.parse("(3 + 2)!", { typeAware: true });
+    it("handles factorial with parentheses (now type-aware by default)", () => {
+      const result = Parser.parse("(3 + 2)!");
       expect(result).toBeInstanceOf(Integer);
       expect(result.value).toBe(120n); // 5! = 120
     });
 
     it("handles factorial with exponentiation (factorial has higher precedence)", () => {
-      const result = Parser.parse("2!^3", { typeAware: true });
+      const result = Parser.parse("2!^3");
       // 2! = 2, then 2^3 = 8
       expect(result).toBeInstanceOf(Integer);
       expect(result.value).toBe(8n);
     });
 
+    it("maintains backward compatibility with explicit typeAware: false", () => {
+      const result = Parser.parse("5!", { typeAware: false });
+      expect(result).toBeInstanceOf(RationalInterval);
+      expect(result.low.equals(new Rational(120))).toBe(true);
+      expect(result.high.equals(new Rational(120))).toBe(true);
+    });
+
     it("parses single factorial with backward compatible parsing", () => {
-      const result = Parser.parse("5!");
+      const result = Parser.parse("5!", { typeAware: false });
       expect(result.low.equals(new Rational(120))).toBe(true);
       expect(result.high.equals(new Rational(120))).toBe(true);
     });
 
     it("parses double factorial with backward compatible parsing", () => {
-      const result = Parser.parse("5!!");
+      const result = Parser.parse("5!!", { typeAware: false });
       expect(result.low.equals(new Rational(15))).toBe(true); // 5 * 3 * 1 = 15
       expect(result.high.equals(new Rational(15))).toBe(true);
     });

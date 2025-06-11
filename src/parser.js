@@ -488,6 +488,9 @@ export class Parser {
       throw new Error('Expression cannot be empty');
     }
 
+    // Set default value for typeAware
+    options = { typeAware: true, ...options };
+
     // Handle space-sensitive E notation before removing whitespace
     // Replace " E" with "TE" (temporary marker) to preserve space information
     expression = expression.replace(/ E/g, 'TE');
@@ -527,7 +530,7 @@ export class Parser {
       }
     }
     
-    return { value: result.value, remainingExpr: currentExpr };
+    return { value: Parser.#promoteType(result.value, options), remainingExpr: currentExpr };
   }
 
   /**
@@ -595,7 +598,7 @@ export class Parser {
       }
     }
     
-    return { value: result.value, remainingExpr: currentExpr };
+    return { value: Parser.#promoteType(result.value, options), remainingExpr: currentExpr };
   }
 
   /**
@@ -623,7 +626,7 @@ export class Parser {
 
       // Check for tight E notation after the closing parenthesis (higher precedence than exponentiation)
       if (result.remainingExpr.length > 0 && (result.remainingExpr[0] === 'E' || result.remainingExpr.startsWith('TE'))) {
-        const eResult = Parser.#parseENotation(result.value, result.remainingExpr);
+        const eResult = Parser.#parseENotation(result.value, result.remainingExpr, options);
         
         // Check for factorial operators after E notation (higher precedence than exponentiation)
         let factorialResult = eResult;
@@ -713,8 +716,16 @@ export class Parser {
             const powerExpr = factorialResult.remainingExpr.substring(2);
             const powerResult = Parser.#parseExponent(powerExpr);
             
+            // For multiplicative exponentiation, always use mpow semantics
+            let base = factorialResult.value;
+            if (!(base instanceof RationalInterval)) {
+              // Convert scalar to point interval for mpow
+              base = RationalInterval.point(base instanceof Integer ? base.toRational() : base);
+            }
+            const result = base.mpow(powerResult.value);
+            result._skipPromotion = true;
             return {
-              value: factorialResult.value.mpow ? factorialResult.value.mpow(powerResult.value) : factorialResult.value.pow(powerResult.value),
+              value: result,
               remainingExpr: powerResult.remainingExpr
             };
           }
@@ -790,7 +801,17 @@ export class Parser {
           
           // Check for 0^0
           const zero = new Rational(0);
-          if (factorialResult.value.low.equals(zero) && factorialResult.value.high.equals(zero) && powerResult.value === 0n) {
+          let isZero = false;
+          
+          if (factorialResult.value instanceof RationalInterval) {
+            isZero = factorialResult.value.low.equals(zero) && factorialResult.value.high.equals(zero);
+          } else if (factorialResult.value instanceof Rational) {
+            isZero = factorialResult.value.equals(zero);
+          } else if (factorialResult.value instanceof Integer) {
+            isZero = factorialResult.value.value === 0n;
+          }
+          
+          if (isZero && powerResult.value === 0n) {
             throw new Error("Zero cannot be raised to the power of zero");
           }
           
@@ -805,8 +826,16 @@ export class Parser {
           const powerExpr = factorialResult.remainingExpr.substring(2);
           const powerResult = Parser.#parseExponent(powerExpr);
           
+          // For multiplicative exponentiation, always use mpow semantics
+          let base = factorialResult.value;
+          if (!(base instanceof RationalInterval)) {
+            // Convert scalar to point interval for mpow
+            base = RationalInterval.point(base instanceof Integer ? base.toRational() : base);
+          }
+          const result = base.mpow(powerResult.value);
+          result._skipPromotion = true;
           return {
-            value: factorialResult.value.mpow(powerResult.value),
+            value: result,
             remainingExpr: powerResult.remainingExpr
           };
         }
@@ -844,6 +873,10 @@ export class Parser {
         negatedValue = factorResult.value.negate();
       } else if (options.typeAware && factorResult.value instanceof Rational) {
         negatedValue = factorResult.value.negate();
+        // Preserve explicitFraction flag when negating
+        if (factorResult.value._explicitFraction) {
+          negatedValue._explicitFraction = true;
+        }
       } else {
         // For backward compatibility and intervals, negate by multiplying by -1
         const negOne = new Rational(-1);
@@ -859,9 +892,9 @@ export class Parser {
     
     // Try to parse a number (could be Integer, Rational, or RationalInterval)  
     const numberResult = Parser.#parseInterval(expr, options);
-    // Check for tight E notation first (higher precedence than exponentiation)
+    // Check for tight E notation after number parsing (higher precedence than exponentiation)
     if (numberResult.remainingExpr.length > 0 && (numberResult.remainingExpr[0] === 'E' || numberResult.remainingExpr.startsWith('TE'))) {
-      const eResult = Parser.#parseENotation(numberResult.value, numberResult.remainingExpr);
+      const eResult = Parser.#parseENotation(numberResult.value, numberResult.remainingExpr, options);
       
       // Check for factorial operators after E notation (higher precedence than exponentiation)
       let factorialResult = eResult;
@@ -952,7 +985,15 @@ export class Parser {
           const powerExpr = factorialResult.remainingExpr.substring(2);
           const powerResult = Parser.#parseExponent(powerExpr);
           
-          const result = factorialResult.value.mpow ? factorialResult.value.mpow(powerResult.value) : factorialResult.value.pow(powerResult.value);
+          // For multiplicative exponentiation, always use mpow semantics
+          let base = factorialResult.value;
+          if (!(base instanceof RationalInterval)) {
+            // Convert scalar to point interval for mpow
+            base = RationalInterval.point(base instanceof Integer ? base.toRational() : base);
+          }
+          const result = base.mpow(powerResult.value);
+          // Don't promote multiplicative power results - they should stay as intervals
+          result._skipPromotion = true;
           return {
             value: result,
             remainingExpr: powerResult.remainingExpr
@@ -1052,7 +1093,14 @@ export class Parser {
         const powerExpr = factorialResult.remainingExpr.substring(2);
         const powerResult = Parser.#parseExponent(powerExpr);
         
-        const result = factorialResult.value.mpow ? factorialResult.value.mpow(powerResult.value) : factorialResult.value.pow(powerResult.value);
+        // For multiplicative exponentiation, always use mpow semantics
+        let base = factorialResult.value;
+        if (!(base instanceof RationalInterval)) {
+          // Convert scalar to point interval for mpow
+          base = RationalInterval.point(base instanceof Integer ? base.toRational() : base);
+        }
+        const result = base.mpow(powerResult.value);
+        result._skipPromotion = true;
         return {
           value: result,
           remainingExpr: powerResult.remainingExpr
@@ -1098,10 +1146,52 @@ export class Parser {
   }
 
   /**
+   * Promotes a value to the most appropriate type for type-aware parsing
+   * @private
+   */
+  static #promoteType(value, options = {}) {
+    if (!options.typeAware) {
+      return value;
+    }
+    
+    // Don't promote if skipPromotion flag is set
+    if (value && value._skipPromotion) {
+      return value;
+    }
+    
+    // If it's a RationalInterval point containing a whole number, convert to Integer
+    // BUT only if it wasn't explicitly parsed as an interval (has explicitInterval flag)
+    if (value instanceof RationalInterval && value.low.equals(value.high)) {
+      // Don't promote if this was explicitly parsed as an interval
+      if (value._explicitInterval) {
+        return value;
+      }
+      
+      if (value.low.denominator === 1n) {
+        return new Integer(value.low.numerator);
+      } else {
+        return value.low; // Return as Rational
+      }
+    }
+    
+    // If it's a Rational with denominator 1, convert to Integer
+    // BUT only if it wasn't explicitly written as a fraction (has explicitFraction flag)
+    if (value instanceof Rational && value.denominator === 1n) {
+      // Don't promote if this was explicitly written as a fraction
+      if (value._explicitFraction) {
+        return value;
+      }
+      return new Integer(value.numerator);
+    }
+    
+    return value;
+  }
+
+  /**
    * Parses E notation and applies it to the given value
    * @private
    */
-  static #parseENotation(value, expr) {
+  static #parseENotation(value, expr, options = {}) {
     // expr should start with 'E' or 'TE'
     let spaceBeforeE = false;
     let startIndex = 1;
@@ -1140,7 +1230,7 @@ export class Parser {
     }
     
     return {
-      value: result,
+      value: Parser.#promoteType(result, options),
       remainingExpr: exponentResult.remainingExpr
     };
   }
@@ -1298,8 +1388,19 @@ export class Parser {
         // Apply E notation to the first value
         const eNotationPart = remainingAfterFirst.substring(0, eEndIndex);
         const firstInterval = RationalInterval.point(firstResult.value);
-        const eResult = Parser.#parseENotation(firstInterval, eNotationPart);
-        firstValue = eResult.value.low; // Extract the rational from the point interval
+        const eResult = Parser.#parseENotation(firstInterval, eNotationPart, options);
+        
+        // Handle type-promoted result - extract the rational value
+        if (eResult.value instanceof RationalInterval) {
+          firstValue = eResult.value.low;
+        } else if (eResult.value instanceof Rational) {
+          firstValue = eResult.value;
+        } else if (eResult.value instanceof Integer) {
+          firstValue = eResult.value.toRational();
+        } else {
+          firstValue = eResult.value;
+        }
+        
         remainingAfterFirst = remainingAfterFirst.substring(eEndIndex);
       }
     }
@@ -1309,6 +1410,13 @@ export class Parser {
       if (options.typeAware) {
         // Type-aware parsing: return Integer for whole numbers, Rational otherwise
         if (firstValue instanceof Rational && firstValue.denominator === 1n) {
+          // Don't promote if this was explicitly written as a fraction
+          if (firstValue._explicitFraction) {
+            return {
+              value: firstValue,
+              remainingExpr: remainingAfterFirst
+            };
+          }
           // This is a whole number, return as Integer
           return {
             value: new Integer(firstValue.numerator),
@@ -1341,13 +1449,28 @@ export class Parser {
     if (remainingExpr.length > 0 && remainingExpr[0] === 'E') {
       // Apply E notation to the second value only (only for tight binding, not spaced)
       const secondInterval = RationalInterval.point(secondResult.value);
-      const eResult = Parser.#parseENotation(secondInterval, remainingExpr);
-      secondValue = eResult.value.low; // Extract the rational from the point interval
+      const eResult = Parser.#parseENotation(secondInterval, remainingExpr, options);
+      
+      // Handle type-promoted result - extract the rational value
+      if (eResult.value instanceof RationalInterval) {
+        secondValue = eResult.value.low;
+      } else if (eResult.value instanceof Rational) {
+        secondValue = eResult.value;
+      } else if (eResult.value instanceof Integer) {
+        secondValue = eResult.value.toRational();
+      } else {
+        secondValue = eResult.value;
+      }
+      
       remainingExpr = eResult.remainingExpr;
     }
     
+    // Mark this as an explicit interval to prevent type promotion
+    const interval = new RationalInterval(firstValue, secondValue);
+    interval._explicitInterval = true;
+    
     return {
-      value: new RationalInterval(firstValue, secondValue),
+      value: interval,
       remainingExpr: remainingExpr
     };
   }
@@ -1480,8 +1603,12 @@ export class Parser {
       }
     }
     
+    // Track whether this was explicitly written as a fraction
+    let explicitFraction = false;
+    
     // Check for denominator
     if (i < expr.length && expr[i] === '/') {
+      explicitFraction = true;
       i++;
       
       // Check if what follows is a simple numeric denominator or something complex
@@ -1547,8 +1674,15 @@ export class Parser {
       throw new Error('Denominator cannot be zero');
     }
     
+    const rational = new Rational(numerator, denominator);
+    
+    // Mark as explicit fraction if it was written with / and denominator is 1
+    if (explicitFraction && denominator === 1n) {
+      rational._explicitFraction = true;
+    }
+    
     return {
-      value: new Rational(numerator, denominator),
+      value: rational,
       remainingExpr: expr.substring(i)
     };
   }

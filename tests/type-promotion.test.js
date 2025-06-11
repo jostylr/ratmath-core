@@ -154,18 +154,16 @@ describe("Type Promotion System", () => {
       expect(result.value).toBe(12n);
     });
 
-    it("promotes Integer * Rational -> Rational", () => {
+    it("promotes Integer * Rational -> Integer when result is whole", () => {
       const result = Parser.parse("4 * 1/2", { typeAware: true });
-      expect(result).toBeInstanceOf(Rational);
-      expect(result.numerator).toBe(2n);
-      expect(result.denominator).toBe(1n);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(2n);
     });
 
-    it("promotes Rational * Integer -> Rational", () => {
+    it("promotes Rational * Integer -> Integer when result is whole", () => {
       const result = Parser.parse("1/2 * 4", { typeAware: true });
-      expect(result).toBeInstanceOf(Rational);
-      expect(result.numerator).toBe(2n);
-      expect(result.denominator).toBe(1n);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(2n);
     });
 
     it("promotes Integer * RationalInterval -> RationalInterval", () => {
@@ -190,11 +188,10 @@ describe("Type Promotion System", () => {
       expect(result.denominator).toBe(2n);
     });
 
-    it("promotes Integer / Rational -> Rational", () => {
+    it("promotes Integer / Rational -> Integer when result is whole", () => {
       const result = Parser.parse("4 / (1/2)", { typeAware: true });
-      expect(result).toBeInstanceOf(Rational);
-      expect(result.numerator).toBe(8n);
-      expect(result.denominator).toBe(1n);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(8n);
     });
 
     it("promotes Rational / Integer -> Rational", () => {
@@ -208,9 +205,8 @@ describe("Type Promotion System", () => {
   describe("Complex Expression Type Promotion", () => {
     it("handles mixed operations with proper promotion", () => {
       const result = Parser.parse("2 + 1/3 * 6", { typeAware: true });
-      expect(result).toBeInstanceOf(Rational);
-      expect(result.numerator).toBe(4n);
-      expect(result.denominator).toBe(1n);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(4n);
     });
 
     it("promotes to interval when any operand is interval", () => {
@@ -228,9 +224,8 @@ describe("Type Promotion System", () => {
 
     it("promotes parenthesized rational expression", () => {
       const result = Parser.parse("(1/2 + 1/3) * 6", { typeAware: true });
-      expect(result).toBeInstanceOf(Rational);
-      expect(result.numerator).toBe(5n);
-      expect(result.denominator).toBe(1n);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(5n);
     });
   });
 

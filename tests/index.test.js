@@ -16,8 +16,8 @@ describe("Main Integration Tests", () => {
     expect(expected.denominator).toBe(14n);
     const parsed = Parser.parse("(3/4 * (1/2 + 1/3)) / (2 - 1/4)");
 
-    expect(parsed.low.equals(expected)).toBe(true);
-    expect(parsed.high.equals(expected)).toBe(true);
+    expect(parsed).toBeInstanceOf(Rational);
+    expect(parsed.equals(expected)).toBe(true);
   });
 
   it("performs interval arithmetic correctly", () => {

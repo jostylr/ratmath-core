@@ -1,32 +1,32 @@
 import { describe, expect, it, test } from "bun:test";
-import { Parser, Rational, RationalInterval } from "../index.js";
+import { Parser, Integer, Rational, RationalInterval } from "../index.js";
 
 describe("E Notation", () => {
   describe("Standard Decimals", () => {
     it("parses integer E notation as exact values", () => {
       const result = Parser.parse("5E-3");
-      expect(result.low.equals(new Rational(5, 1000))).toBe(true);
-      expect(result.high.equals(new Rational(5, 1000))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.equals(new Rational(5, 1000))).toBe(true);
     });
 
     it("parses positive E notation with integers", () => {
       const result = Parser.parse("3E2");
-      expect(result.low.equals(new Rational(300))).toBe(true);
-      expect(result.high.equals(new Rational(300))).toBe(true);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(300n);
     });
 
     it("parses decimal E notation with intervals", () => {
-      // 1.23 becomes 1.225:1.235, then E4 makes it 12250:12350
+      // With type-aware parsing, 1.23 becomes exact Rational, then E4 makes it exact integer
       const result = Parser.parse("1.23E4");
-      expect(result.low.equals(new Rational(12250))).toBe(true);
-      expect(result.high.equals(new Rational(12350))).toBe(true);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(12300n);
     });
 
     it("parses decimal E notation with negative exponent", () => {
-      // 5.0 becomes 4.95:5.05, then E-3 makes it 0.00495:0.00505
+      // With type-aware parsing, 5.0 becomes exact Rational, then E-3 makes it exact
       const result = Parser.parse("5.0E-3");
-      expect(result.low.equals(new Rational(495, 100000))).toBe(true);
-      expect(result.high.equals(new Rational(505, 100000))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.equals(new Rational(5, 1000))).toBe(true);
     });
   });
 
@@ -82,15 +82,15 @@ describe("E Notation", () => {
     it("allows E notation with parentheses around fraction", () => {
       // (5/4)E2 → (5/4) × 100 = 125
       const result = Parser.parse("(5/4)E2");
-      expect(result.low.equals(new Rational(125))).toBe(true);
-      expect(result.high.equals(new Rational(125))).toBe(true);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(125n);
     });
 
     it("allows E notation in denominator with parentheses", () => {
       // 5/(4E2) → 5/400 = 1/80
       const result = Parser.parse("5/(4E2)");
-      expect(result.low.equals(new Rational(1, 80))).toBe(true);
-      expect(result.high.equals(new Rational(1, 80))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.equals(new Rational(1, 80))).toBe(true);
     });
 
     it("rejects E notation directly after mixed number", () => {
@@ -100,8 +100,8 @@ describe("E Notation", () => {
     it("allows E notation with parentheses around mixed number", () => {
       // (1..1/4)E3 → (5/4) × 1000 = 1250
       const result = Parser.parse("(1..1/4)E3");
-      expect(result.low.equals(new Rational(1250))).toBe(true);
-      expect(result.high.equals(new Rational(1250))).toBe(true);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(1250n);
     });
   });
 
@@ -109,15 +109,15 @@ describe("E Notation", () => {
     it("binds E more tightly than multiplication", () => {
       // 2 * 3E2 → 2 * 300 = 600
       const result = Parser.parse("2 * 3E2");
-      expect(result.low.equals(new Rational(600))).toBe(true);
-      expect(result.high.equals(new Rational(600))).toBe(true);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(600n);
     });
 
     it("binds E more tightly than addition", () => {
       // 1 + 2E2 → 1 + 200 = 201
       const result = Parser.parse("1 + 2E2");
-      expect(result.low.equals(new Rational(201))).toBe(true);
-      expect(result.high.equals(new Rational(201))).toBe(true);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(201n);
     });
 
     it("handles spaces around E", () => {
@@ -140,15 +140,15 @@ describe("E Notation", () => {
     it("handles E notation in complex arithmetic", () => {
       // (1E2 + 2E1) * 3E-1 → (100 + 20) * 0.3 = 120 * 0.3 = 36
       const result = Parser.parse("(1E2 + 2E1) * 3E-1");
-      expect(result.low.equals(new Rational(36))).toBe(true);
-      expect(result.high.equals(new Rational(36))).toBe(true);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(36n);
     });
 
     it("handles E notation with exponentiation", () => {
       // (2E1)^2 → 20^2 = 400
       const result = Parser.parse("(2E1)^2");
-      expect(result.low.equals(new Rational(400))).toBe(true);
-      expect(result.high.equals(new Rational(400))).toBe(true);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(400n);
     });
 
     it("handles E notation with intervals in complex expressions", () => {
@@ -163,29 +163,29 @@ describe("E Notation", () => {
     it("handles zero with E notation", () => {
       // 0E5 → 0
       const result = Parser.parse("0E5");
-      expect(result.low.equals(new Rational(0))).toBe(true);
-      expect(result.high.equals(new Rational(0))).toBe(true);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(0n);
     });
 
     it("handles negative numbers with E notation", () => {
       // -5E2 → -500
       const result = Parser.parse("-5E2");
-      expect(result.low.equals(new Rational(-500))).toBe(true);
-      expect(result.high.equals(new Rational(-500))).toBe(true);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(-500n);
     });
 
     it("handles large exponents", () => {
       // 1E10 → 10000000000
       const result = Parser.parse("1E10");
-      expect(result.low.equals(new Rational(10000000000n))).toBe(true);
-      expect(result.high.equals(new Rational(10000000000n))).toBe(true);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(10000000000n);
     });
 
     it("handles very negative exponents", () => {
       // 1E-10 → 0.0000000001
       const result = Parser.parse("1E-10");
-      expect(result.low.equals(new Rational(1, 10000000000n))).toBe(true);
-      expect(result.high.equals(new Rational(1, 10000000000n))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.equals(new Rational(1, 10000000000n))).toBe(true);
     });
   });
 
@@ -208,8 +208,8 @@ describe("E Notation", () => {
       expect(() => Parser.parse("3/2E4")).toThrow();
       // 2E3/4 is valid - E notation before division is allowed
       const result = Parser.parse("2E3/4");
-      expect(result.low.equals(new Rational(500))).toBe(true);
-      expect(result.high.equals(new Rational(500))).toBe(true);
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(500n);
     });
   });
 
@@ -217,15 +217,15 @@ describe("E Notation", () => {
     it("handles repeating decimals with E notation", () => {
       // 0.#3E2 → (1/3)E2 = 100/3
       const result = Parser.parse("0.#3E2");
-      expect(result.low.equals(new Rational(100, 3))).toBe(true);
-      expect(result.high.equals(new Rational(100, 3))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.equals(new Rational(100, 3))).toBe(true);
     });
 
     it("handles complex repeating decimals with E notation", () => {
       // 1.23#45E-1 → (679/550)E-1 = 679/5500
       const result = Parser.parse("1.23#45E-1");
-      expect(result.low.equals(new Rational(679, 5500))).toBe(true);
-      expect(result.high.equals(new Rational(679, 5500))).toBe(true);
+      expect(result).toBeInstanceOf(Rational);
+      expect(result.equals(new Rational(679, 5500))).toBe(true);
     });
   });
 });

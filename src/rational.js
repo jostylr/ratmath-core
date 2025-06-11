@@ -19,6 +19,13 @@ export class Rational {
    * @throws {Error} If denominator is zero or if the input format is invalid
    */
   constructor(numerator, denominator = 1n) {
+    // Handle Integer object inputs
+    if (numerator && typeof numerator === 'object' && numerator.constructor.name === 'Integer') {
+      this.#numerator = numerator.value;
+      this.#denominator = 1n;
+      return;
+    }
+    
     // Handle string representation (e.g., "3/4" or "5..2/3")
     if (typeof numerator === "string") {
       // Check for mixed number notation with double dot
