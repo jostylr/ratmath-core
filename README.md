@@ -29,6 +29,86 @@ npm install ratmath
 bun add ratmath
 ```
 
+## How to Use
+
+### Template String Functions
+
+The library provides convenient template string functions for creating rational numbers and fractions:
+
+#### R Template Function
+
+The `R` template function parses expressions using type-aware parsing, returning the most appropriate type (`Integer`, `Rational`, or `RationalInterval`):
+
+```javascript
+import { R } from 'ratmath';
+
+// Basic fraction literals
+const n = 3, m = 5;
+const frac = R`${n}/${m}`;          // Rational(3/5)
+
+// Fractions with denominator 1 stay as Rational
+const rational = R`${7}/1`;         // Rational(7) (not Integer)
+
+// Exact division promotes to Integer
+const exact = R`${8}/${2}`;         // Integer(4)
+
+// Intervals
+const interval = R`${2}:${4}`;      // RationalInterval(2, 4)
+
+// Complex expressions
+const calc = R`${1}/${2} + ${3}/${4}`;  // Rational(5/4)
+
+// Mixed numbers
+const mixed = R`${2}..${1}/${3}`;   // Rational(7/3)
+
+// Multiplicative power (always returns intervals)
+const mpow = R`${2}**${3}`;         // RationalInterval(8, 8)
+```
+
+#### F Template Function
+
+The `F` template function forces results into `Fraction` and `FractionInterval` types:
+
+```javascript
+import { F } from 'ratmath';
+
+// Simple fractions
+const frac = F`${3}/${5}`;          // Fraction(3, 5)
+
+// Integers become fractions with denominator 1
+const whole = F`${7}`;              // Fraction(7, 1)
+
+// Fraction intervals
+const fracInterval = F`${1}/${2}:${3}/${4}`;  // FractionInterval(1/2, 3/4)
+
+// Arithmetic results
+const sum = F`${1}/${2} + ${1}/${3}`;         // Fraction(5, 6)
+
+// Even exact divisions become fractions
+const division = F`${8}/${2}`;      // Fraction(4, 1)
+```
+
+#### Real-World Examples
+
+```javascript
+import { R, F } from 'ratmath';
+
+// Cooking measurements
+const cups = 2, teaspoons = 3;
+const totalTeaspoons = R`${cups} * 48 + ${teaspoons}`;  // 99 teaspoons
+
+// Engineering tolerances
+const nominal = 100, tolerance = 5;
+const spec = R`${nominal - tolerance}:${nominal + tolerance}`;  // 95:105
+
+// Financial calculations
+const profit = 150, revenue = 1000;
+const margin = F`${profit}/${revenue}`;  // Fraction(3, 20) = 15%
+
+// Compound calculations
+const result = R`(${1}/${2} + ${3}/${4}) * 2`;  // Rational(5/2)
+```
+
 ## Usage
 
 ### Repeating Decimal Parsing
