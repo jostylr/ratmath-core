@@ -435,4 +435,67 @@ export class Integer {
       return thisAsRational.multiply(powerOf10);
     }
   }
+
+  /**
+   * Computes the factorial of this integer (n!)
+   * The factorial of a non-negative integer n is the product of all positive integers less than or equal to n.
+   * By definition, 0! = 1.
+   * 
+   * @returns {Integer} The factorial as a new Integer
+   * @throws {Error} If this integer is negative
+   * @example
+   * new Integer(0).factorial()  // 1
+   * new Integer(1).factorial()  // 1
+   * new Integer(5).factorial()  // 120
+   * new Integer(10).factorial() // 3628800
+   */
+  factorial() {
+    if (this.#value < 0n) {
+      throw new Error("Factorial is not defined for negative integers");
+    }
+
+    if (this.#value === 0n || this.#value === 1n) {
+      return new Integer(1);
+    }
+
+    let result = 1n;
+    for (let i = 2n; i <= this.#value; i++) {
+      result *= i;
+    }
+
+    return new Integer(result);
+  }
+
+  /**
+   * Computes the double factorial of this integer (n!!)
+   * The double factorial of a positive integer n is the product of all positive integers
+   * up to n that have the same parity (odd or even) as n.
+   * For example: 5!! = 5 * 3 * 1 = 15, and 6!! = 6 * 4 * 2 = 48
+   * By definition, 0!! = 1 and 1!! = 1.
+   * 
+   * @returns {Integer} The double factorial as a new Integer
+   * @throws {Error} If this integer is negative
+   * @example
+   * new Integer(0).doubleFactorial()  // 1
+   * new Integer(1).doubleFactorial()  // 1
+   * new Integer(5).doubleFactorial()  // 15 (5 * 3 * 1)
+   * new Integer(6).doubleFactorial()  // 48 (6 * 4 * 2)
+   * new Integer(7).doubleFactorial()  // 105 (7 * 5 * 3 * 1)
+   */
+  doubleFactorial() {
+    if (this.#value < 0n) {
+      throw new Error("Double factorial is not defined for negative integers");
+    }
+
+    if (this.#value === 0n || this.#value === 1n) {
+      return new Integer(1);
+    }
+
+    let result = 1n;
+    for (let i = this.#value; i > 0n; i -= 2n) {
+      result *= i;
+    }
+
+    return new Integer(result);
+  }
 }

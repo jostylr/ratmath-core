@@ -491,6 +491,42 @@ Computes the least common multiple with another integer.
 
 **Returns:** (Integer) The LCM as a new Integer
 
+#### `factorial()`
+
+Computes the factorial of this integer (n!).
+
+The factorial of a non-negative integer n is the product of all positive integers less than or equal to n. By definition, 0! = 1.
+
+**Returns:** (Integer) The factorial as a new Integer
+
+**Throws:** Error if this integer is negative
+
+**Example:**
+```javascript
+const a = new Integer(5);
+const b = new Integer(0);
+console.log(a.factorial());  // 120 (5 × 4 × 3 × 2 × 1)
+console.log(b.factorial());  // 1 (by definition)
+```
+
+#### `doubleFactorial()`
+
+Computes the double factorial of this integer (n!!).
+
+The double factorial of a positive integer n is the product of all positive integers up to n that have the same parity (odd or even) as n. By definition, 0!! = 1 and 1!! = 1.
+
+**Returns:** (Integer) The double factorial as a new Integer
+
+**Throws:** Error if this integer is negative
+
+**Example:**
+```javascript
+const a = new Integer(5);
+const b = new Integer(6);
+console.log(a.doubleFactorial());  // 15 (5 × 3 × 1)
+console.log(b.doubleFactorial());  // 48 (6 × 4 × 2)
+```
+
 #### `toString()`
 
 Converts this integer to a string.
@@ -1176,14 +1212,16 @@ The `Parser` class parses and evaluates string expressions involving rational in
 
 ### Static Methods
 
-#### `Parser.parse(expression)`
+#### `Parser.parse(expression, options = {})`
 
 Parses a string representing an interval arithmetic expression.
 
 **Parameters:**
 - `expression` (string): The expression to parse
+- `options` (Object): Optional parsing options
+  - `typeAware` (boolean): When true, returns precise types (Integer, Rational, RationalInterval) instead of always returning RationalInterval
 
-**Returns:** (RationalInterval) The result of evaluating the expression
+**Returns:** (RationalInterval|Integer|Rational) The result of evaluating the expression. Return type depends on the `typeAware` option and the expression content.
 
 **Throws:**
 - Error: If the expression syntax is invalid
@@ -1195,6 +1233,8 @@ Parses a string representing an interval arithmetic expression.
 - Division (`/`)
 - Standard exponentiation (`^`) - applies power to each element in the interval
 - Multiplicative exponentiation (`**`) - applies power by repeated multiplication of intervals
+- Factorial (`!`) - computes factorial of positive integers
+- Double factorial (`!!`) - computes double factorial of positive integers
 - Parentheses for grouping
 - Negation (`-`)
 - Interval notation (`a:b`)
@@ -1226,6 +1266,17 @@ Parser.parse('(1/2:3/4 + 1/4) * (3/2 - 1/2:1)'); // [3/8, 5/4]
 
 // Multiplicative power
 Parser.parse('(1/2:3/4)**2');                  // Different from (1/2:3/4)^2
+
+// Factorial operations (with type-aware parsing)
+Parser.parse('5!', { typeAware: true });       // 120 (Integer)
+Parser.parse('6!!', { typeAware: true });      // 48 (Integer: 6×4×2)
+Parser.parse('5!! + 3!', { typeAware: true }); // 21 (Integer: 15+6)
+Parser.parse('(2+3)!', { typeAware: true });   // 120 (Integer: 5!)
+Parser.parse('2!^3', { typeAware: true });     // 8 (Integer: 2^3, factorial has higher precedence)
+
+// Factorial with backward compatibility (returns intervals)
+Parser.parse('5!');                            // [120, 120]
+Parser.parse('6!!');                           // [48, 48]
 
 // Using constants
 Parser.parse('0:1');                           // Same as RationalInterval.unitInterval

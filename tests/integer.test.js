@@ -430,6 +430,82 @@ describe('Integer', () => {
     });
   });
 
+  describe('factorial operations', () => {
+    describe('factorial', () => {
+      it('computes factorial of 0', () => {
+        const a = new Integer(0);
+        const result = a.factorial();
+        expect(result.value).toBe(1n);
+      });
+
+      it('computes factorial of 1', () => {
+        const a = new Integer(1);
+        const result = a.factorial();
+        expect(result.value).toBe(1n);
+      });
+
+      it('computes factorial of 5', () => {
+        const a = new Integer(5);
+        const result = a.factorial();
+        expect(result.value).toBe(120n);
+      });
+
+      it('computes factorial of 10', () => {
+        const a = new Integer(10);
+        const result = a.factorial();
+        expect(result.value).toBe(3628800n);
+      });
+
+      it('throws error for negative integers', () => {
+        const a = new Integer(-1);
+        expect(() => a.factorial()).toThrow('Factorial is not defined for negative integers');
+      });
+    });
+
+    describe('doubleFactorial', () => {
+      it('computes double factorial of 0', () => {
+        const a = new Integer(0);
+        const result = a.doubleFactorial();
+        expect(result.value).toBe(1n);
+      });
+
+      it('computes double factorial of 1', () => {
+        const a = new Integer(1);
+        const result = a.doubleFactorial();
+        expect(result.value).toBe(1n);
+      });
+
+      it('computes double factorial of 5 (5!! = 5*3*1)', () => {
+        const a = new Integer(5);
+        const result = a.doubleFactorial();
+        expect(result.value).toBe(15n);
+      });
+
+      it('computes double factorial of 6 (6!! = 6*4*2)', () => {
+        const a = new Integer(6);
+        const result = a.doubleFactorial();
+        expect(result.value).toBe(48n);
+      });
+
+      it('computes double factorial of 7 (7!! = 7*5*3*1)', () => {
+        const a = new Integer(7);
+        const result = a.doubleFactorial();
+        expect(result.value).toBe(105n);
+      });
+
+      it('computes double factorial of 8 (8!! = 8*6*4*2)', () => {
+        const a = new Integer(8);
+        const result = a.doubleFactorial();
+        expect(result.value).toBe(384n);
+      });
+
+      it('throws error for negative integers', () => {
+        const a = new Integer(-1);
+        expect(() => a.doubleFactorial()).toThrow('Double factorial is not defined for negative integers');
+      });
+    });
+  });
+
   describe('conversion methods', () => {
     describe('toString', () => {
       it('converts positive integer to string', () => {

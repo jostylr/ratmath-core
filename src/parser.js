@@ -625,72 +625,194 @@ export class Parser {
       if (result.remainingExpr.length > 0 && (result.remainingExpr[0] === 'E' || result.remainingExpr.startsWith('TE'))) {
         const eResult = Parser.#parseENotation(result.value, result.remainingExpr);
         
-        // Check for exponentiation after E notation
-        if (eResult.remainingExpr.length > 0) {
-          if (eResult.remainingExpr[0] === '^') {
+        // Check for factorial operators after E notation (higher precedence than exponentiation)
+        let factorialResult = eResult;
+        if (factorialResult.remainingExpr.length > 1 && factorialResult.remainingExpr.substring(0, 2) === '!!') {
+          // Double factorial
+          if (factorialResult.value instanceof Integer) {
+            factorialResult = {
+              value: factorialResult.value.doubleFactorial(),
+              remainingExpr: factorialResult.remainingExpr.substring(2)
+            };
+          } else if (factorialResult.value instanceof Rational && factorialResult.value.denominator === 1n) {
+            const intValue = new Integer(factorialResult.value.numerator);
+            factorialResult = {
+              value: intValue.doubleFactorial().toRational(),
+              remainingExpr: factorialResult.remainingExpr.substring(2)
+            };
+          } else if (factorialResult.value.low && factorialResult.value.high && 
+                     factorialResult.value.low.equals(factorialResult.value.high) &&
+                     factorialResult.value.low.denominator === 1n) {
+            // Point interval containing an integer
+            const intValue = new Integer(factorialResult.value.low.numerator);
+            const factorialValue = intValue.doubleFactorial();
+            const IntervalClass = factorialResult.value.constructor;
+            factorialResult = {
+              value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+              remainingExpr: factorialResult.remainingExpr.substring(2)
+            };
+          } else {
+            throw new Error("Double factorial is not defined for negative integers");
+          }
+        } else if (factorialResult.remainingExpr.length > 0 && factorialResult.remainingExpr[0] === '!') {
+          // Single factorial
+          if (factorialResult.value instanceof Integer) {
+            factorialResult = {
+              value: factorialResult.value.factorial(),
+              remainingExpr: factorialResult.remainingExpr.substring(1)
+            };
+          } else if (factorialResult.value instanceof Rational && factorialResult.value.denominator === 1n) {
+            const intValue = new Integer(factorialResult.value.numerator);
+            factorialResult = {
+              value: intValue.factorial().toRational(),
+              remainingExpr: factorialResult.remainingExpr.substring(1)
+            };
+          } else if (factorialResult.value.low && factorialResult.value.high && 
+                     factorialResult.value.low.equals(factorialResult.value.high) &&
+                     factorialResult.value.low.denominator === 1n) {
+            // Point interval containing an integer
+            const intValue = new Integer(factorialResult.value.low.numerator);
+            const factorialValue = intValue.factorial();
+            const IntervalClass = factorialResult.value.constructor;
+            factorialResult = {
+              value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+              remainingExpr: factorialResult.remainingExpr.substring(1)
+            };
+          } else {
+            throw new Error("Factorial is not defined for negative integers");
+          }
+        }
+        
+        // Check for exponentiation after factorial
+        if (factorialResult.remainingExpr.length > 0) {
+          if (factorialResult.remainingExpr[0] === '^') {
             // Standard exponentiation (pow)
-            const powerExpr = eResult.remainingExpr.substring(1);
+            const powerExpr = factorialResult.remainingExpr.substring(1);
             const powerResult = Parser.#parseExponent(powerExpr);
             
             // Check for 0^0
             const zero = new Rational(0);
-            if (eResult.value.low.equals(zero) && eResult.value.high.equals(zero) && powerResult.value === 0n) {
+            if (factorialResult.value.low && factorialResult.value.high) {
+              if (factorialResult.value.low.equals(zero) && factorialResult.value.high.equals(zero) && powerResult.value === 0n) {
+                throw new Error("Zero cannot be raised to the power of zero");
+              }
+            } else if (factorialResult.value instanceof Integer && factorialResult.value.value === 0n && powerResult.value === 0n) {
+              throw new Error("Zero cannot be raised to the power of zero");
+            } else if (factorialResult.value instanceof Rational && factorialResult.value.numerator === 0n && powerResult.value === 0n) {
               throw new Error("Zero cannot be raised to the power of zero");
             }
             
             return {
-              value: eResult.value.pow(powerResult.value),
+              value: factorialResult.value.pow(powerResult.value),
               remainingExpr: powerResult.remainingExpr
             };
-          } else if (eResult.remainingExpr.length > 1 && 
-                    eResult.remainingExpr[0] === '*' && 
-                    eResult.remainingExpr[1] === '*') {
+          } else if (factorialResult.remainingExpr.length > 1 && 
+                    factorialResult.remainingExpr[0] === '*' && 
+                    factorialResult.remainingExpr[1] === '*') {
             // Multiplicative exponentiation (mpow)
-            const powerExpr = eResult.remainingExpr.substring(2);
+            const powerExpr = factorialResult.remainingExpr.substring(2);
             const powerResult = Parser.#parseExponent(powerExpr);
             
             return {
-              value: eResult.value.mpow(powerResult.value),
+              value: factorialResult.value.mpow ? factorialResult.value.mpow(powerResult.value) : factorialResult.value.pow(powerResult.value),
               remainingExpr: powerResult.remainingExpr
             };
           }
         }
         
-        return eResult;
+        return factorialResult;
       }
       
-      // Check for exponentiation after the closing parenthesis
-      if (result.remainingExpr.length > 0) {
-        if (result.remainingExpr[0] === '^') {
+      // Check for factorial operators after the closing parenthesis (higher precedence than exponentiation)
+      let factorialResult = result;
+      if (factorialResult.remainingExpr.length > 1 && factorialResult.remainingExpr.substring(0, 2) === '!!') {
+        // Double factorial
+        if (factorialResult.value instanceof Integer) {
+          factorialResult = {
+            value: factorialResult.value.doubleFactorial(),
+            remainingExpr: factorialResult.remainingExpr.substring(2)
+          };
+        } else if (factorialResult.value instanceof Rational && factorialResult.value.denominator === 1n) {
+          const intValue = new Integer(factorialResult.value.numerator);
+          factorialResult = {
+            value: intValue.doubleFactorial().toRational(),
+            remainingExpr: factorialResult.remainingExpr.substring(2)
+          };
+        } else if (factorialResult.value.low && factorialResult.value.high && 
+            factorialResult.value.low.equals(factorialResult.value.high) &&
+            factorialResult.value.low.denominator === 1n) {
+          // Point interval containing an integer
+          const intValue = new Integer(factorialResult.value.low.numerator);
+          const factorialValue = intValue.doubleFactorial();
+          const IntervalClass = factorialResult.value.constructor;
+          factorialResult = {
+            value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+            remainingExpr: factorialResult.remainingExpr.substring(2)
+          };
+        } else {
+          throw new Error("Double factorial is not defined for negative integers");
+        }
+      } else if (factorialResult.remainingExpr.length > 0 && factorialResult.remainingExpr[0] === '!') {
+        // Single factorial
+        if (factorialResult.value instanceof Integer) {
+          factorialResult = {
+            value: factorialResult.value.factorial(),
+            remainingExpr: factorialResult.remainingExpr.substring(1)
+          };
+        } else if (factorialResult.value instanceof Rational && factorialResult.value.denominator === 1n) {
+          const intValue = new Integer(factorialResult.value.numerator);
+          factorialResult = {
+            value: intValue.factorial().toRational(),
+            remainingExpr: factorialResult.remainingExpr.substring(1)
+          };
+        } else if (factorialResult.value.low && factorialResult.value.high && 
+            factorialResult.value.low.equals(factorialResult.value.high) &&
+            factorialResult.value.low.denominator === 1n) {
+          // Point interval containing an integer
+          const intValue = new Integer(factorialResult.value.low.numerator);
+          const factorialValue = intValue.factorial();
+          const IntervalClass = factorialResult.value.constructor;
+          factorialResult = {
+            value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+            remainingExpr: factorialResult.remainingExpr.substring(1)
+          };
+        } else {
+          throw new Error("Factorial is not defined for negative integers");
+        }
+      }
+      
+      // Check for exponentiation after factorial
+      if (factorialResult.remainingExpr.length > 0) {
+        if (factorialResult.remainingExpr[0] === '^') {
           // Standard exponentiation (pow)
-          const powerExpr = result.remainingExpr.substring(1);
+          const powerExpr = factorialResult.remainingExpr.substring(1);
           const powerResult = Parser.#parseExponent(powerExpr);
           
           // Check for 0^0
           const zero = new Rational(0);
-          if (result.value.low.equals(zero) && result.value.high.equals(zero) && powerResult.value === 0n) {
+          if (factorialResult.value.low.equals(zero) && factorialResult.value.high.equals(zero) && powerResult.value === 0n) {
             throw new Error("Zero cannot be raised to the power of zero");
           }
           
           return {
-            value: result.value.pow(powerResult.value),
+            value: factorialResult.value.pow(powerResult.value),
             remainingExpr: powerResult.remainingExpr
           };
-        } else if (result.remainingExpr.length > 1 && 
-                  result.remainingExpr[0] === '*' && 
-                  result.remainingExpr[1] === '*') {
+        } else if (factorialResult.remainingExpr.length > 1 && 
+                  factorialResult.remainingExpr[0] === '*' && 
+                  factorialResult.remainingExpr[1] === '*') {
           // Multiplicative exponentiation (mpow)
-          const powerExpr = result.remainingExpr.substring(2);
+          const powerExpr = factorialResult.remainingExpr.substring(2);
           const powerResult = Parser.#parseExponent(powerExpr);
           
           return {
-            value: result.value.mpow(powerResult.value),
+            value: factorialResult.value.mpow(powerResult.value),
             remainingExpr: powerResult.remainingExpr
           };
         }
       }
       
-      return result;
+      return factorialResult;
     }
     
     // Check for uncertainty notation first (including negative numbers)
@@ -741,38 +863,96 @@ export class Parser {
     if (numberResult.remainingExpr.length > 0 && (numberResult.remainingExpr[0] === 'E' || numberResult.remainingExpr.startsWith('TE'))) {
       const eResult = Parser.#parseENotation(numberResult.value, numberResult.remainingExpr);
       
-      // Check for exponentiation after E notation
-      if (eResult.remainingExpr.length > 0) {
-        if (eResult.remainingExpr[0] === '^') {
+      // Check for factorial operators after E notation (higher precedence than exponentiation)
+      let factorialResult = eResult;
+      if (factorialResult.remainingExpr.length > 1 && factorialResult.remainingExpr.substring(0, 2) === '!!') {
+        // Double factorial
+        if (factorialResult.value instanceof Integer) {
+          factorialResult = {
+            value: factorialResult.value.doubleFactorial(),
+            remainingExpr: factorialResult.remainingExpr.substring(2)
+          };
+        } else if (factorialResult.value instanceof Rational && factorialResult.value.denominator === 1n) {
+          const intValue = new Integer(factorialResult.value.numerator);
+          factorialResult = {
+            value: intValue.doubleFactorial().toRational(),
+            remainingExpr: factorialResult.remainingExpr.substring(2)
+          };
+        } else if (factorialResult.value.low && factorialResult.value.high && 
+                   factorialResult.value.low.equals(factorialResult.value.high) &&
+                   factorialResult.value.low.denominator === 1n) {
+          // Point interval containing an integer
+          const intValue = new Integer(factorialResult.value.low.numerator);
+          const factorialValue = intValue.doubleFactorial();
+          const IntervalClass = factorialResult.value.constructor;
+          factorialResult = {
+            value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+            remainingExpr: factorialResult.remainingExpr.substring(2)
+          };
+        } else {
+          throw new Error("Double factorial is not defined for negative integers");
+        }
+      } else if (factorialResult.remainingExpr.length > 0 && factorialResult.remainingExpr[0] === '!') {
+        // Single factorial
+        if (factorialResult.value instanceof Integer) {
+          factorialResult = {
+            value: factorialResult.value.factorial(),
+            remainingExpr: factorialResult.remainingExpr.substring(1)
+          };
+        } else if (factorialResult.value instanceof Rational && factorialResult.value.denominator === 1n) {
+          const intValue = new Integer(factorialResult.value.numerator);
+          factorialResult = {
+            value: intValue.factorial().toRational(),
+            remainingExpr: factorialResult.remainingExpr.substring(1)
+          };
+        } else if (factorialResult.value.low && factorialResult.value.high && 
+                   factorialResult.value.low.equals(factorialResult.value.high) &&
+                   factorialResult.value.low.denominator === 1n) {
+          // Point interval containing an integer
+          const intValue = new Integer(factorialResult.value.low.numerator);
+          const factorialValue = intValue.factorial();
+          const IntervalClass = factorialResult.value.constructor;
+          factorialResult = {
+            value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+            remainingExpr: factorialResult.remainingExpr.substring(1)
+          };
+        } else {
+          throw new Error("Factorial is not defined for negative integers");
+        }
+      }
+      
+      // Check for exponentiation after factorial
+      if (factorialResult.remainingExpr.length > 0) {
+        if (factorialResult.remainingExpr[0] === '^') {
           // Standard exponentiation (pow)
-          const powerExpr = eResult.remainingExpr.substring(1);
+          const powerExpr = factorialResult.remainingExpr.substring(1);
           const powerResult = Parser.#parseExponent(powerExpr);
           
           // Check for 0^0 based on value type
-          if (eResult.value instanceof Integer && eResult.value.value === 0n && powerResult.value === 0n) {
+          if (factorialResult.value instanceof Integer && factorialResult.value.value === 0n && powerResult.value === 0n) {
             throw new Error("Zero cannot be raised to the power of zero");
-          } else if (eResult.value instanceof Rational && eResult.value.numerator === 0n && powerResult.value === 0n) {
+          } else if (factorialResult.value instanceof Rational && factorialResult.value.numerator === 0n && powerResult.value === 0n) {
             throw new Error("Zero cannot be raised to the power of zero");
-          } else if (eResult.value.low && eResult.value.high) {
+          } else if (factorialResult.value.low && factorialResult.value.high) {
             const zero = new Rational(0);
-            if (eResult.value.low.equals(zero) && eResult.value.high.equals(zero) && powerResult.value === 0n) {
+            if (factorialResult.value.low.equals(zero) && factorialResult.value.high.equals(zero) && powerResult.value === 0n) {
               throw new Error("Zero cannot be raised to the power of zero");
             }
           }
           
-          const result = eResult.value.pow(powerResult.value);
+          const result = factorialResult.value.pow(powerResult.value);
           return {
             value: result,
             remainingExpr: powerResult.remainingExpr
           };
-        } else if (eResult.remainingExpr.length > 1 && 
-                   eResult.remainingExpr[0] === '*' && 
-                   eResult.remainingExpr[1] === '*') {
+        } else if (factorialResult.remainingExpr.length > 1 && 
+                   factorialResult.remainingExpr[0] === '*' && 
+                   factorialResult.remainingExpr[1] === '*') {
           // Multiplicative exponentiation (mpow)
-          const powerExpr = eResult.remainingExpr.substring(2);
+          const powerExpr = factorialResult.remainingExpr.substring(2);
           const powerResult = Parser.#parseExponent(powerExpr);
           
-          const result = eResult.value.mpow ? eResult.value.mpow(powerResult.value) : eResult.value.pow(powerResult.value);
+          const result = factorialResult.value.mpow ? factorialResult.value.mpow(powerResult.value) : factorialResult.value.pow(powerResult.value);
           return {
             value: result,
             remainingExpr: powerResult.remainingExpr
@@ -780,41 +960,99 @@ export class Parser {
         }
       }
       
-      return eResult;
+      return factorialResult;
     }
     
-    // Check for standard exponentiation
-    if (numberResult.remainingExpr.length > 0) {
-      if (numberResult.remainingExpr[0] === '^') {
+    // Check for factorial operators (higher precedence than exponentiation)
+    let factorialResult = numberResult;
+    if (factorialResult.remainingExpr.length > 1 && factorialResult.remainingExpr.substring(0, 2) === '!!') {
+      // Double factorial
+      if (factorialResult.value instanceof Integer) {
+        factorialResult = {
+          value: factorialResult.value.doubleFactorial(),
+          remainingExpr: factorialResult.remainingExpr.substring(2)
+        };
+      } else if (factorialResult.value instanceof Rational && factorialResult.value.denominator === 1n) {
+        const intValue = new Integer(factorialResult.value.numerator);
+        factorialResult = {
+          value: intValue.doubleFactorial().toRational(),
+          remainingExpr: factorialResult.remainingExpr.substring(2)
+        };
+      } else if (factorialResult.value.low && factorialResult.value.high && 
+                 factorialResult.value.low.equals(factorialResult.value.high) &&
+                 factorialResult.value.low.denominator === 1n) {
+        // Point interval containing an integer
+        const intValue = new Integer(factorialResult.value.low.numerator);
+        const factorialValue = intValue.doubleFactorial();
+        const IntervalClass = factorialResult.value.constructor;
+        factorialResult = {
+          value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+          remainingExpr: factorialResult.remainingExpr.substring(2)
+        };
+      } else {
+        throw new Error("Double factorial is not defined for negative integers");
+      }
+    } else if (factorialResult.remainingExpr.length > 0 && factorialResult.remainingExpr[0] === '!') {
+      // Single factorial
+      if (factorialResult.value instanceof Integer) {
+        factorialResult = {
+          value: factorialResult.value.factorial(),
+          remainingExpr: factorialResult.remainingExpr.substring(1)
+        };
+      } else if (factorialResult.value instanceof Rational && factorialResult.value.denominator === 1n) {
+        const intValue = new Integer(factorialResult.value.numerator);
+        factorialResult = {
+          value: intValue.factorial().toRational(),
+          remainingExpr: factorialResult.remainingExpr.substring(1)
+        };
+      } else if (factorialResult.value.low && factorialResult.value.high && 
+                 factorialResult.value.low.equals(factorialResult.value.high) &&
+                 factorialResult.value.low.denominator === 1n) {
+        // Point interval containing an integer
+        const intValue = new Integer(factorialResult.value.low.numerator);
+        const factorialValue = intValue.factorial();
+        const IntervalClass = factorialResult.value.constructor;
+        factorialResult = {
+          value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+          remainingExpr: factorialResult.remainingExpr.substring(1)
+        };
+      } else {
+        throw new Error("Factorial is not defined for negative integers");
+      }
+    }
+    
+    // Check for standard exponentiation after factorial
+    if (factorialResult.remainingExpr.length > 0) {
+      if (factorialResult.remainingExpr[0] === '^') {
         // Standard exponentiation (pow)
-        const powerExpr = numberResult.remainingExpr.substring(1);
+        const powerExpr = factorialResult.remainingExpr.substring(1);
         const powerResult = Parser.#parseExponent(powerExpr);
         
         // Check for 0^0 based on value type
-        if (numberResult.value instanceof Integer && numberResult.value.value === 0n && powerResult.value === 0n) {
+        if (factorialResult.value instanceof Integer && factorialResult.value.value === 0n && powerResult.value === 0n) {
           throw new Error("Zero cannot be raised to the power of zero");
-        } else if (numberResult.value instanceof Rational && numberResult.value.numerator === 0n && powerResult.value === 0n) {
+        } else if (factorialResult.value instanceof Rational && factorialResult.value.numerator === 0n && powerResult.value === 0n) {
           throw new Error("Zero cannot be raised to the power of zero");
-        } else if (numberResult.value.low && numberResult.value.high) {
+        } else if (factorialResult.value.low && factorialResult.value.high) {
           const zero = new Rational(0);
-          if (numberResult.value.low.equals(zero) && numberResult.value.high.equals(zero) && powerResult.value === 0n) {
+          if (factorialResult.value.low.equals(zero) && factorialResult.value.high.equals(zero) && powerResult.value === 0n) {
             throw new Error("Zero cannot be raised to the power of zero");
           }
         }
         
-        const result = numberResult.value.pow(powerResult.value);
+        const result = factorialResult.value.pow(powerResult.value);
         return {
           value: result,
           remainingExpr: powerResult.remainingExpr
         };
-      } else if (numberResult.remainingExpr.length > 1 && 
-                 numberResult.remainingExpr[0] === '*' && 
-                 numberResult.remainingExpr[1] === '*') {
+      } else if (factorialResult.remainingExpr.length > 1 && 
+                 factorialResult.remainingExpr[0] === '*' && 
+                 factorialResult.remainingExpr[1] === '*') {
         // Multiplicative exponentiation (mpow)
-        const powerExpr = numberResult.remainingExpr.substring(2);
+        const powerExpr = factorialResult.remainingExpr.substring(2);
         const powerResult = Parser.#parseExponent(powerExpr);
         
-        const result = numberResult.value.mpow ? numberResult.value.mpow(powerResult.value) : numberResult.value.pow(powerResult.value);
+        const result = factorialResult.value.mpow ? factorialResult.value.mpow(powerResult.value) : factorialResult.value.pow(powerResult.value);
         return {
           value: result,
           remainingExpr: powerResult.remainingExpr
@@ -822,7 +1060,7 @@ export class Parser {
       }
     }
     
-    return numberResult;
+    return factorialResult;
   }
 
   /**

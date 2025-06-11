@@ -1,5 +1,5 @@
 import { describe, expect, it, test } from "bun:test";
-import { Parser, Rational, RationalInterval } from "../index.js";
+import { Parser, Integer, Rational, RationalInterval } from "../index.js";
 
 describe("Parser", () => {
   describe("simple expressions", () => {
@@ -440,6 +440,93 @@ describe("Parser", () => {
       // [1/4, 3/4] + [1/3, 2/3] = [7/12, 17/12]
       expect(result.low.equals(new Rational(7, 12))).toBe(true);
       expect(result.high.equals(new Rational(17, 12))).toBe(true);
+    });
+  });
+
+  describe("factorial operations", () => {
+    it("parses single factorial with type-aware parsing", () => {
+      const result = Parser.parse("5!", { typeAware: true });
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(120n);
+    });
+
+    it("parses double factorial with type-aware parsing", () => {
+      const result = Parser.parse("5!!", { typeAware: true });
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(15n); // 5 * 3 * 1 = 15
+    });
+
+    it("parses double factorial for even numbers with type-aware parsing", () => {
+      const result = Parser.parse("6!!", { typeAware: true });
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(48n); // 6 * 4 * 2 = 48
+    });
+
+    it("handles factorial of zero with type-aware parsing", () => {
+      const result = Parser.parse("0!", { typeAware: true });
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(1n);
+    });
+
+    it("handles double factorial of zero with type-aware parsing", () => {
+      const result = Parser.parse("0!!", { typeAware: true });
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(1n);
+    });
+
+    it("handles factorial in expressions with type-aware parsing", () => {
+      const result = Parser.parse("3! + 2!", { typeAware: true });
+      // 6 + 2 = 8
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(8n);
+    });
+
+    it("handles double factorial in expressions with type-aware parsing", () => {
+      const result = Parser.parse("5!! + 4!!", { typeAware: true });
+      // 15 + 8 = 23
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(23n);
+    });
+
+    it("handles factorial with parentheses with type-aware parsing", () => {
+      const result = Parser.parse("(3 + 2)!", { typeAware: true });
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(120n); // 5! = 120
+    });
+
+    it("handles factorial with exponentiation (factorial has higher precedence)", () => {
+      const result = Parser.parse("2!^3", { typeAware: true });
+      // 2! = 2, then 2^3 = 8
+      expect(result).toBeInstanceOf(Integer);
+      expect(result.value).toBe(8n);
+    });
+
+    it("parses single factorial with backward compatible parsing", () => {
+      const result = Parser.parse("5!");
+      expect(result.low.equals(new Rational(120))).toBe(true);
+      expect(result.high.equals(new Rational(120))).toBe(true);
+    });
+
+    it("parses double factorial with backward compatible parsing", () => {
+      const result = Parser.parse("5!!");
+      expect(result.low.equals(new Rational(15))).toBe(true); // 5 * 3 * 1 = 15
+      expect(result.high.equals(new Rational(15))).toBe(true);
+    });
+
+    it("throws error for factorial of negative numbers", () => {
+      expect(() => Parser.parse("(-1)!")).toThrow("Factorial is not defined for negative integers");
+    });
+
+    it("throws error for double factorial of negative numbers", () => {
+      expect(() => Parser.parse("(-1)!!")).toThrow("Double factorial is not defined for negative integers");
+    });
+
+    it("throws error for factorial of non-integers", () => {
+      expect(() => Parser.parse("1/2!")).toThrow("Factorial is not defined for negative integers");
+    });
+
+    it("throws error for double factorial of non-integers", () => {
+      expect(() => Parser.parse("1/2!!")).toThrow("Double factorial is not defined for negative integers");
     });
   });
 });

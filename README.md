@@ -6,6 +6,7 @@ A JavaScript library for exact rational arithmetic and interval arithmetic. The 
 
 - **Exact Arithmetic**: All calculations are performed exactly, with no floating-point approximation errors.
 - **Integer Arithmetic**: BigInt-based integer class with exact arithmetic. Division returns Integer for exact results or Rational for non-exact results.
+- **Factorial Operations**: Support for standard factorial (n!) and double factorial (n!!) operations with exact BigInt precision.
 - **Rational Numbers**: Represents fractions in lowest terms with arbitrary precision using JavaScript's built-in BigInt.
 - **Mixed Number Notation**: Supports both standard fraction notation (a/b) and mixed number notation (a..b/c).
 - **Fraction Representation**: Provides a Fraction class that maintains the exact numerator and denominator without automatic reduction.
@@ -14,7 +15,7 @@ A JavaScript library for exact rational arithmetic and interval arithmetic. The 
 - **Mediant Partitioning**: Create interval subdivisions using mediants (useful in continued fractions and number theory).
 - **Repeating Decimal Support**: Parse repeating decimals like "0.12#45" and convert them to exact rational representations.
 - **Decimal Uncertainty Parsing**: Parse decimal numbers with uncertainty notation like "1.23[56,67]" (range), "1.23[+5,-6]" (relative), or "1.3[+-1]" (symmetric).
-- **Expression Parser**: Parse and evaluate string expressions involving rational intervals and arithmetic operations.
+- **Expression Parser**: Parse and evaluate string expressions involving rational intervals and arithmetic operations, including factorial operators.
 
 ## Installation
 
@@ -214,6 +215,16 @@ const inexactDiv = a.divide(new Integer(4)); // 15/4 (Rational)
 console.log(`15 ÷ 3 = ${exactDiv} (${exactDiv.constructor.name})`);
 console.log(`15 ÷ 4 = ${inexactDiv} (${inexactDiv.constructor.name})`);
 
+// Factorial operations
+console.log(a.factorial());      // 1307674368000 (15!)
+console.log(new Integer(5).factorial());  // 120 (5!)
+console.log(new Integer(0).factorial());  // 1 (0! = 1 by definition)
+
+// Double factorial operations  
+console.log(new Integer(5).doubleFactorial());  // 15 (5×3×1)
+console.log(new Integer(6).doubleFactorial());  // 48 (6×4×2)
+console.log(new Integer(7).doubleFactorial());  // 105 (7×5×3×1)
+
 // Utility methods
 console.log(c.abs());            // 7
 console.log(a.isEven());         // false
@@ -370,6 +381,17 @@ const bracketOffset = Parser.parse('1[+-0.5]');       // 1/2:3/2 (offset notatio
 const exactInterval = Parser.parse('1.23:1.34');      // [123/100, 67/50]
 const mixedInterval = Parser.parse('1.5:0.#3');       // [1/3, 3/2]
 
+// Factorial operations with type-aware parsing
+const fact1 = Parser.parse('5!', { typeAware: true });       // 120 (Integer)
+const fact2 = Parser.parse('6!!', { typeAware: true });      // 48 (Integer: 6×4×2)
+const fact3 = Parser.parse('3! + 4!', { typeAware: true }); // 30 (Integer: 6+24)
+const fact4 = Parser.parse('(2+3)!', { typeAware: true });  // 120 (Integer: 5!)
+const fact5 = Parser.parse('2!^3', { typeAware: true });    // 8 (Integer: 2^3, factorial has higher precedence)
+
+// Factorial with backward compatibility (returns intervals)
+const factInterval1 = Parser.parse('5!');    // [120, 120]
+const factInterval2 = Parser.parse('7!!');   // [105, 105] (7×5×3×1)
+
 // Results are RationalInterval objects
 console.log(result2.toString());     // "1:9/4"
 console.log(result2m.toMixedString()); // "3:8..1/4"
@@ -477,6 +499,8 @@ new Integer(value)
 - **isZero()**, **isPositive()**, **isNegative()**: Returns true if the integer matches the condition
 - **gcd(other)**: Returns the greatest common divisor as a new Integer
 - **lcm(other)**: Returns the least common multiple as a new Integer
+- **factorial()**: Returns the factorial (n!) as a new Integer
+- **doubleFactorial()**: Returns the double factorial (n!!) as a new Integer
 - **toString()**: Returns a string representation
 - **toNumber()**: Returns a floating-point approximation
 - **toRational()**: Returns this integer as a Rational with denominator 1
@@ -737,7 +761,18 @@ The `Parser` class parses and evaluates string expressions involving rational in
 
 #### Static Methods
 
-- **parse(expression)**: Parses a string expression and returns the result as a RationalInterval
+- **parse(expression, options = {})**: Parses a string expression and returns the result as a RationalInterval (or Integer/Rational with `typeAware: true`)
+  - **expression** (string): The expression to parse
+  - **options** (object): Optional parsing options
+    - **typeAware** (boolean): When true, returns precise types (Integer, Rational, RationalInterval) instead of always returning RationalInterval
+  
+**Supported operations:**
+- Addition (`+`), Subtraction (`-`), Multiplication (`*`), Division (`/`)
+- Standard exponentiation (`^`), Multiplicative exponentiation (`**`)
+- **Factorial (`!`)**: Computes factorial of positive integers (n!)
+- **Double factorial (`!!`)**: Computes double factorial of positive integers (n!!)
+- Parentheses for grouping, Negation (`-`), Interval notation (`a:b`)
+- Repeating decimals (`0.#3`), Mixed numbers (`2..1/3`), Uncertainty notation (`1.23[+-0.05]`)
 
 ## Examples
 
@@ -819,6 +854,45 @@ const result = Parser.parse('(1/2:3/4 + 1/4:1/2)^2 / 2:3');
 console.log(result.toString());  // Will output the exact result as a rational interval
 ```
 
+### Factorial Calculations
+
+```javascript
+import { Integer, Parser } from 'ratmath';
+
+// Direct factorial calculations
+const n = new Integer(10);
+console.log(n.factorial().toString());        // "3628800" (10!)
+console.log(n.doubleFactorial().toString());  // "3840" (10!! = 10×8×6×4×2)
+
+// Mathematical properties
+console.log(new Integer(5).factorial());      // 120 (5×4×3×2×1)
+console.log(new Integer(5).doubleFactorial()); // 15 (5×3×1)
+console.log(new Integer(6).doubleFactorial()); // 48 (6×4×2)
+console.log(new Integer(0).factorial());      // 1 (0! = 1 by definition)
+
+// Parser with factorial operators (type-aware parsing)
+console.log(Parser.parse('5!', { typeAware: true }));         // Integer(120)
+console.log(Parser.parse('6!!', { typeAware: true }));        // Integer(48)
+console.log(Parser.parse('3! + 4!', { typeAware: true }));    // Integer(30)
+console.log(Parser.parse('(2+3)!', { typeAware: true }));     // Integer(120)
+
+// Operator precedence: factorial has higher precedence than exponentiation
+console.log(Parser.parse('2!^3', { typeAware: true }));       // Integer(8) = (2!)^3 = 2^3
+
+// Backward compatible parsing (returns intervals)
+console.log(Parser.parse('7!!'));             // RationalInterval[105, 105]
+
+// Factorial in mathematical expressions
+const combinatorial = (n, k) => {
+  const nFact = new Integer(n).factorial();
+  const kFact = new Integer(k).factorial();
+  const nMinusKFact = new Integer(n - k).factorial();
+  return nFact.divide(kFact.multiply(nMinusKFact));
+};
+
+console.log(combinatorial(10, 3).toString()); // "120" (C(10,3) = 10!/(3!×7!))
+```
+
 ## Implementation Notes
 
 ### Repeating Decimal Algorithm
@@ -846,11 +920,6 @@ When a decimal like "1.23" is provided without the `#` symbol, it's treated as h
 - "-1.5" becomes [-1.55, -1.45]
 
 This approach acknowledges that finite decimal representations often have implicit uncertainty.
-- Division by interval containing zero: `"Cannot divide by an interval containing zero"`
-- Raising zero to power zero: `"Zero cannot be raised to the power of zero"`
-- Negative exponents with zero base: `"Zero cannot be raised to a negative power"`
-- Invalid repeating decimal format: `"Invalid repeating decimal format. Use format like '0.12#45'"`
-- Non-numeric characters in repeating part: `"Repeating part must contain only digits"`
 
 ## Error Handling
 
@@ -861,6 +930,11 @@ The library throws clear error messages for various error conditions:
 - Division by interval containing zero: `"Cannot divide by an interval containing zero"`
 - Raising zero to power zero: `"Zero cannot be raised to the power of zero"`
 - Negative exponents with zero base: `"Zero cannot be raised to a negative power"`
+- Factorial of negative numbers: `"Factorial is not defined for negative integers"`
+- Double factorial of negative numbers: `"Double factorial is not defined for negative integers"`
+- Factorial of non-integers: Parser will throw appropriate errors when factorial operators are applied to non-integer values
+- Invalid repeating decimal format: `"Invalid repeating decimal format. Use format like '0.12#45'"`
+- Non-numeric characters in repeating part: `"Repeating part must contain only digits"`
 
 ## License
 
