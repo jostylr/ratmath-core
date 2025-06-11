@@ -69,6 +69,25 @@ function parseDecimalUncertainty(str, allowIntegerRangeNotation = true) {
     const lowerBoundStr = baseStr + lowerUncertainty;
     const upperBoundStr = baseStr + upperUncertainty;
     
+    // For integer bases, validate that range values have the same number of digits
+    if (baseDecimalPlaces === 0) {
+      // Check if both range values are pure integers (no decimal points)
+      const lowerIsInteger = !lowerUncertainty.includes('.');
+      const upperIsInteger = !upperUncertainty.includes('.');
+      
+      // Extract integer parts from range values (whether they're pure integers or have decimals)
+      const lowerIntPart = lowerUncertainty.includes('.') ? lowerUncertainty.split('.')[0] : lowerUncertainty;
+      const upperIntPart = upperUncertainty.includes('.') ? upperUncertainty.split('.')[0] : upperUncertainty;
+      
+      // Check that both integer parts have the same number of digits
+      const lowerIntDigits = lowerIntPart.length;
+      const upperIntDigits = upperIntPart.length;
+      
+      if (lowerIntDigits !== upperIntDigits) {
+        throw new Error(`Invalid range notation: ${baseStr}[${lowerUncertainty},${upperUncertainty}] - integer parts of range values must have the same number of digits (${lowerIntPart} has ${lowerIntDigits}, ${upperIntPart} has ${upperIntDigits})`);
+      }
+    }
+    
     const lowerBound = new Rational(lowerBoundStr);
     const upperBound = new Rational(upperBoundStr);
     

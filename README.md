@@ -232,6 +232,14 @@ const product = Parser.parse('2[+-0.1] * 3[-+0.2]');     // [5.32, 6.72] (intege
 
 // Note: Range notation 1[2,3] creates intervals 12:13 via concatenation
 // This is different from offset notation 1[+2,-3] which adds/subtracts values
+
+// Concatenation validation prevents problematic ranges:
+// Valid:   12[34,42] → 1234:1242 (integer parts: 34,42 both 2 digits)
+// Valid:   1[19.2,20] → 119.2:120 (integer parts: 19,20 both 2 digits)
+// Valid:   1.2[3,6]  → 1.23:1.26 (decimal base allows any)
+// Invalid: 1[9,20] (integer parts: 9=1 digit, 20=2 digits)
+// Invalid: 1[9.2,20] (integer parts: 9=1 digit, 20=2 digits)
+// Invalid: 1.2[3.4,5.6] (creates double decimal points)
 ```
 
 ### Basic Rational Arithmetic
@@ -455,6 +463,14 @@ const intervalResult = Parser.parse('0.#3:0.8#3');  // 1/3:5/6
 const bracketBasic = Parser.parse('1[2,3]');          // 12:13 (concatenation)
 const bracketDecimal = Parser.parse('1[2.34,9]');     // 617/50:19 (12.34:19)
 const bracketOrdered = Parser.parse('1[3,2]');        // 12:13 (auto-ordered)
+
+// Validation prevents problematic concatenation ranges
+const validConcat = Parser.parse('12[34,42]');        // 1234:1242 (valid: integer parts 34,42 both 2 digits)
+const validMixed = Parser.parse('1[19.2,20]');        // 119.2:120 (valid: integer parts 19,20 both 2 digits)
+const validDecimal = Parser.parse('1.2[3,6]');        // 1.23:1.26 (valid: decimal base allows any)
+// Parser.parse('1[9,20]');                           // Error: integer parts 9=1 digit, 20=2 digits
+// Parser.parse('1[9.2,20]');                         // Error: integer parts 9=1 digit, 20=2 digits
+// Parser.parse('1.2[3.4,5.6]');                      // Error: double decimal points
 const bracketOffset = Parser.parse('1[+-0.5]');       // 1/2:3/2 (offset notation)
 
 // Exact decimal intervals (treated as terminating decimals)
@@ -476,6 +492,111 @@ const factInterval2 = Parser.parse('7!!');   // [105, 105] (7×5×3×1)
 console.log(result2.toString());     // "1:9/4"
 console.log(result2m.toMixedString()); // "3:8..1/4"
 ```
+
+## Terminal Calculator
+
+The ratmath library includes an interactive terminal calculator (`calc.js`) that provides a command-line interface for performing exact rational arithmetic calculations.
+
+### Running the Calculator
+
+```bash
+# Using Bun (recommended)
+bun calc.js
+
+# Make executable and run directly
+chmod +x calc.js
+./calc.js
+```
+
+### Features
+
+- **Interactive Prompt**: Type mathematical expressions and get immediate results
+- **Multiple Output Modes**: Switch between decimal, rational, and combined display
+- **All Parser Features**: Supports all the parsing capabilities including intervals, factorials, repeating decimals, and uncertainty notation
+- **Error Handling**: Clear error messages for division by zero, invalid syntax, etc.
+- **Graceful Exit**: Use `EXIT`, `QUIT`, `BYE`, or Ctrl+C to exit
+
+### Commands
+
+- `HELP` - Display available operations and commands
+- `DECI` - Show results as decimals only
+- `RAT` - Show results as fractions only  
+- `BOTH` - Show both decimal and fraction (default)
+- `LIMIT <n>` - Set decimal display limit to n digits (default: 20)
+- `EXIT`, `QUIT`, `BYE` - Exit the calculator
+
+### Example Session
+
+```
+$ bun calc.js
+Ratmath Terminal Calculator
+Type HELP for help, EXIT to quit
+
+> 1/2 + 3/4
+1.25 (5/4)
+> 2^3
+8
+> 5!
+120
+> 1:2 * 3:4
+3:8
+> RAT
+Output mode set to rational
+> 1/3
+1/3
+> DECI
+Output mode set to decimal
+> 1/3
+0.#3
+> 0.#3
+0.#3 (1/3)
+> 1.5[+-0.1]
+1.499:1.501 (1499/1000:1501/1000)
+> BYE
+
+Goodbye!
+```
+
+### Supported Operations
+
+The calculator supports all the same operations as the Parser class:
+
+- **Basic arithmetic**: `+`, `-`, `*`, `/`
+- **Exponentiation**: `^` (standard), `**` (multiplicative/interval)
+- **Factorials**: `!` (factorial), `!!` (double factorial)
+- **Parentheses**: `(` `)` for grouping
+- **Numbers**: Integers, fractions (`3/4`), decimals (`1.25`), mixed numbers (`1..2/3`)
+- **Advanced**: Repeating decimals (`0.#3`), uncertainty notation (`1.23[+-0.01]`), intervals (`2:5`), scientific notation (`1E3`)
+
+### Decimal Display
+
+The calculator automatically displays repeating decimals using the `#` notation:
+
+- `1/3` displays as `0.#3` (instead of `0.333333...`)
+- `1/7` displays as `0.#142857` (shows the full repeating cycle)
+- `22/7` displays as `3.#142857` (π approximation)
+- `1/2` displays as `0.5#0` (terminating decimals end with `#0`)
+
+Use the `LIMIT` command to control long decimal displays:
+
+```
+> LIMIT 5
+Decimal display limit set to 5 digits
+> 1/17
+0.#0588... (1/17)
+> 1/19  
+0.#0526... (1/19)
+```
+
+### Error Handling
+
+The calculator provides user-friendly error messages:
+
+- Division by zero: "Error: Division by zero is undefined"
+- Undefined operations: "Error: 0^0 is undefined"
+- Invalid factorials: "Error: Factorial is not defined for negative numbers"
+- Invalid limits: "Error: LIMIT must be a positive integer"
+- Parsing errors: Detailed syntax error messages
 
 ### E Notation Methods
 
