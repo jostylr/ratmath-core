@@ -53,98 +53,160 @@ export class RationalInterval {
   }
 
   /**
-   * Adds another interval to this one.
+   * Adds another number to this interval with automatic type promotion
    * [a,b] + [c,d] = [a+c, b+d]
    * 
-   * @param {RationalInterval} other - The interval to add
+   * @param {Integer|Rational|RationalInterval} other - The number to add
    * @returns {RationalInterval} The sum as a new RationalInterval
    */
   add(other) {
-    const newLow = this.#low.add(other.low);
-    const newHigh = this.#high.add(other.high);
-    return new RationalInterval(newLow, newHigh);
+    // Handle Integer type by checking for value property
+    if (other.value !== undefined && typeof other.value === 'bigint') {
+      // Convert Integer to Rational and create point interval
+      const otherAsRational = new Rational(other.value, 1n);
+      const otherAsInterval = new RationalInterval(otherAsRational, otherAsRational);
+      return this.add(otherAsInterval);
+    } else if (other.numerator !== undefined && other.denominator !== undefined) {
+      // Convert Rational to point interval
+      const otherAsInterval = new RationalInterval(other, other);
+      return this.add(otherAsInterval);
+    } else if (other.low && other.high) {
+      const newLow = this.#low.add(other.low);
+      const newHigh = this.#high.add(other.high);
+      return new RationalInterval(newLow, newHigh);
+    } else {
+      throw new Error(`Cannot add ${other.constructor.name} to RationalInterval`);
+    }
   }
 
   /**
-   * Subtracts another interval from this one.
+   * Subtracts another number from this interval with automatic type promotion
    * [a,b] - [c,d] = [a-d, b-c]
    * 
-   * @param {RationalInterval} other - The interval to subtract
+   * @param {Integer|Rational|RationalInterval} other - The number to subtract
    * @returns {RationalInterval} The difference as a new RationalInterval
    */
   subtract(other) {
-    const newLow = this.#low.subtract(other.high);
-    const newHigh = this.#high.subtract(other.low);
-    return new RationalInterval(newLow, newHigh);
+    // Handle Integer type by checking for value property
+    if (other.value !== undefined && typeof other.value === 'bigint') {
+      // Convert Integer to Rational and create point interval
+      const otherAsRational = new Rational(other.value, 1n);
+      const otherAsInterval = new RationalInterval(otherAsRational, otherAsRational);
+      return this.subtract(otherAsInterval);
+    } else if (other.numerator !== undefined && other.denominator !== undefined) {
+      // Convert Rational to point interval
+      const otherAsInterval = new RationalInterval(other, other);
+      return this.subtract(otherAsInterval);
+    } else if (other.low && other.high) {
+      const newLow = this.#low.subtract(other.high);
+      const newHigh = this.#high.subtract(other.low);
+      return new RationalInterval(newLow, newHigh);
+    } else {
+      throw new Error(`Cannot subtract ${other.constructor.name} from RationalInterval`);
+    }
   }
 
   /**
-   * Multiplies this interval by another.
+   * Multiplies this interval by another number with automatic type promotion
    * For [a,b] * [c,d], compute min and max of all pairwise products
    * 
-   * @param {RationalInterval} other - The interval to multiply by
+   * @param {Integer|Rational|RationalInterval} other - The number to multiply by
    * @returns {RationalInterval} The product as a new RationalInterval
    */
   multiply(other) {
-    // Calculate all possible endpoint products
-    const products = [
-      this.#low.multiply(other.low),
-      this.#low.multiply(other.high),
-      this.#high.multiply(other.low),
-      this.#high.multiply(other.high)
-    ];
-    
-    // Find the minimum and maximum
-    let min = products[0];
-    let max = products[0];
-    
-    for (let i = 1; i < products.length; i++) {
-      if (products[i].lessThan(min)) min = products[i];
-      if (products[i].greaterThan(max)) max = products[i];
+    // Handle Integer type by checking for value property
+    if (other.value !== undefined && typeof other.value === 'bigint') {
+      // Convert Integer to Rational and create point interval
+      const otherAsRational = new Rational(other.value, 1n);
+      const otherAsInterval = new RationalInterval(otherAsRational, otherAsRational);
+      return this.multiply(otherAsInterval);
+    } else if (other.numerator !== undefined && other.denominator !== undefined) {
+      // Convert Rational to point interval
+      const otherAsInterval = new RationalInterval(other, other);
+      return this.multiply(otherAsInterval);
+    } else if (other.low && other.high) {
+      // Calculate all possible endpoint products
+      const products = [
+        this.#low.multiply(other.low),
+        this.#low.multiply(other.high),
+        this.#high.multiply(other.low),
+        this.#high.multiply(other.high)
+      ];
+      
+      // Find the minimum and maximum
+      let min = products[0];
+      let max = products[0];
+      
+      for (let i = 1; i < products.length; i++) {
+        if (products[i].lessThan(min)) min = products[i];
+        if (products[i].greaterThan(max)) max = products[i];
+      }
+      
+      return new RationalInterval(min, max);
+    } else {
+      throw new Error(`Cannot multiply RationalInterval by ${other.constructor.name}`);
     }
-    
-    return new RationalInterval(min, max);
   }
 
   /**
-   * Divides this interval by another.
+   * Divides this interval by another number with automatic type promotion
    * For [a,b] / [c,d], if 0 ∉ [c,d], compute min and max of all pairwise divisions
    * 
-   * @param {RationalInterval} other - The interval to divide by
+   * @param {Integer|Rational|RationalInterval} other - The number to divide by
    * @returns {RationalInterval} The quotient as a new RationalInterval
    * @throws {Error} If the divisor interval contains zero
    */
   divide(other) {
-    const zero = RationalInterval.zero; 
-    
-    // Check if the divisor is exactly zero
-    if (other.low.equals(zero) && other.high.equals(zero)) {
-      throw new Error("Division by zero");
+    // Handle Integer type by checking for value property
+    if (other.value !== undefined && typeof other.value === 'bigint') {
+      if (other.value === 0n) {
+        throw new Error("Division by zero");
+      }
+      // Convert Integer to Rational and create point interval
+      const otherAsRational = new Rational(other.value, 1n);
+      const otherAsInterval = new RationalInterval(otherAsRational, otherAsRational);
+      return this.divide(otherAsInterval);
+    } else if (other.numerator !== undefined && other.denominator !== undefined) {
+      if (other.numerator === 0n) {
+        throw new Error("Division by zero");
+      }
+      // Convert Rational to point interval
+      const otherAsInterval = new RationalInterval(other, other);
+      return this.divide(otherAsInterval);
+    } else if (other.low && other.high) {
+      const zero = Rational.zero; 
+      
+      // Check if the divisor is exactly zero
+      if (other.low.equals(zero) && other.high.equals(zero)) {
+        throw new Error("Division by zero");
+      }
+      
+      // Check if the divisor interval contains zero
+      if (other.containsZero()) {
+        throw new Error("Cannot divide by an interval containing zero");
+      }
+      
+      // Calculate all possible endpoint quotients
+      const quotients = [
+        this.#low.divide(other.low),
+        this.#low.divide(other.high),
+        this.#high.divide(other.low),
+        this.#high.divide(other.high)
+      ];
+      
+      // Find the minimum and maximum
+      let min = quotients[0];
+      let max = quotients[0];
+      
+      for (let i = 1; i < quotients.length; i++) {
+        if (quotients[i].lessThan(min)) min = quotients[i];
+        if (quotients[i].greaterThan(max)) max = quotients[i];
+      }
+      
+      return new RationalInterval(min, max);
+    } else {
+      throw new Error(`Cannot divide RationalInterval by ${other.constructor.name}`);
     }
-    
-    // Check if the divisor interval contains zero
-    if (other.containsZero()) {
-      throw new Error("Cannot divide by an interval containing zero");
-    }
-    
-    // Calculate all possible endpoint quotients
-    const quotients = [
-      this.#low.divide(other.low),
-      this.#low.divide(other.high),
-      this.#high.divide(other.low),
-      this.#high.divide(other.high)
-    ];
-    
-    // Find the minimum and maximum
-    let min = quotients[0];
-    let max = quotients[0];
-    
-    for (let i = 1; i < quotients.length; i++) {
-      if (quotients[i].lessThan(min)) min = quotients[i];
-      if (quotients[i].greaterThan(max)) max = quotients[i];
-    }
-    
-    return new RationalInterval(min, max);
   }
   
   /**

@@ -162,80 +162,142 @@ export class Rational {
   }
 
   /**
-   * Adds another rational number to this one
-   * @param {Rational} other - The rational to add
-   * @returns {Rational} The sum as a new Rational
+   * Adds another number to this rational with automatic type promotion
+   * @param {Integer|Rational|RationalInterval} other - The number to add
+   * @returns {Rational|RationalInterval} The sum with appropriate type
    */
   add(other) {
-    const a = this.#numerator;
-    const b = this.#denominator;
-    const c = other.numerator;
-    const d = other.denominator;
+    // Handle Integer type by importing it dynamically to avoid circular imports
+    if (other.constructor.name === 'Integer') {
+      // Convert Integer to Rational and add
+      const otherAsRational = new Rational(other.value, 1n);
+      return this.add(otherAsRational);
+    } else if (other instanceof Rational) {
+      const a = this.#numerator;
+      const b = this.#denominator;
+      const c = other.numerator;
+      const d = other.denominator;
 
-    // a/b + c/d = (ad + bc)/bd
-    const numerator = a * d + b * c;
-    const denominator = b * d;
+      // a/b + c/d = (ad + bc)/bd
+      const numerator = a * d + b * c;
+      const denominator = b * d;
 
-    return new Rational(numerator, denominator);
+      return new Rational(numerator, denominator);
+    } else if (other.low && other.high && typeof other.low.equals === 'function') {
+      // This looks like a RationalInterval - promote this rational to interval and add
+      // We need to dynamically create the interval to avoid circular imports
+      const thisAsInterval = { low: this, high: this };
+      // Create a new interval using the same constructor as other
+      const IntervalClass = other.constructor;
+      const newThisAsInterval = new IntervalClass(this, this);
+      return newThisAsInterval.add(other);
+    } else {
+      throw new Error(`Cannot add ${other.constructor.name} to Rational`);
+    }
   }
 
   /**
-   * Subtracts another rational number from this one
-   * @param {Rational} other - The rational to subtract
-   * @returns {Rational} The difference as a new Rational
+   * Subtracts another number from this rational with automatic type promotion
+   * @param {Integer|Rational|RationalInterval} other - The number to subtract
+   * @returns {Rational|RationalInterval} The difference with appropriate type
    */
   subtract(other) {
-    const a = this.#numerator;
-    const b = this.#denominator;
-    const c = other.numerator;
-    const d = other.denominator;
+    // Handle Integer type by checking constructor name to avoid circular imports
+    if (other.constructor.name === 'Integer') {
+      // Convert Integer to Rational and subtract
+      const otherAsRational = new Rational(other.value, 1n);
+      return this.subtract(otherAsRational);
+    } else if (other instanceof Rational) {
+      const a = this.#numerator;
+      const b = this.#denominator;
+      const c = other.numerator;
+      const d = other.denominator;
 
-    // a/b - c/d = (ad - bc)/bd
-    const numerator = a * d - b * c;
-    const denominator = b * d;
+      // a/b - c/d = (ad - bc)/bd
+      const numerator = a * d - b * c;
+      const denominator = b * d;
 
-    return new Rational(numerator, denominator);
+      return new Rational(numerator, denominator);
+    } else if (other.low && other.high && typeof other.low.equals === 'function') {
+      // This looks like a RationalInterval - promote this rational to interval and subtract
+      const IntervalClass = other.constructor;
+      const newThisAsInterval = new IntervalClass(this, this);
+      return newThisAsInterval.subtract(other);
+    } else {
+      throw new Error(`Cannot subtract ${other.constructor.name} from Rational`);
+    }
   }
 
   /**
-   * Multiplies this rational by another
-   * @param {Rational} other - The rational to multiply by
-   * @returns {Rational} The product as a new Rational
+   * Multiplies this rational by another number with automatic type promotion
+   * @param {Integer|Rational|RationalInterval} other - The number to multiply by
+   * @returns {Rational|RationalInterval} The product with appropriate type
    */
   multiply(other) {
-    const a = this.#numerator;
-    const b = this.#denominator;
-    const c = other.numerator;
-    const d = other.denominator;
+    // Handle Integer type by checking constructor name to avoid circular imports
+    if (other.constructor.name === 'Integer') {
+      // Convert Integer to Rational and multiply
+      const otherAsRational = new Rational(other.value, 1n);
+      return this.multiply(otherAsRational);
+    } else if (other instanceof Rational) {
+      const a = this.#numerator;
+      const b = this.#denominator;
+      const c = other.numerator;
+      const d = other.denominator;
 
-    // (a/b) * (c/d) = (ac)/(bd)
-    const numerator = a * c;
-    const denominator = b * d;
+      // (a/b) * (c/d) = (ac)/(bd)
+      const numerator = a * c;
+      const denominator = b * d;
 
-    return new Rational(numerator, denominator);
+      return new Rational(numerator, denominator);
+    } else if (other.low && other.high && typeof other.low.equals === 'function') {
+      // This looks like a RationalInterval - promote this rational to interval and multiply
+      const IntervalClass = other.constructor;
+      const newThisAsInterval = new IntervalClass(this, this);
+      return newThisAsInterval.multiply(other);
+    } else {
+      throw new Error(`Cannot multiply Rational by ${other.constructor.name}`);
+    }
   }
 
   /**
-   * Divides this rational by another
-   * @param {Rational} other - The rational to divide by
-   * @returns {Rational} The quotient as a new Rational
+   * Divides this rational by another number with automatic type promotion
+   * @param {Integer|Rational|RationalInterval} other - The number to divide by
+   * @returns {Rational|RationalInterval} The quotient with appropriate type
    * @throws {Error} If other is zero
    */
   divide(other) {
-    if (other.numerator === 0n) {
-      throw new Error("Division by zero");
+    // Handle Integer type by checking constructor name to avoid circular imports
+    if (other.constructor.name === 'Integer') {
+      if (other.value === 0n) {
+        throw new Error("Division by zero");
+      }
+      // Convert Integer to Rational and divide
+      const otherAsRational = new Rational(other.value, 1n);
+      return this.divide(otherAsRational);
+    } else if (other instanceof Rational) {
+      if (other.numerator === 0n) {
+        throw new Error("Division by zero");
+      }
+
+      const a = this.#numerator;
+      const b = this.#denominator;
+      const c = other.numerator;
+      const d = other.denominator;
+
+      // (a/b) / (c/d) = (a/b) * (d/c) = (ad)/(bc)
+      const numerator = a * d;
+      const denominator = b * c;
+
+      return new Rational(numerator, denominator);
+    } else if (other.low && other.high && typeof other.low.equals === 'function') {
+      // This looks like a RationalInterval - promote this rational to interval and divide
+      const IntervalClass = other.constructor;
+      const newThisAsInterval = new IntervalClass(this, this);
+      return newThisAsInterval.divide(other);
+    } else {
+      throw new Error(`Cannot divide Rational by ${other.constructor.name}`);
     }
-
-    const a = this.#numerator;
-    const b = this.#denominator;
-    const c = other.numerator;
-    const d = other.denominator;
-
-    // (a/b) / (c/d) = (a/b) * (d/c) = (ad)/(bc)
-    const numerator = a * d;
-    const denominator = b * c;
-
-    return new Rational(numerator, denominator);
   }
 
   /**

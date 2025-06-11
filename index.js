@@ -11,6 +11,7 @@ import { Parser, parseRepeatingDecimal } from "./src/parser.js";
 import { Fraction } from "./src/fraction.js";
 import { FractionInterval } from "./src/fraction-interval.js";
 import { Integer } from "./src/integer.js";
+import { TypePromotion } from "./src/type-promotion.js";
 
 // Export named exports
 export {
@@ -21,6 +22,7 @@ export {
   Fraction,
   FractionInterval,
   Integer,
+  TypePromotion,
 };
 
 // Default export for convenient importing
@@ -32,4 +34,5 @@ export default {
   Fraction,
   FractionInterval,
   Integer,
+  TypePromotion,
 };

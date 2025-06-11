@@ -6,6 +6,7 @@
  * Supports decimal uncertainty notation including range [56,67], relative [+5,-6], and symmetric [+-1] formats.
  */
 
+import { Integer } from './integer.js';
 import { Rational } from './rational.js';
 import { RationalInterval } from './rational-interval.js';
 
@@ -477,10 +478,12 @@ export class Parser {
    * Parses a string representing an interval arithmetic expression
    * 
    * @param {string} expression - The expression to parse
-   * @returns {RationalInterval} The result of evaluating the expression
+   * @param {Object} options - Parsing options
+   * @param {boolean} options.typeAware - If true, returns Integer/Rational/RationalInterval based on input
+   * @returns {Integer|Rational|RationalInterval} The result of evaluating the expression
    * @throws {Error} If the expression syntax is invalid
    */
-  static parse(expression) {
+  static parse(expression, options = {}) {
     if (!expression || expression.trim() === '') {
       throw new Error('Expression cannot be empty');
     }
@@ -493,7 +496,7 @@ export class Parser {
     expression = expression.replace(/\s+/g, '');
     
     // Parse the expression
-    const result = Parser.#parseExpression(expression);
+    const result = Parser.#parseExpression(expression, options);
     
     if (result.remainingExpr.length > 0) {
       throw new Error(`Unexpected token at end: ${result.remainingExpr}`);
@@ -506,15 +509,15 @@ export class Parser {
    * Parses an expression with addition and subtraction
    * @private
    */
-  static #parseExpression(expr) {
-    let result = Parser.#parseTerm(expr);
+  static #parseExpression(expr, options = {}) {
+    let result = Parser.#parseTerm(expr, options);
     let currentExpr = result.remainingExpr;
     
     while (currentExpr.length > 0 && (currentExpr[0] === '+' || currentExpr[0] === '-')) {
       const operator = currentExpr[0];
       currentExpr = currentExpr.substring(1);
       
-      const termResult = Parser.#parseTerm(currentExpr);
+      const termResult = Parser.#parseTerm(currentExpr, options);
       currentExpr = termResult.remainingExpr;
       
       if (operator === '+') {
@@ -531,8 +534,8 @@ export class Parser {
    * Parses a term with multiplication, division, and E notation
    * @private
    */
-  static #parseTerm(expr) {
-    let result = Parser.#parseFactor(expr);
+  static #parseTerm(expr, options = {}) {
+    let result = Parser.#parseFactor(expr, options);
     let currentExpr = result.remainingExpr;
     
     while (currentExpr.length > 0 && (currentExpr[0] === '*' || currentExpr[0] === '/' || currentExpr[0] === 'E' || currentExpr.startsWith('TE'))) {
@@ -546,37 +549,49 @@ export class Parser {
       }
       currentExpr = currentExpr.substring(skipLength);
       
-      const factorResult = Parser.#parseFactor(currentExpr);
+      const factorResult = Parser.#parseFactor(currentExpr, options);
       currentExpr = factorResult.remainingExpr;
       
       if (operator === '*') {
         result.value = result.value.multiply(factorResult.value);
       } else if (operator === '/') {
-        // Let the RationalInterval.divide method handle errors
         result.value = result.value.divide(factorResult.value);
       } else if (operator === 'E') {
         // E notation: left operand * 10^(right operand)
-        // Right operand must be an integer (point interval)
-        if (!factorResult.value.low.equals(factorResult.value.high)) {
-          throw new Error('E notation exponent must be an integer');
-        }
-        
-        const exponent = factorResult.value.low;
-        if (exponent.denominator !== 1n) {
-          throw new Error('E notation exponent must be an integer');
-        }
-        
-        // Create 10^exponent as a rational
-        let powerOf10;
-        const exponentValue = exponent.numerator;
-        if (exponentValue >= 0n) {
-          powerOf10 = new Rational(10n ** exponentValue);
+        // Extract the exponent value based on the type
+        let exponentValue;
+        if (factorResult.value instanceof Integer) {
+          exponentValue = factorResult.value.value;
+        } else if (factorResult.value instanceof Rational) {
+          if (factorResult.value.denominator !== 1n) {
+            throw new Error('E notation exponent must be an integer');
+          }
+          exponentValue = factorResult.value.numerator;
+        } else if (factorResult.value.low && factorResult.value.high) {
+          // RationalInterval case
+          if (!factorResult.value.low.equals(factorResult.value.high)) {
+            throw new Error('E notation exponent must be an integer');
+          }
+          const exponent = factorResult.value.low;
+          if (exponent.denominator !== 1n) {
+            throw new Error('E notation exponent must be an integer');
+          }
+          exponentValue = exponent.numerator;
         } else {
-          powerOf10 = new Rational(1n, 10n ** (-exponentValue));
+          throw new Error('Invalid E notation exponent type');
         }
         
-        const powerInterval = RationalInterval.point(powerOf10);
-        result.value = result.value.multiply(powerInterval);
+        // Apply E notation using the value's E method if available
+        if (result.value.E && typeof result.value.E === 'function') {
+          result.value = result.value.E(exponentValue);
+        } else {
+          // Fallback for backward compatibility
+          const powerOf10 = exponentValue >= 0n 
+            ? new Rational(10n ** exponentValue)
+            : new Rational(1n, 10n ** (-exponentValue));
+          const powerInterval = RationalInterval.point(powerOf10);
+          result.value = result.value.multiply(powerInterval);
+        }
       }
     }
     
@@ -587,14 +602,14 @@ export class Parser {
    * Parses a factor (interval, number, or parenthesized expression)
    * @private
    */
-  static #parseFactor(expr) {
+  static #parseFactor(expr, options = {}) {
     if (expr.length === 0) {
       throw new Error('Unexpected end of expression');
     }
     
     // Handle parenthesized expressions
     if (expr[0] === '(') {
-      const subExprResult = Parser.#parseExpression(expr.substring(1));
+      const subExprResult = Parser.#parseExpression(expr.substring(1), options);
       
       if (subExprResult.remainingExpr.length === 0 || subExprResult.remainingExpr[0] !== ')') {
         throw new Error('Missing closing parenthesis');
@@ -699,23 +714,32 @@ export class Parser {
 
     // Check for negation (but only if it's not part of uncertainty notation)
     if (expr[0] === '-' && !expr.includes('[')) {
-      const factorResult = Parser.#parseFactor(expr.substring(1));
+      const factorResult = Parser.#parseFactor(expr.substring(1), options);
       
-      // Create a negative interval by multiplying by -1
-      const negOne = new Rational(-1);
-      const negInterval = RationalInterval.point(negOne);
+      // Negate the value - type-aware for new parsing, backward compatible for old
+      let negatedValue;
+      if (options.typeAware && factorResult.value instanceof Integer) {
+        negatedValue = factorResult.value.negate();
+      } else if (options.typeAware && factorResult.value instanceof Rational) {
+        negatedValue = factorResult.value.negate();
+      } else {
+        // For backward compatibility and intervals, negate by multiplying by -1
+        const negOne = new Rational(-1);
+        const negInterval = RationalInterval.point(negOne);
+        negatedValue = negInterval.multiply(factorResult.value);
+      }
       
       return {
-        value: negInterval.multiply(factorResult.value),
+        value: negatedValue,
         remainingExpr: factorResult.remainingExpr
       };
     }
     
-    // Try to parse an interval or a single rational number
-    const intervalResult = Parser.#parseInterval(expr);
+    // Try to parse a number (could be Integer, Rational, or RationalInterval)  
+    const numberResult = Parser.#parseInterval(expr, options);
     // Check for tight E notation first (higher precedence than exponentiation)
-    if (intervalResult.remainingExpr.length > 0 && (intervalResult.remainingExpr[0] === 'E' || intervalResult.remainingExpr.startsWith('TE'))) {
-      const eResult = Parser.#parseENotation(intervalResult.value, intervalResult.remainingExpr);
+    if (numberResult.remainingExpr.length > 0 && (numberResult.remainingExpr[0] === 'E' || numberResult.remainingExpr.startsWith('TE'))) {
+      const eResult = Parser.#parseENotation(numberResult.value, numberResult.remainingExpr);
       
       // Check for exponentiation after E notation
       if (eResult.remainingExpr.length > 0) {
@@ -724,10 +748,16 @@ export class Parser {
           const powerExpr = eResult.remainingExpr.substring(1);
           const powerResult = Parser.#parseExponent(powerExpr);
           
-          // Special case for 0^0
-          const zero = new Rational(0);
-          if (eResult.value.low.equals(zero) && eResult.value.high.equals(zero) && powerResult.value === 0n) {
+          // Check for 0^0 based on value type
+          if (eResult.value instanceof Integer && eResult.value.value === 0n && powerResult.value === 0n) {
             throw new Error("Zero cannot be raised to the power of zero");
+          } else if (eResult.value instanceof Rational && eResult.value.numerator === 0n && powerResult.value === 0n) {
+            throw new Error("Zero cannot be raised to the power of zero");
+          } else if (eResult.value.low && eResult.value.high) {
+            const zero = new Rational(0);
+            if (eResult.value.low.equals(zero) && eResult.value.high.equals(zero) && powerResult.value === 0n) {
+              throw new Error("Zero cannot be raised to the power of zero");
+            }
           }
           
           const result = eResult.value.pow(powerResult.value);
@@ -742,7 +772,7 @@ export class Parser {
           const powerExpr = eResult.remainingExpr.substring(2);
           const powerResult = Parser.#parseExponent(powerExpr);
           
-          const result = eResult.value.mpow(powerResult.value);
+          const result = eResult.value.mpow ? eResult.value.mpow(powerResult.value) : eResult.value.pow(powerResult.value);
           return {
             value: result,
             remainingExpr: powerResult.remainingExpr
@@ -754,33 +784,37 @@ export class Parser {
     }
     
     // Check for standard exponentiation
-    if (intervalResult.remainingExpr.length > 0) {
-      if (intervalResult.remainingExpr[0] === '^') {
+    if (numberResult.remainingExpr.length > 0) {
+      if (numberResult.remainingExpr[0] === '^') {
         // Standard exponentiation (pow)
-        const powerExpr = intervalResult.remainingExpr.substring(1);
+        const powerExpr = numberResult.remainingExpr.substring(1);
         const powerResult = Parser.#parseExponent(powerExpr);
         
-        // Special case for 0^0
-        const zero = new Rational(0);
-        if (intervalResult.value.low.equals(zero) && intervalResult.value.high.equals(zero) && powerResult.value === 0n) {
+        // Check for 0^0 based on value type
+        if (numberResult.value instanceof Integer && numberResult.value.value === 0n && powerResult.value === 0n) {
           throw new Error("Zero cannot be raised to the power of zero");
+        } else if (numberResult.value instanceof Rational && numberResult.value.numerator === 0n && powerResult.value === 0n) {
+          throw new Error("Zero cannot be raised to the power of zero");
+        } else if (numberResult.value.low && numberResult.value.high) {
+          const zero = new Rational(0);
+          if (numberResult.value.low.equals(zero) && numberResult.value.high.equals(zero) && powerResult.value === 0n) {
+            throw new Error("Zero cannot be raised to the power of zero");
+          }
         }
         
-        // Let the RationalInterval.pow method handle errors
-        const result = intervalResult.value.pow(powerResult.value);
+        const result = numberResult.value.pow(powerResult.value);
         return {
           value: result,
           remainingExpr: powerResult.remainingExpr
         };
-      } else if (intervalResult.remainingExpr.length > 1 && 
-                 intervalResult.remainingExpr[0] === '*' && 
-                 intervalResult.remainingExpr[1] === '*') {
+      } else if (numberResult.remainingExpr.length > 1 && 
+                 numberResult.remainingExpr[0] === '*' && 
+                 numberResult.remainingExpr[1] === '*') {
         // Multiplicative exponentiation (mpow)
-        const powerExpr = intervalResult.remainingExpr.substring(2);
+        const powerExpr = numberResult.remainingExpr.substring(2);
         const powerResult = Parser.#parseExponent(powerExpr);
         
-        // Let the RationalInterval.mpow method handle errors
-        const result = intervalResult.value.mpow(powerResult.value);
+        const result = numberResult.value.mpow ? numberResult.value.mpow(powerResult.value) : numberResult.value.pow(powerResult.value);
         return {
           value: result,
           remainingExpr: powerResult.remainingExpr
@@ -788,7 +822,7 @@ export class Parser {
       }
     }
     
-    return intervalResult;
+    return numberResult;
   }
 
   /**
@@ -830,6 +864,7 @@ export class Parser {
    * @private
    */
   static #parseENotation(value, expr) {
+    // expr should start with 'E' or 'TE'
     let spaceBeforeE = false;
     let startIndex = 1;
     
@@ -847,21 +882,24 @@ export class Parser {
     const exponentResult = Parser.#parseExponent(expr.substring(startIndex));
     const exponent = exponentResult.value;
     
-    // Create 10^exponent as a rational
-    let powerOf10;
-    if (exponent >= 0n) {
-      // Positive exponent: 10^n
-      powerOf10 = new Rational(10n ** exponent);
+    // Apply E notation using the value's E method if available, or multiply by power of 10
+    let result;
+    if (value.E && typeof value.E === 'function') {
+      result = value.E(exponent);
     } else {
-      // Negative exponent: 1/(10^(-n))
-      powerOf10 = new Rational(1n, 10n ** (-exponent));
+      // Create 10^exponent as a rational
+      let powerOf10;
+      if (exponent >= 0n) {
+        // Positive exponent: 10^n
+        powerOf10 = new Rational(10n ** exponent);
+      } else {
+        // Negative exponent: 1/(10^(-n))
+        powerOf10 = new Rational(1n, 10n ** (-exponent));
+      }
+      
+      // Multiply the value by 10^exponent
+      result = value.multiply(powerOf10);
     }
-    
-    // Create interval for the power of 10
-    const powerInterval = RationalInterval.point(powerOf10);
-    
-    // Multiply the value by 10^exponent
-    const result = value.multiply(powerInterval);
     
     return {
       value: result,
@@ -870,10 +908,10 @@ export class Parser {
   }
 
   /**
-   * Parses an interval of the form "a/b:c/d", "0.#3:0.5#0", or a single rational "a/b"
+   * Parses an interval of the form "a:b" or a single rational number
    * @private
    */
-  static #parseInterval(expr) {
+  static #parseInterval(expr, options = {}) {
     // Check if this is uncertainty notation first
     if (expr.includes('[') && expr.includes(']') && /^-?\d*\.?\d*\[/.test(expr)) {
       try {
@@ -887,7 +925,7 @@ export class Parser {
       }
     }
     
-    // Check if this is a simple decimal (no # and no :) that should become an interval
+    // Check if this is a simple decimal (no # and no :)
     if (expr.includes('.') && !expr.includes('#') && !expr.includes(':') && !expr.includes('[')) {
       // Find the end of the decimal number
       let endIndex = 0;
@@ -913,17 +951,23 @@ export class Parser {
       if (hasDecimalPoint && endIndex > (expr[0] === '-' ? 2 : 1)) {
         const decimalStr = expr.substring(0, endIndex);
         try {
-          // Check if it's negative
-          const isNegative = decimalStr.startsWith('-');
-          const absDecimalStr = isNegative ? decimalStr.substring(1) : decimalStr;
-          
-          // Use parseNonRepeatingDecimal to get interval representation
-          const result = parseNonRepeatingDecimal(absDecimalStr, isNegative);
-          
-          return {
-            value: result,
-            remainingExpr: expr.substring(endIndex)
-          };
+          if (options.typeAware) {
+            // Parse as exact rational using Rational constructor for type-aware parsing
+            const result = new Rational(decimalStr);
+            return {
+              value: result,
+              remainingExpr: expr.substring(endIndex)
+            };
+          } else {
+            // Use parseNonRepeatingDecimal for backward compatibility (uncertainty intervals)
+            const isNegative = decimalStr.startsWith('-');
+            const absDecimalStr = isNegative ? decimalStr.substring(1) : decimalStr;
+            const result = parseNonRepeatingDecimal(absDecimalStr, isNegative);
+            return {
+              value: result,
+              remainingExpr: expr.substring(endIndex)
+            };
+          }
         } catch (error) {
           // Fall through to regular parsing if decimal parsing fails
         }
@@ -1022,14 +1066,30 @@ export class Parser {
       }
     }
     
-    // If no colon follows, treat it as a point interval
+    // If no colon follows, return the appropriate type based on parsing mode
     if (remainingAfterFirst.length === 0 || remainingAfterFirst[0] !== ':') {
-      // Create a point interval
-      const pointValue = RationalInterval.point(firstValue);
-      return {
-        value: pointValue,
-        remainingExpr: remainingAfterFirst
-      };
+      if (options.typeAware) {
+        // Type-aware parsing: return Integer for whole numbers, Rational otherwise
+        if (firstValue instanceof Rational && firstValue.denominator === 1n) {
+          // This is a whole number, return as Integer
+          return {
+            value: new Integer(firstValue.numerator),
+            remainingExpr: remainingAfterFirst
+          };
+        }
+        // Return as the original type (Rational)
+        return {
+          value: firstValue,
+          remainingExpr: remainingAfterFirst
+        };
+      } else {
+        // Backward compatible parsing: always return point intervals
+        const pointValue = RationalInterval.point(firstValue);
+        return {
+          value: pointValue,
+          remainingExpr: remainingAfterFirst
+        };
+      }
     }
     
     // Parse the second rational after the colon

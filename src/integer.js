@@ -7,6 +7,7 @@
  */
 
 import { Rational } from "./rational.js";
+import { RationalInterval } from "./rational-interval.js";
 
 export class Integer {
   #value;
@@ -41,49 +42,105 @@ export class Integer {
   }
 
   /**
-   * Adds another integer to this one
-   * @param {Integer} other - The integer to add
-   * @returns {Integer} The sum as a new Integer
+   * Adds another number to this integer with automatic type promotion
+   * @param {Integer|Rational|RationalInterval} other - The number to add
+   * @returns {Integer|Rational|RationalInterval} The sum with appropriate type
    */
   add(other) {
-    return new Integer(this.#value + other.value);
+    if (other instanceof Integer) {
+      return new Integer(this.#value + other.value);
+    } else if (other instanceof Rational) {
+      // Promote this integer to rational and add
+      const thisAsRational = new Rational(this.#value, 1n);
+      return thisAsRational.add(other);
+    } else if (other.low && other.high && typeof other.low.equals === 'function') {
+      // This looks like a RationalInterval - promote this integer to rational interval and add
+      const thisAsRational = new Rational(this.#value, 1n);
+      const IntervalClass = other.constructor;
+      const thisAsInterval = new IntervalClass(thisAsRational, thisAsRational);
+      return thisAsInterval.add(other);
+    } else {
+      throw new Error(`Cannot add ${other.constructor.name} to Integer`);
+    }
   }
 
   /**
-   * Subtracts another integer from this one
-   * @param {Integer} other - The integer to subtract
-   * @returns {Integer} The difference as a new Integer
+   * Subtracts another number from this integer with automatic type promotion
+   * @param {Integer|Rational|RationalInterval} other - The number to subtract
+   * @returns {Integer|Rational|RationalInterval} The difference with appropriate type
    */
   subtract(other) {
-    return new Integer(this.#value - other.value);
+    if (other instanceof Integer) {
+      return new Integer(this.#value - other.value);
+    } else if (other instanceof Rational) {
+      // Promote this integer to rational and subtract
+      const thisAsRational = new Rational(this.#value, 1n);
+      return thisAsRational.subtract(other);
+    } else if (other.low && other.high && typeof other.low.equals === 'function') {
+      // This looks like a RationalInterval - promote this integer to rational interval and subtract
+      const thisAsRational = new Rational(this.#value, 1n);
+      const IntervalClass = other.constructor;
+      const thisAsInterval = new IntervalClass(thisAsRational, thisAsRational);
+      return thisAsInterval.subtract(other);
+    } else {
+      throw new Error(`Cannot subtract ${other.constructor.name} from Integer`);
+    }
   }
 
   /**
-   * Multiplies this integer by another
-   * @param {Integer} other - The integer to multiply by
-   * @returns {Integer} The product as a new Integer
+   * Multiplies this integer by another number with automatic type promotion
+   * @param {Integer|Rational|RationalInterval} other - The number to multiply by
+   * @returns {Integer|Rational|RationalInterval} The product with appropriate type
    */
   multiply(other) {
-    return new Integer(this.#value * other.value);
+    if (other instanceof Integer) {
+      return new Integer(this.#value * other.value);
+    } else if (other instanceof Rational) {
+      // Promote this integer to rational and multiply
+      const thisAsRational = new Rational(this.#value, 1n);
+      return thisAsRational.multiply(other);
+    } else if (other.low && other.high && typeof other.low.equals === 'function') {
+      // This looks like a RationalInterval - promote this integer to rational interval and multiply
+      const thisAsRational = new Rational(this.#value, 1n);
+      const IntervalClass = other.constructor;
+      const thisAsInterval = new IntervalClass(thisAsRational, thisAsRational);
+      return thisAsInterval.multiply(other);
+    } else {
+      throw new Error(`Cannot multiply Integer by ${other.constructor.name}`);
+    }
   }
 
   /**
-   * Divides this integer by another
-   * @param {Integer} other - The integer to divide by
-   * @returns {Integer|Rational} The quotient as an Integer if exact, otherwise a Rational
+   * Divides this integer by another number with automatic type promotion
+   * @param {Integer|Rational|RationalInterval} other - The number to divide by
+   * @returns {Integer|Rational|RationalInterval} The quotient with appropriate type
    * @throws {Error} If other is zero
    */
   divide(other) {
-    if (other.value === 0n) {
-      throw new Error("Division by zero");
-    }
+    if (other instanceof Integer) {
+      if (other.value === 0n) {
+        throw new Error("Division by zero");
+      }
 
-    // Check if division is exact
-    if (this.#value % other.value === 0n) {
-      return new Integer(this.#value / other.value);
+      // Check if division is exact
+      if (this.#value % other.value === 0n) {
+        return new Integer(this.#value / other.value);
+      } else {
+        // Return a rational number
+        return new Rational(this.#value, other.value);
+      }
+    } else if (other instanceof Rational) {
+      // Promote this integer to rational and divide
+      const thisAsRational = new Rational(this.#value, 1n);
+      return thisAsRational.divide(other);
+    } else if (other.low && other.high && typeof other.low.equals === 'function') {
+      // This looks like a RationalInterval - promote this integer to rational interval and divide
+      const thisAsRational = new Rational(this.#value, 1n);
+      const IntervalClass = other.constructor;
+      const thisAsInterval = new IntervalClass(thisAsRational, thisAsRational);
+      return thisAsInterval.divide(other);
     } else {
-      // Return a rational number
-      return new Rational(this.#value, other.value);
+      throw new Error(`Cannot divide Integer by ${other.constructor.name}`);
     }
   }
 
