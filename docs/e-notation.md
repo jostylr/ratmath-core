@@ -23,8 +23,3 @@ Rules
 	•	(5/4)E2 → (5/4) × 100 = 125/4 = 31.25
 	•	5/(4E2) → 5 / 400 = 0.0125
 	•	Same rule for mixed numbers (e.g., 1..1/4E3 is invalid, (1..1/4)E3 is valid).
-	5.	Units and Algebraic Extensions:
-	•	E-notation can appear before the unit or algebraic extension.
-	•	Examples:
-	•	5.1E3~m~ → 5100 meters
-	•	2E-1~i~ → 0.2i
