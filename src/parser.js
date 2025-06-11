@@ -514,6 +514,10 @@ export class Parser {
     // Replace " E" with "TE" (temporary marker) to preserve space information
     expression = expression.replace(/ E/g, 'TE');
     
+    // Handle space-sensitive division disambiguation before removing whitespace
+    // Replace "/ " with "/S" (temporary marker) to preserve space information
+    expression = expression.replace(/\/ /g, '/S');
+    
     // Remove all whitespace
     expression = expression.replace(/\s+/g, '');
     
@@ -570,6 +574,11 @@ export class Parser {
         skipLength = 1;
       }
       currentExpr = currentExpr.substring(skipLength);
+      
+      // Handle space marker for division
+      if (operator === '/' && currentExpr.length > 0 && currentExpr[0] === 'S') {
+        currentExpr = currentExpr.substring(1); // Skip the 'S' marker
+      }
       
       const factorResult = Parser.#parseFactor(currentExpr, options);
       currentExpr = factorResult.remainingExpr;
@@ -1629,6 +1638,20 @@ export class Parser {
     if (i < expr.length && expr[i] === '/') {
       explicitFraction = true;
       i++;
+      
+      // Check for space marker after '/' - if present, treat as division operation
+      if (i < expr.length && expr[i] === 'S') {
+        // There was whitespace after '/', so this should be division, not a fraction
+        if (hasMixedForm) {
+          throw new Error('Invalid mixed number format: missing denominator');
+        }
+        // Return just the numerator as a rational and let division be handled at term level
+        const numerator = isNegative ? -BigInt(numeratorStr) : BigInt(numeratorStr);
+        return {
+          value: new Rational(numerator, 1n),
+          remainingExpr: expr.substring(i - 1) // Include the '/' in remaining (skip the 'S')
+        };
+      }
       
       // Check if what follows is a simple numeric denominator or something complex
       if (i < expr.length && expr[i] === '(') {

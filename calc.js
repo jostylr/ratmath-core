@@ -89,7 +89,14 @@ class Calculator {
 
     // Try to parse and evaluate the expression
     try {
-      const result = Parser.parse(input, { typeAware: true });
+      // Check if input contains #0 notation for exact decimals or fractions
+      const hasExactDecimal = input.includes('#0');
+      const hasFraction = input.includes('/');
+      const hasDecimalPoint = input.includes('.');
+      const isSimpleInteger = /^\s*-?\d+\s*$/.test(input);
+      const hasPlainDecimal = hasDecimalPoint && !hasExactDecimal && !hasFraction;
+      // Use typeAware parsing for exact decimals, fractions, integers, and expressions without plain decimals
+      const result = Parser.parse(input, { typeAware: hasExactDecimal || hasFraction || isSimpleInteger || !hasPlainDecimal });
       this.displayResult(result);
     } catch (error) {
       if (error.message.includes('Division by zero') || 
@@ -138,18 +145,20 @@ class Calculator {
     const decimal = this.formatDecimal(rational);
     const fraction = rational.toString();
     
+    // For fractions that convert to terminating decimals, show #0 notation
+    const isTerminatingDecimal = repeatingDecimal.endsWith('#0');
+    const displayDecimal = isTerminatingDecimal ? repeatingDecimal : this.formatRepeatingDecimal(rational);
+    
     switch (this.outputMode) {
       case 'DECI':
-        // Use formatted repeating decimal
-        console.log(this.formatRepeatingDecimal(rational));
+        console.log(displayDecimal);
         break;
       case 'RAT':
         console.log(fraction);
         break;
       case 'BOTH':
         if (fraction.includes('/')) {
-          // Use formatted repeating decimal
-          console.log(`${this.formatRepeatingDecimal(rational)} (${fraction})`);
+          console.log(`${displayDecimal} (${fraction})`);
         } else {
           console.log(decimal);
         }
@@ -220,21 +229,21 @@ class Calculator {
     const lowFraction = interval.low.toString();
     const highFraction = interval.high.toString();
     
+    // For intervals, remove #0 notation since rounding is implicit
+    const lowIsTerminating = lowRepeating.endsWith('#0');
+    const highIsTerminating = highRepeating.endsWith('#0');
+    const lowDisplay = lowIsTerminating ? lowRepeating.substring(0, lowRepeating.length - 2) : this.formatRepeatingDecimal(interval.low);
+    const highDisplay = highIsTerminating ? highRepeating.substring(0, highRepeating.length - 2) : this.formatRepeatingDecimal(interval.high);
+    
     switch (this.outputMode) {
       case 'DECI':
-        // Use formatted repeating decimals
-        const lowDisplay = this.formatRepeatingDecimal(interval.low);
-        const highDisplay = this.formatRepeatingDecimal(interval.high);
         console.log(`${lowDisplay}:${highDisplay}`);
         break;
       case 'RAT':
         console.log(`${lowFraction}:${highFraction}`);
         break;
       case 'BOTH':
-        // Use formatted repeating decimals
-        const lowDisplayBoth = this.formatRepeatingDecimal(interval.low);
-        const highDisplayBoth = this.formatRepeatingDecimal(interval.high);
-        const decimalRange = `${lowDisplayBoth}:${highDisplayBoth}`;
+        const decimalRange = `${lowDisplay}:${highDisplay}`;
         const rationalRange = `${lowFraction}:${highFraction}`;
         if (decimalRange !== rationalRange) {
           console.log(`${decimalRange} (${rationalRange})`);
