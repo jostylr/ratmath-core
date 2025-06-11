@@ -569,6 +569,76 @@ export class Rational {
   }
 
   /**
+   * Converts this rational to a repeating decimal string with period information
+   * @returns {object} Object with decimal string and period info: {decimal: string, period: number}
+   */
+  toRepeatingDecimalWithPeriod() {
+    // Handle special cases
+    if (this.#numerator === 0n) {
+      return { decimal: '0', period: 0 };
+    }
+
+    // Handle negative numbers
+    const isNegative = this.#numerator < 0n;
+    const num = isNegative ? -this.#numerator : this.#numerator;
+    const den = this.#denominator;
+
+    // Get integer part
+    const integerPart = num / den;
+    let remainder = num % den;
+
+    // If no remainder, it's a terminating decimal
+    if (remainder === 0n) {
+      return { 
+        decimal: (isNegative ? '-' : '') + integerPart.toString(),
+        period: 0
+      };
+    }
+
+    // Perform long division to find the repeating pattern
+    const seenRemainders = new Map();
+    const digits = [];
+    let position = 0;
+
+    while (remainder !== 0n && !seenRemainders.has(remainder.toString())) {
+      seenRemainders.set(remainder.toString(), position);
+      remainder *= 10n;
+      const digit = remainder / den;
+      digits.push(digit.toString());
+      remainder = remainder % den;
+      position++;
+    }
+
+    let result = (isNegative ? '-' : '') + integerPart.toString();
+
+    if (remainder === 0n) {
+      // Terminating decimal
+      if (digits.length > 0) {
+        result += '.' + digits.join('') + '#0';
+      } else {
+        result += '#0';
+      }
+      return { decimal: result, period: 0 };
+    } else {
+      // Repeating decimal
+      const repeatStart = seenRemainders.get(remainder.toString());
+      const nonRepeatingPart = digits.slice(0, repeatStart);
+      const repeatingPart = digits.slice(repeatStart);
+
+      if (nonRepeatingPart.length > 0) {
+        result += '.' + nonRepeatingPart.join('') + '#' + repeatingPart.join('');
+      } else {
+        result += '.#' + repeatingPart.join('');
+      }
+      
+      return { 
+        decimal: result, 
+        period: repeatingPart.length 
+      };
+    }
+  }
+
+  /**
    * Converts this rational to a standard decimal string representation
    * For terminating decimals, returns the exact decimal. For repeating decimals,
    * returns an approximation with sufficient precision.

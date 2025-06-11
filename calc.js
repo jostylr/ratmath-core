@@ -70,14 +70,18 @@ class Calculator {
       return;
     }
 
-    if (upperInput.startsWith('LIMIT ')) {
-      const limitStr = upperInput.substring(6).trim();
-      const limit = parseInt(limitStr);
-      if (isNaN(limit) || limit < 1) {
-        console.log('Error: LIMIT must be a positive integer');
+    if (upperInput.startsWith('LIMIT')) {
+      const limitStr = upperInput.substring(5).trim();
+      if (limitStr === '') {
+        console.log(`Current decimal display limit: ${this.decimalLimit} digits`);
       } else {
-        this.decimalLimit = limit;
-        console.log(`Decimal display limit set to ${limit} digits`);
+        const limit = parseInt(limitStr);
+        if (isNaN(limit) || limit < 1) {
+          console.log('Error: LIMIT must be a positive integer');
+        } else {
+          this.decimalLimit = limit;
+          console.log(`Decimal display limit set to ${limit} digits`);
+        }
       }
       return;
     }
@@ -141,7 +145,9 @@ class Calculator {
   }
 
   displayRational(rational) {
-    const repeatingDecimal = rational.toRepeatingDecimal();
+    const repeatingInfo = rational.toRepeatingDecimalWithPeriod();
+    const repeatingDecimal = repeatingInfo.decimal;
+    const period = repeatingInfo.period;
     const decimal = this.formatDecimal(rational);
     const fraction = rational.toString();
     
@@ -149,16 +155,19 @@ class Calculator {
     const isTerminatingDecimal = repeatingDecimal.endsWith('#0');
     const displayDecimal = isTerminatingDecimal ? repeatingDecimal : this.formatRepeatingDecimal(rational);
     
+    // Add period information for true repeating decimals (period > 0)
+    const periodInfo = period > 0 ? ` {period: ${period}}` : '';
+    
     switch (this.outputMode) {
       case 'DECI':
-        console.log(displayDecimal);
+        console.log(`${displayDecimal}${periodInfo}`);
         break;
       case 'RAT':
         console.log(fraction);
         break;
       case 'BOTH':
         if (fraction.includes('/')) {
-          console.log(`${displayDecimal} (${fraction})`);
+          console.log(`${displayDecimal}${periodInfo} (${fraction})`);
         } else {
           console.log(decimal);
         }
@@ -222,8 +231,12 @@ class Calculator {
   }
 
   displayInterval(interval) {
-    const lowRepeating = interval.low.toRepeatingDecimal();
-    const highRepeating = interval.high.toRepeatingDecimal();
+    const lowRepeatingInfo = interval.low.toRepeatingDecimalWithPeriod();
+    const highRepeatingInfo = interval.high.toRepeatingDecimalWithPeriod();
+    const lowRepeating = lowRepeatingInfo.decimal;
+    const highRepeating = highRepeatingInfo.decimal;
+    const lowPeriod = lowRepeatingInfo.period;
+    const highPeriod = highRepeatingInfo.period;
     const lowDecimal = this.formatDecimal(interval.low);
     const highDecimal = this.formatDecimal(interval.high);
     const lowFraction = interval.low.toString();
@@ -235,15 +248,24 @@ class Calculator {
     const lowDisplay = lowIsTerminating ? lowRepeating.substring(0, lowRepeating.length - 2) : this.formatRepeatingDecimal(interval.low);
     const highDisplay = highIsTerminating ? highRepeating.substring(0, highRepeating.length - 2) : this.formatRepeatingDecimal(interval.high);
     
+    // Add period information for intervals with repeating endpoints
+    let periodInfo = '';
+    if (lowPeriod > 0 || highPeriod > 0) {
+      const periodParts = [];
+      if (lowPeriod > 0) periodParts.push(`low: ${lowPeriod}`);
+      if (highPeriod > 0) periodParts.push(`high: ${highPeriod}`);
+      periodInfo = ` {period: ${periodParts.join(', ')}}`;
+    }
+    
     switch (this.outputMode) {
       case 'DECI':
-        console.log(`${lowDisplay}:${highDisplay}`);
+        console.log(`${lowDisplay}:${highDisplay}${periodInfo}`);
         break;
       case 'RAT':
         console.log(`${lowFraction}:${highFraction}`);
         break;
       case 'BOTH':
-        const decimalRange = `${lowDisplay}:${highDisplay}`;
+        const decimalRange = `${lowDisplay}:${highDisplay}${periodInfo}`;
         const rationalRange = `${lowFraction}:${highFraction}`;
         if (decimalRange !== rationalRange) {
           console.log(`${decimalRange} (${rationalRange})`);
@@ -302,6 +324,7 @@ COMMANDS:
   RAT               Show results as fractions only
   BOTH              Show both decimal and fraction (default)
   LIMIT <n>         Set decimal display limit to n digits (default: 20)
+  LIMIT             Show current decimal display limit
   EXIT, QUIT, BYE   Exit calculator
 
 DECIMAL DISPLAY:
