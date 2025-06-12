@@ -10,7 +10,7 @@ describe("Repeating Decimal Intervals", () => {
   describe("range notation after decimal point", () => {
     it("parses 0.[#3,#6] as interval from 1/3 to 2/3", () => {
       const result = parseRepeatingDecimal("0.[#3,#6]");
-      
+
       expect(result.low.equals(new Rational("1/3"))).toBe(true);
       expect(result.high.equals(new Rational("2/3"))).toBe(true);
     });
@@ -157,8 +157,8 @@ describe("Repeating Decimal Intervals", () => {
   });
 
   describe("error handling", () => {
-    it("throws error for invalid range order with integer base", () => {
-      expect(() => parseRepeatingDecimal("1[3,2]")).toThrow();
+    it("throws error for brackets not after decimal point", () => {
+      expect(() => parseRepeatingDecimal("1[2,3]")).toThrow();
     });
 
     it("throws error for old colon notation in brackets", () => {

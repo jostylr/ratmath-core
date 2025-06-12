@@ -20,7 +20,7 @@
 
     <div class="calculator">
       <div class="output-history" id="outputHistory"></div>
-      
+
       <div class="input-section">
         <div class="prompt">></div>
         <input type="text" id="calculatorInput" class="calculator-input" placeholder="Enter expression (type HELP for help)" autocomplete="off" spellcheck="false">
@@ -31,6 +31,70 @@
       <button id="copyButton" class="copy-button" title="Copy session to clipboard">📋 Copy Session</button>
       <button id="helpButton" class="help-button" title="Show help">❓ Help</button>
       <button id="clearButton" class="clear-button" title="Clear history">🗑️ Clear</button>
+    </div>
+  </div>
+
+  <!-- Mobile Keypad -->
+  <div id="mobileKeypad" class="mobile-keypad">
+      <div id="keypadGrid" class="keypad-grid">
+        <!-- Row 1 -->
+        <button class="keypad-btn" data-key="7">7</button>
+        <button class="keypad-btn" data-key="8">8</button>
+        <button class="keypad-btn" data-key="9">9</button>
+        <button class="keypad-btn" data-key="(">(</button>
+        <button class="keypad-btn" data-key=")">)</button>
+
+        <!-- Row 2 -->
+        <button class="keypad-btn" data-key="4">4</button>
+        <button class="keypad-btn" data-key="5">5</button>
+        <button class="keypad-btn" data-key="6">6</button>
+        <button class="keypad-btn" data-key="*">×</button>
+        <button class="keypad-btn" data-key="/">÷</button>
+
+        <!-- Row 3 -->
+        <button class="keypad-btn" data-key="1">1</button>
+        <button class="keypad-btn" data-key="2">2</button>
+        <button class="keypad-btn" data-key="3">3</button>
+        <button class="keypad-btn" data-key="+">+</button>
+        <button class="keypad-btn" data-key="-">−</button>
+
+        <!-- Row 4 -->
+        <button class="keypad-btn" data-key="0">0</button>
+        <button class="keypad-btn" data-key=".">.</button>
+        <button class="keypad-btn" data-key=",">,</button>
+        <button class="keypad-btn" data-key=":">:</button>
+        <button class="keypad-btn" data-key="#">#</button>
+
+        <!-- Row 5 -->
+        <button class="keypad-btn" data-key="[">[</button>
+        <button class="keypad-btn" data-key="]">]</button>
+        <button class="keypad-btn" data-key=" ">SPC</button>
+        <button class="keypad-btn" data-key="^">^</button>
+        <button class="keypad-btn" data-key="!">!</button>
+
+        <!-- Row 6 - Action buttons -->
+        <button class="keypad-btn keypad-backspace" data-action="backspace">⌫</button>
+        <button class="keypad-btn keypad-clear" data-action="clear">CLR</button>
+        <button class="keypad-btn keypad-enter" data-action="enter">↵</button>
+        <button class="keypad-btn keypad-help" data-action="help">?</button>
+        <button class="keypad-btn keypad-command" data-action="command">CMD</button>
+      </div>
+    </div>
+
+    <!-- Command Panel -->
+    <div id="commandPanel" class="command-panel">
+      <div class="command-panel-header">
+        <h3>Commands</h3>
+        <button id="closeCommandPanel" class="close-command-panel">×</button>
+      </div>
+      <div class="command-buttons">
+        <button class="command-btn" data-command="HELP">HELP</button>
+        <button class="command-btn" data-command="DECI">DECI</button>
+        <button class="command-btn" data-command="RAT">RAT</button>
+        <button class="command-btn" data-command="BOTH">BOTH</button>
+        <button class="command-btn" data-command="LIMIT ">LIMIT</button>
+        <button class="command-btn" data-command="CLEAR">CLEAR</button>
+      </div>
     </div>
   </div>
 

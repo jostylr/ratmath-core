@@ -14,6 +14,7 @@ class WebCalculator {
     this.history = []; // Command history for up/down arrows
     this.historyIndex = -1; // Current position in history
     this.outputHistory = []; // All input/output pairs for copying
+    this.currentEntry = null; // Track current entry being built
     
     this.initializeElements();
     this.setupEventListeners();
@@ -130,6 +131,9 @@ class WebCalculator {
     }
     this.historyIndex = -1;
 
+    // Start tracking this entry for copying
+    this.currentEntry = { input: input, output: '', isError: false };
+    
     // Display input
     this.addToOutput(input, null, false);
 
@@ -139,49 +143,63 @@ class WebCalculator {
     if (upperInput === 'HELP') {
       this.showHelp();
       this.inputElement.value = '';
+      this.currentEntry = null; // Don't track help command
       return;
     }
 
     if (upperInput === 'CLEAR') {
       this.clearHistory();
       this.inputElement.value = '';
+      this.currentEntry = null; // Don't track clear command
       return;
     }
 
     if (upperInput === 'DECI') {
       this.outputMode = 'DECI';
-      this.addToOutput('', 'Output mode set to decimal', false);
+      const output = 'Output mode set to decimal';
+      this.addToOutput('', output, false);
+      this.finishEntry(output);
       this.inputElement.value = '';
       return;
     }
 
     if (upperInput === 'RAT') {
       this.outputMode = 'RAT';
-      this.addToOutput('', 'Output mode set to rational', false);
+      const output = 'Output mode set to rational';
+      this.addToOutput('', output, false);
+      this.finishEntry(output);
       this.inputElement.value = '';
       return;
     }
 
     if (upperInput === 'BOTH') {
       this.outputMode = 'BOTH';
-      this.addToOutput('', 'Output mode set to both decimal and rational', false);
+      const output = 'Output mode set to both decimal and rational';
+      this.addToOutput('', output, false);
+      this.finishEntry(output);
       this.inputElement.value = '';
       return;
     }
 
     if (upperInput.startsWith('LIMIT')) {
       const limitStr = upperInput.substring(5).trim();
+      let output;
       if (limitStr === '') {
-        this.addToOutput('', `Current decimal display limit: ${this.decimalLimit} digits`, false);
+        output = `Current decimal display limit: ${this.decimalLimit} digits`;
+        this.addToOutput('', output, false);
       } else {
         const limit = parseInt(limitStr);
         if (isNaN(limit) || limit < 1) {
-          this.addToOutput('', 'Error: LIMIT must be a positive integer', true);
+          output = 'Error: LIMIT must be a positive integer';
+          this.addToOutput('', output, true);
+          this.currentEntry.isError = true;
         } else {
           this.decimalLimit = limit;
-          this.addToOutput('', `Decimal display limit set to ${limit} digits`, false);
+          output = `Decimal display limit set to ${limit} digits`;
+          this.addToOutput('', output, false);
         }
       }
+      this.finishEntry(output);
       this.inputElement.value = '';
       return;
     }
@@ -197,6 +215,7 @@ class WebCalculator {
       const result = Parser.parse(input, { typeAware: hasExactDecimal || hasFraction || isSimpleInteger || !hasPlainDecimal });
       const output = this.formatResult(result);
       this.addToOutput('', output, false);
+      this.finishEntry(output);
     } catch (error) {
       let errorMessage;
       if (error.message.includes('Division by zero') || 
@@ -210,6 +229,8 @@ class WebCalculator {
         errorMessage = `Error: ${error.message}`;
       }
       this.addToOutput('', errorMessage, true);
+      this.currentEntry.isError = true;
+      this.finishEntry(errorMessage);
     }
 
     this.inputElement.value = '';
@@ -217,6 +238,14 @@ class WebCalculator {
     // Ensure input stays focused (except on mobile)
     if (!this.isMobile()) {
       setTimeout(() => this.inputElement.focus(), 50);
+    }
+  }
+
+  finishEntry(output) {
+    if (this.currentEntry) {
+      this.currentEntry.output = output;
+      this.outputHistory.push(this.currentEntry);
+      this.currentEntry = null;
     }
   }
 
@@ -380,11 +409,6 @@ class WebCalculator {
     setTimeout(() => {
       this.outputHistoryElement.scrollTop = this.outputHistoryElement.scrollHeight;
     }, 10);
-    
-    // Store for copying - capture both input and output properly
-    if (input || output) {
-      this.outputHistory.push({ input: input || '', output: output || '', isError });
-    }
   }
 
   escapeHtml(text) {
@@ -427,6 +451,7 @@ class WebCalculator {
   clearHistory() {
     this.outputHistoryElement.innerHTML = '';
     this.outputHistory = [];
+    this.currentEntry = null;
     this.displayWelcome();
     if (!this.isMobile()) {
       setTimeout(() => this.inputElement.focus(), 100);
