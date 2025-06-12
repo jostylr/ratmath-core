@@ -2,49 +2,263 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>calc.ratmath.com</title>
+  <title>Ratmath - Exact Rational Arithmetic Library</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Ratmath is a powerful JavaScript library for exact rational arithmetic and interval arithmetic. No rounding errors or precision loss.">
+  <meta name="keywords" content="rational arithmetic, exact mathematics, interval arithmetic, JavaScript library, fractions, BigInt">
+  <meta name="author" content="James Taylor">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
   <style>
     body {
-      font-family: system-ui, sans-serif;
-      background: #f9fafb;
-      color: #222;
-      display: flex;
-      height: 100vh;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
       margin: 0;
+      min-height: 100vh;
+      display: flex;
       align-items: center;
       justify-content: center;
-      flex-direction: column;
+      line-height: 1.6;
     }
-    .box {
-      padding: 2rem 3rem;
-      background: white;
-      border-radius: 1.5rem;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.07);
+    .container {
+      max-width: 800px;
+      padding: 3rem;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       text-align: center;
     }
     h1 {
-      font-size: 2.5rem;
+      font-size: 3rem;
       margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 300;
     }
-    p {
-      font-size: 1.1rem;
+    .subtitle {
+      font-size: 1.2rem;
       color: #666;
+      margin-bottom: 2rem;
+      font-weight: 300;
+    }
+    .description {
+      font-size: 1.1rem;
+      color: #555;
+      margin-bottom: 2.5rem;
+      text-align: left;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+      text-align: left;
+    }
+    .feature {
+      background: rgba(255, 255, 255, 0.7);
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid rgba(102, 126, 234, 0.1);
+    }
+    .feature h3 {
+      color: #667eea;
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+    .feature p {
+      color: #666;
+      margin: 0;
+      font-size: 0.95rem;
+    }
+    .actions {
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem 2rem;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.9);
+      color: #667eea;
+      border: 2px solid #667eea;
+    }
+    .btn-secondary:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
     }
     .domain {
-      font-family: monospace;
-      color: #0a7;
-      font-size: 1.2rem;
-      margin: 1rem 0 0.5rem 0;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      color: #667eea;
+      font-size: 1.1rem;
+      margin-top: 2rem;
+      font-weight: 500;
+    }
+    .example {
+      background: rgba(102, 126, 234, 0.1);
+      border: 1px solid rgba(102, 126, 234, 0.2);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      font-size: 0.9rem;
+      text-align: left;
+    }
+    @media (max-width: 768px) {
+      .container {
+        padding: 1.5rem;
+        margin: 0.5rem;
+      }
+      h1 {
+        font-size: 2rem;
+      }
+      .subtitle {
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      .description {
+        font-size: 1rem;
+        margin-bottom: 2rem;
+      }
+      .features {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+      .feature {
+        padding: 1rem;
+      }
+      .actions {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+      }
+      .btn {
+        width: 100%;
+        max-width: 280px;
+        justify-content: center;
+        padding: 0.875rem 1.5rem;
+        font-size: 0.95rem;
+      }
+      .example {
+        font-size: 0.85rem;
+        padding: 0.75rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 1rem;
+        margin: 0.25rem;
+      }
+      h1 {
+        font-size: 1.75rem;
+      }
+      .subtitle {
+        font-size: 0.95rem;
+      }
+      .description {
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+      }
+      .feature h3 {
+        font-size: 1rem;
+      }
+      .feature p {
+        font-size: 0.85rem;
+      }
+      .btn {
+        padding: 0.75rem 1.25rem;
+        font-size: 0.9rem;
+        max-width: 260px;
+      }
+      .example {
+        font-size: 0.8rem;
+        margin: 0.75rem 0;
+      }
+      .domain {
+        font-size: 1rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h1>Welcome!</h1>
+  <div class="container">
+    <h1>Ratmath</h1>
+    <div class="subtitle">Exact Rational Arithmetic & Interval Arithmetic Library</div>
+    
+    <div class="description">
+      <p>Ratmath is a powerful JavaScript library for exact rational arithmetic and interval arithmetic. Unlike floating-point numbers, Ratmath maintains perfect precision for fractional calculations, making it ideal for financial calculations, scientific computing, and any application where exact results matter.</p>
+    </div>
+
+    <div class="features">
+      <div class="feature">
+        <h3>🔢 Exact Arithmetic</h3>
+        <p>No rounding errors or precision loss. Every calculation is mathematically exact using rational numbers.</p>
+      </div>
+      <div class="feature">
+        <h3>📊 Interval Arithmetic</h3>
+        <p>Work with ranges and uncertainties. Perfect for error analysis and approximate calculations.</p>
+      </div>
+      <div class="feature">
+        <h3>🎯 Rich Number Formats</h3>
+        <p>Support for fractions, decimals, repeating decimals, mixed numbers, and scientific notation.</p>
+      </div>
+      <div class="feature">
+        <h3>⚡ High Performance</h3>
+        <p>Built on BigInt for arbitrary precision while maintaining excellent performance.</p>
+      </div>
+    </div>
+
+    <div class="example">
+      <strong>Examples:</strong><br>
+      1/3 + 1/6 = 1/2 (exactly)<br>
+      0.#3 * 3 = 1 (repeating decimal)<br>
+      [1.4, 1.6] * [2.9, 3.1] = [4.06, 4.96] (intervals)
+    </div>
+
+    <div class="actions">
+      <a href="calc.html" class="btn btn-primary">
+        🧮 Try Calculator
+      </a>
+      <a href="https://github.com/jostylr/ratmath" class="btn btn-secondary" target="_blank" rel="noopener">
+        📚 View on GitHub
+      </a>
+    </div>
+
     <div class="domain">calc.ratmath.com</div>
-    <p>This is a landing page for the calcuator version of ratmath. 🎉</p>
-    <p> Ratmath is short for Rational Mathematics. Created by James Taylor with the help of Novix and Zeddy! </p>
+    <p style="color: #999; font-size: 0.9rem; margin-top: 1rem;">
+      Created by James Taylor with the help of Novix and Zeddy! 🎉
+    </p>
   </div>
 </body>
 </html>

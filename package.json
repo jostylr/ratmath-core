@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "test": "bun test",
-    "calc": "bun calc.js"
+    "calc": "bun calc.js",
+    "build-web": "bun build src/web-calc.js --outfile docs/calc.js --format esm --target browser",
+    "serve": "python3 -m http.server 3000 --directory docs"
   },
   "keywords": [
     "rational",

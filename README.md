@@ -17,6 +17,10 @@ A JavaScript library for exact rational arithmetic and interval arithmetic. The 
 - **Decimal Uncertainty Parsing**: Parse decimal numbers with uncertainty notation like "1.23[56,67]" (range), "1.23[+5,-6]" (relative), or "1.3[+-1]" (symmetric).
 - **Expression Parser**: Parse and evaluate string expressions involving rational intervals and arithmetic operations, including factorial operators.
 
+## Web calculator
+
+Try out the [ratmath calcuator](https://calc.ratmath.com) today!
+
 ## Installation
 
 This library is designed to work in both Node.js/Bun environments and browsers as an ES module.
@@ -308,7 +312,7 @@ console.log(a.factorial());      // 1307674368000 (15!)
 console.log(new Integer(5).factorial());  // 120 (5!)
 console.log(new Integer(0).factorial());  // 1 (0! = 1 by definition)
 
-// Double factorial operations  
+// Double factorial operations
 console.log(new Integer(5).doubleFactorial());  // 15 (5×3×1)
 console.log(new Integer(6).doubleFactorial());  // 48 (6×4×2)
 console.log(new Integer(7).doubleFactorial());  // 105 (7×5×3×1)
@@ -520,7 +524,7 @@ chmod +x calc.js
 
 - `HELP` - Display available operations and commands
 - `DECI` - Show results as decimals only
-- `RAT` - Show results as fractions only  
+- `RAT` - Show results as fractions only
 - `BOTH` - Show both decimal and fraction (default)
 - `LIMIT <n>` - Set decimal display limit to n digits (default: 20)
 - `EXIT`, `QUIT`, `BYE` - Exit the calculator
@@ -584,7 +588,7 @@ Use the `LIMIT` command to control long decimal displays:
 Decimal display limit set to 5 digits
 > 1/17
 0.#0588... (1/17)
-> 1/19  
+> 1/19
 0.#0526... (1/19)
 ```
 
@@ -598,6 +602,66 @@ The calculator provides user-friendly error messages:
 - Invalid limits: "Error: LIMIT must be a positive integer"
 - Parsing errors: Detailed syntax error messages
 
+## Web Calculator
+
+Ratmath also includes a modern web-based calculator available at [calc.ratmath.com](https://calc.ratmath.com) or locally in the `docs/` folder.
+
+### Features
+
+- **Browser-Based**: No installation required, works in any modern browser
+- **Terminal-Style Interface**: Familiar prompt-based interaction with command history
+- **All Calculator Features**: Complete parity with the terminal calculator
+- **Interactive Help**: Built-in modal help system with full documentation
+- **Session Management**: Copy entire calculation sessions to clipboard
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
+- **Keyboard Navigation**: Arrow keys for history, Enter to calculate, Escape to close modals
+
+### Building the Web Calculator
+
+The web calculator is built using Bun to bundle the JavaScript:
+
+```bash
+# Build the web calculator
+bun run build-web
+
+# Serve locally for testing
+bun run serve
+# Open http://localhost:3000 in your browser
+```
+
+### Web Calculator Commands
+
+All terminal calculator commands work in the web version:
+
+- `HELP` - Open help modal (or click Help button)
+- `CLEAR` - Clear calculation history (or click Clear button)
+- `DECI`, `RAT`, `BOTH` - Set output modes
+- `LIMIT <n>` - Set decimal display limit
+
+### Usage Example
+
+```
+> 1/2 + 1/3
+5/6 (0.8#3)
+
+> 2^10
+1024
+
+> 0.#142857 * 7
+0.#9 (1)
+
+> [1.4, 1.6] * [2.9, 3.1]
+4.06:4.96
+
+> LIMIT 10
+Decimal display limit set to 10 digits
+
+> 22/7
+3.#142857 (22/7)
+```
+
+The web calculator provides the same exact arithmetic capabilities as the library and terminal calculator, with an intuitive interface that's perfect for interactive mathematical exploration.
+
 ### E Notation Methods
 
 All number classes (`Rational`, `RationalInterval`, `Fraction`, `FractionInterval`, `Integer`) include an `E()` method for applying scientific notation scaling:
@@ -607,7 +671,7 @@ import { Rational, RationalInterval, Fraction, Integer } from 'ratmath';
 
 // Rational E notation
 const r1 = new Rational(5).E(2);        // 500 (5 * 10^2)
-const r2 = new Rational(123).E(-2);     // 1.23 (123 * 10^-2) 
+const r2 = new Rational(123).E(-2);     // 1.23 (123 * 10^-2)
 const r3 = new Rational(1, 3).E(3);     // 1000/3 (1/3 * 10^3)
 
 // RationalInterval E notation
@@ -724,7 +788,7 @@ parseRepeatingDecimal(str)
 #### Supported Formats
 
 - **Repeating decimals**: `"0.12#45"` represents 0.12454545... = 137/1100
-- **Terminating decimals**: `"1.23#0"` represents exactly 1.23 = 123/100  
+- **Terminating decimals**: `"1.23#0"` represents exactly 1.23 = 123/100
 - **Pure repeating**: `"0.#3"` represents 0.333... = 1/3
 - **Negative decimals**: `"-0.#6"` represents -0.666... = -2/3
 - **Non-repeating**: `"1.23"` becomes interval [1.225, 1.235]
@@ -774,7 +838,7 @@ console.log(oneThird.toRepeatingDecimal());     // "0.#3"
 const twentyTwoSevenths = new Rational(22, 7);
 console.log(twentyTwoSevenths.toRepeatingDecimal()); // "3.#142857"
 
-const half = new Rational(1, 2); 
+const half = new Rational(1, 2);
 console.log(half.toRepeatingDecimal());         // "0.5#0" (terminating)
 
 const five = new Rational(5);
@@ -810,7 +874,7 @@ import { parseRepeatingDecimal, Rational } from 'ratmath';
 
 // Convert repeating decimals to exact fractions
 const third = parseRepeatingDecimal('0.#3');           // 1/3
-const sixth = parseRepeatingDecimal('0.1#6');          // 1/6  
+const sixth = parseRepeatingDecimal('0.1#6');          // 1/6
 const mixed = parseRepeatingDecimal('1.23#45');        // 679/550
 
 // Verify mathematical properties
@@ -846,7 +910,7 @@ console.log(original.equals(roundtrip));               // true (exact match)
 // Works with all types of numbers
 const cases = [
   new Rational(1, 7),    // "0.#142857"
-  new Rational(22, 7),   // "3.#142857" 
+  new Rational(22, 7),   // "3.#142857"
   new Rational(3, 4),    // "0.75#0"
   new Rational(-1, 3)    // "-0.#3"
 ];
@@ -966,7 +1030,7 @@ The `Parser` class parses and evaluates string expressions involving rational in
   - **expression** (string): The expression to parse
   - **options** (object): Optional parsing options
     - **typeAware** (boolean): When true, returns precise types (Integer, Rational, RationalInterval) instead of always returning RationalInterval
-  
+
 **Supported operations:**
 - Addition (`+`), Subtraction (`-`), Multiplication (`*`), Division (`/`)
 - Standard exponentiation (`^`), Multiplicative exponentiation (`**`)
@@ -1102,7 +1166,7 @@ The conversion from repeating decimals to fractions uses the standard mathematic
 
 For a repeating decimal like `a.b#c` where:
 - `a` is the integer part
-- `b` is the non-repeating fractional part (length n)  
+- `b` is the non-repeating fractional part (length n)
 - `c` is the repeating part (length m)
 
 The conversion formula is:
