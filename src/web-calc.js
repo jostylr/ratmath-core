@@ -77,12 +77,7 @@ class WebCalculator {
   }
 
   isMobile() {
-    return (
-      /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent,
-      ) ||
-      (window.innerWidth <= 768 && "ontouchstart" in window)
-    );
+    return window.innerWidth <= 768;
   }
 
   handleKeyDown(e) {
@@ -523,13 +518,13 @@ class WebCalculator {
     const welcome = document.createElement("div");
     welcome.className = "output-entry";
     welcome.innerHTML = `
-      <div class="output-line" style="color: #059669; font-weight: 600;">
+      <div class="output-line no-mobile" style="color: #059669; font-weight: 600;">
         Welcome to Ratmath Calculator!
       </div>
-      <div class="output-line" style="margin-top: 0.5rem;">
+      <div class="output-line no-mobile" style="margin-top: 0.5rem;">
         Type mathematical expressions and press Enter to calculate.
       </div>
-      <div class="output-line">
+      <div class="output-line no-mobile">
         Use the Help button or type HELP for detailed instructions.
       </div>
     `;
@@ -761,7 +756,8 @@ class WebCalculator {
     if (this.isMobile()) {
       // Show current input in a temporary div at bottom of calculator
       let tempDiv = document.getElementById("mobileInputDisplay");
-
+      console.log("seen");
+      /*
       // Always show the prompt when on mobile
       if (!tempDiv) {
         tempDiv = document.createElement("div");
@@ -772,7 +768,7 @@ class WebCalculator {
           calculator.appendChild(tempDiv);
         }
       }
-
+*/
       // Update the content
       tempDiv.innerHTML = `<span style="color: #059669; font-weight: bold; font-size: 0.95rem; margin-right: 6px;">></span> <span style="font-size: 0.9rem;">${this.escapeHtml(this.mobileInput || "")}</span>`;
 
@@ -788,9 +784,19 @@ class WebCalculator {
   }
 
   scrollToKeepAboveInput() {
+    console.log(
+      "scroll above",
+      this.outputHistoryElement.scrollTop,
+      this.outputHistoryElement.scrollHeight,
+    );
     // Simple scroll to bottom - flexbox layout handles the rest
     this.outputHistoryElement.scrollTop =
       this.outputHistoryElement.scrollHeight;
+    console.log(
+      "scroll below",
+      this.outputHistoryElement.scrollTop,
+      this.outputHistoryElement.scrollHeight,
+    );
   }
 
   enforceScrollBoundary() {

@@ -2593,7 +2593,7 @@ class WebCalculator {
     }
   }
   isMobile() {
-    return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768 && "ontouchstart" in window;
+    return window.innerWidth <= 768;
   }
   handleKeyDown(e) {
     switch (e.key) {
@@ -2929,13 +2929,13 @@ class WebCalculator {
     const welcome = document.createElement("div");
     welcome.className = "output-entry";
     welcome.innerHTML = `
-      <div class="output-line" style="color: #059669; font-weight: 600;">
+      <div class="output-line no-mobile" style="color: #059669; font-weight: 600;">
         Welcome to Ratmath Calculator!
       </div>
-      <div class="output-line" style="margin-top: 0.5rem;">
+      <div class="output-line no-mobile" style="margin-top: 0.5rem;">
         Type mathematical expressions and press Enter to calculate.
       </div>
-      <div class="output-line">
+      <div class="output-line no-mobile">
         Use the Help button or type HELP for detailed instructions.
       </div>
     `;
@@ -3131,14 +3131,7 @@ class WebCalculator {
   updateMobileDisplay() {
     if (this.isMobile()) {
       let tempDiv = document.getElementById("mobileInputDisplay");
-      if (!tempDiv) {
-        tempDiv = document.createElement("div");
-        tempDiv.id = "mobileInputDisplay";
-        const calculator = document.querySelector(".calculator");
-        if (calculator) {
-          calculator.appendChild(tempDiv);
-        }
-      }
+      console.log("seen");
       tempDiv.innerHTML = `<span style="color: #059669; font-weight: bold; font-size: 0.95rem; margin-right: 6px;">></span> <span style="font-size: 0.9rem;">${this.escapeHtml(this.mobileInput || "")}</span>`;
       if (document.body.classList.contains("keypad-visible")) {
         tempDiv.style.display = "flex";
@@ -3149,7 +3142,9 @@ class WebCalculator {
     }
   }
   scrollToKeepAboveInput() {
+    console.log("scroll above", this.outputHistoryElement.scrollTop, this.outputHistoryElement.scrollHeight);
     this.outputHistoryElement.scrollTop = this.outputHistoryElement.scrollHeight;
+    console.log("scroll below", this.outputHistoryElement.scrollTop, this.outputHistoryElement.scrollHeight);
   }
   enforceScrollBoundary() {
     const inputDisplay = document.getElementById("mobileInputDisplay");

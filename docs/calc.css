@@ -68,6 +68,7 @@ header p {
 /* Output area - takes available space and scrolls */
 .output-history {
     flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 1.5rem;
@@ -519,6 +520,12 @@ header p {
     background: #555;
 }
 
+@media (min-width: 769px) {
+    .mobile {
+        display: none;
+    }
+}
+
 /* Mobile styles */
 @media (max-width: 768px) {
     .container {
@@ -546,7 +553,10 @@ header p {
     }
 
     .output-history {
+        display: block;
         padding: 1rem;
+        flex: none;
+        height: 49dvh;
     }
 
     .input-section {
@@ -577,7 +587,9 @@ header p {
     /* When keypad is visible */
     body.keypad-visible .calculator {
         /* Calculator shrinks to make room for keypad */
-        height: calc(60dvh - 3rem); /* Accounting for header */
+        /* height: calc(
+            60dvh - 3rem -50px
+        );*/ /* Accounting for header and mobileinputdisplay */
     }
 
     /* Mobile input display */
@@ -611,6 +623,10 @@ header p {
 
     .modal-body {
         max-height: calc(100vh - 80px);
+    }
+
+    .no-mobile {
+        display: none;
     }
 }
 
@@ -651,7 +667,7 @@ header p {
     }
 
     .mobile-keypad {
-        height: 45vh;
+        /*height: 45vh;*/
     }
 
     body.keypad-visible .calculator {
