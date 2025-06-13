@@ -5,11 +5,7 @@ class Rational {
   static zero = new Rational(0, 1);
   static one = new Rational(1, 1);
   constructor(numerator, denominator = 1n) {
-    if (
-      numerator &&
-      typeof numerator === "object" &&
-      numerator.constructor.name === "Integer"
-    ) {
+    if (numerator && typeof numerator === "object" && numerator.constructor.name === "Integer") {
       this.#numerator = numerator.value;
       this.#denominator = 1n;
       return;
@@ -29,9 +25,7 @@ class Rational {
         const fracDenominator = BigInt(fractionParts[1]);
         const isNegative = wholePart < 0n;
         const absWhole = isNegative ? -wholePart : wholePart;
-        this.#numerator = isNegative
-          ? -(absWhole * fracDenominator + fracNumerator)
-          : wholePart * fracDenominator + fracNumerator;
+        this.#numerator = isNegative ? -(absWhole * fracDenominator + fracNumerator) : wholePart * fracDenominator + fracNumerator;
         this.#denominator = fracDenominator;
       } else {
         if (numerator.includes(".")) {
@@ -45,9 +39,7 @@ class Rational {
             const wholePart = BigInt(integerPart);
             const fractionalValue = BigInt(fractionalPart);
             const denomValue = 10n ** BigInt(fractionalPart.length);
-            this.#numerator =
-              wholePart * denomValue +
-              (wholePart < 0n ? -fractionalValue : fractionalValue);
+            this.#numerator = wholePart * denomValue + (wholePart < 0n ? -fractionalValue : fractionalValue);
             this.#denominator = denomValue;
           } else {
             throw new Error("Invalid decimal format - multiple decimal points");
@@ -61,9 +53,7 @@ class Rational {
             this.#numerator = BigInt(parts[0]);
             this.#denominator = BigInt(parts[1]);
           } else {
-            throw new Error(
-              "Invalid rational format. Use 'a/b', 'a', or 'a..b/c'",
-            );
+            throw new Error("Invalid rational format. Use 'a/b', 'a', or 'a..b/c'");
           }
         }
       }
@@ -85,10 +75,7 @@ class Rational {
       this.#denominator = 1n;
       return;
     }
-    const gcd = this.#gcd(
-      this.#numerator < 0n ? -this.#numerator : this.#numerator,
-      this.#denominator,
-    );
+    const gcd = this.#gcd(this.#numerator < 0n ? -this.#numerator : this.#numerator, this.#denominator);
     this.#numerator = this.#numerator / gcd;
     this.#denominator = this.#denominator / gcd;
   }
@@ -118,11 +105,7 @@ class Rational {
       const numerator = a * d + b * c;
       const denominator = b * d;
       return new Rational(numerator, denominator);
-    } else if (
-      other.low &&
-      other.high &&
-      typeof other.low.equals === "function"
-    ) {
+    } else if (other.low && other.high && typeof other.low.equals === "function") {
       const thisAsInterval = { low: this, high: this };
       const IntervalClass = other.constructor;
       const newThisAsInterval = new IntervalClass(this, this);
@@ -143,18 +126,12 @@ class Rational {
       const numerator = a * d - b * c;
       const denominator = b * d;
       return new Rational(numerator, denominator);
-    } else if (
-      other.low &&
-      other.high &&
-      typeof other.low.equals === "function"
-    ) {
+    } else if (other.low && other.high && typeof other.low.equals === "function") {
       const IntervalClass = other.constructor;
       const newThisAsInterval = new IntervalClass(this, this);
       return newThisAsInterval.subtract(other);
     } else {
-      throw new Error(
-        `Cannot subtract ${other.constructor.name} from Rational`,
-      );
+      throw new Error(`Cannot subtract ${other.constructor.name} from Rational`);
     }
   }
   multiply(other) {
@@ -169,11 +146,7 @@ class Rational {
       const numerator = a * c;
       const denominator = b * d;
       return new Rational(numerator, denominator);
-    } else if (
-      other.low &&
-      other.high &&
-      typeof other.low.equals === "function"
-    ) {
+    } else if (other.low && other.high && typeof other.low.equals === "function") {
       const IntervalClass = other.constructor;
       const newThisAsInterval = new IntervalClass(this, this);
       return newThisAsInterval.multiply(other);
@@ -199,11 +172,7 @@ class Rational {
       const numerator = a * d;
       const denominator = b * c;
       return new Rational(numerator, denominator);
-    } else if (
-      other.low &&
-      other.high &&
-      typeof other.low.equals === "function"
-    ) {
+    } else if (other.low && other.high && typeof other.low.equals === "function") {
       const IntervalClass = other.constructor;
       const newThisAsInterval = new IntervalClass(this, this);
       return newThisAsInterval.divide(other);
@@ -239,7 +208,7 @@ class Rational {
     let resultDen = 1n;
     let num = this.#numerator;
     let den = this.#denominator;
-    for (let i = n < 0n ? -n : n; i > 0n; i >>= 1n) {
+    for (let i = n < 0n ? -n : n;i > 0n; i >>= 1n) {
       if (i & 1n) {
         resultNum *= num;
         resultDen *= den;
@@ -250,16 +219,15 @@ class Rational {
     return new Rational(resultNum, resultDen);
   }
   equals(other) {
-    return (
-      this.#numerator === other.numerator &&
-      this.#denominator === other.denominator
-    );
+    return this.#numerator === other.numerator && this.#denominator === other.denominator;
   }
   compareTo(other) {
     const crossProduct1 = this.#numerator * other.denominator;
     const crossProduct2 = this.#denominator * other.numerator;
-    if (crossProduct1 < crossProduct2) return -1;
-    if (crossProduct1 > crossProduct2) return 1;
+    if (crossProduct1 < crossProduct2)
+      return -1;
+    if (crossProduct1 > crossProduct2)
+      return 1;
     return 0;
   }
   lessThan(other) {
@@ -275,9 +243,7 @@ class Rational {
     return this.compareTo(other) >= 0;
   }
   abs() {
-    return this.#numerator < 0n
-      ? this.negate()
-      : new Rational(this.#numerator, this.#denominator);
+    return this.#numerator < 0n ? this.negate() : new Rational(this.#numerator, this.#denominator);
   }
   toString() {
     if (this.#denominator === 1n) {
@@ -297,13 +263,9 @@ class Rational {
       return isNegative ? `-${wholePart}` : `${wholePart}`;
     }
     if (wholePart === 0n) {
-      return isNegative
-        ? `-0..${remainder}/${this.#denominator}`
-        : `0..${remainder}/${this.#denominator}`;
+      return isNegative ? `-0..${remainder}/${this.#denominator}` : `0..${remainder}/${this.#denominator}`;
     } else {
-      return isNegative
-        ? `-${wholePart}..${remainder}/${this.#denominator}`
-        : `${wholePart}..${remainder}/${this.#denominator}`;
+      return isNegative ? `-${wholePart}..${remainder}/${this.#denominator}` : `${wholePart}..${remainder}/${this.#denominator}`;
     }
   }
   toNumber() {
@@ -321,7 +283,7 @@ class Rational {
     if (remainder === 0n) {
       return (isNegative ? "-" : "") + integerPart.toString();
     }
-    const seenRemainders = new Map();
+    const seenRemainders = new Map;
     const digits = [];
     let position = 0;
     while (remainder !== 0n && !seenRemainders.has(remainder.toString())) {
@@ -344,8 +306,7 @@ class Rational {
       const nonRepeatingPart = digits.slice(0, repeatStart);
       const repeatingPart = digits.slice(repeatStart);
       if (nonRepeatingPart.length > 0) {
-        result +=
-          "." + nonRepeatingPart.join("") + "#" + repeatingPart.join("");
+        result += "." + nonRepeatingPart.join("") + "#" + repeatingPart.join("");
       } else {
         result += ".#" + repeatingPart.join("");
       }
@@ -364,10 +325,10 @@ class Rational {
     if (remainder === 0n) {
       return {
         decimal: (isNegative ? "-" : "") + integerPart.toString(),
-        period: 0,
+        period: 0
       };
     }
-    const seenRemainders = new Map();
+    const seenRemainders = new Map;
     const digits = [];
     let position = 0;
     while (remainder !== 0n && !seenRemainders.has(remainder.toString())) {
@@ -391,14 +352,13 @@ class Rational {
       const nonRepeatingPart = digits.slice(0, repeatStart);
       const repeatingPart = digits.slice(repeatStart);
       if (nonRepeatingPart.length > 0) {
-        result +=
-          "." + nonRepeatingPart.join("") + "#" + repeatingPart.join("");
+        result += "." + nonRepeatingPart.join("") + "#" + repeatingPart.join("");
       } else {
         result += ".#" + repeatingPart.join("");
       }
       return {
         decimal: result,
-        period: repeatingPart.length,
+        period: repeatingPart.length
       };
     }
   }
@@ -416,7 +376,7 @@ class Rational {
     }
     const digits = [];
     const maxDigits = 20;
-    for (let i = 0; i < maxDigits && remainder !== 0n; i++) {
+    for (let i = 0;i < maxDigits && remainder !== 0n; i++) {
       remainder *= 10n;
       const digit = remainder / den;
       digits.push(digit.toString());
@@ -450,13 +410,9 @@ class Rational {
 class RationalInterval {
   #low;
   #high;
-  static zero = Object.freeze(
-    new RationalInterval(Rational.zero, Rational.zero),
-  );
+  static zero = Object.freeze(new RationalInterval(Rational.zero, Rational.zero));
   static one = Object.freeze(new RationalInterval(Rational.one, Rational.one));
-  static unitInterval = Object.freeze(
-    new RationalInterval(Rational.zero, Rational.one),
-  );
+  static unitInterval = Object.freeze(new RationalInterval(Rational.zero, Rational.one));
   constructor(a, b) {
     const aRational = a instanceof Rational ? a : new Rational(a);
     const bRational = b instanceof Rational ? b : new Rational(b);
@@ -477,15 +433,9 @@ class RationalInterval {
   add(other) {
     if (other.value !== undefined && typeof other.value === "bigint") {
       const otherAsRational = new Rational(other.value, 1n);
-      const otherAsInterval = new RationalInterval(
-        otherAsRational,
-        otherAsRational,
-      );
+      const otherAsInterval = new RationalInterval(otherAsRational, otherAsRational);
       return this.add(otherAsInterval);
-    } else if (
-      other.numerator !== undefined &&
-      other.denominator !== undefined
-    ) {
+    } else if (other.numerator !== undefined && other.denominator !== undefined) {
       const otherAsInterval = new RationalInterval(other, other);
       return this.add(otherAsInterval);
     } else if (other.low && other.high) {
@@ -493,23 +443,15 @@ class RationalInterval {
       const newHigh = this.#high.add(other.high);
       return new RationalInterval(newLow, newHigh);
     } else {
-      throw new Error(
-        `Cannot add ${other.constructor.name} to RationalInterval`,
-      );
+      throw new Error(`Cannot add ${other.constructor.name} to RationalInterval`);
     }
   }
   subtract(other) {
     if (other.value !== undefined && typeof other.value === "bigint") {
       const otherAsRational = new Rational(other.value, 1n);
-      const otherAsInterval = new RationalInterval(
-        otherAsRational,
-        otherAsRational,
-      );
+      const otherAsInterval = new RationalInterval(otherAsRational, otherAsRational);
       return this.subtract(otherAsInterval);
-    } else if (
-      other.numerator !== undefined &&
-      other.denominator !== undefined
-    ) {
+    } else if (other.numerator !== undefined && other.denominator !== undefined) {
       const otherAsInterval = new RationalInterval(other, other);
       return this.subtract(otherAsInterval);
     } else if (other.low && other.high) {
@@ -517,23 +459,15 @@ class RationalInterval {
       const newHigh = this.#high.subtract(other.low);
       return new RationalInterval(newLow, newHigh);
     } else {
-      throw new Error(
-        `Cannot subtract ${other.constructor.name} from RationalInterval`,
-      );
+      throw new Error(`Cannot subtract ${other.constructor.name} from RationalInterval`);
     }
   }
   multiply(other) {
     if (other.value !== undefined && typeof other.value === "bigint") {
       const otherAsRational = new Rational(other.value, 1n);
-      const otherAsInterval = new RationalInterval(
-        otherAsRational,
-        otherAsRational,
-      );
+      const otherAsInterval = new RationalInterval(otherAsRational, otherAsRational);
       return this.multiply(otherAsInterval);
-    } else if (
-      other.numerator !== undefined &&
-      other.denominator !== undefined
-    ) {
+    } else if (other.numerator !== undefined && other.denominator !== undefined) {
       const otherAsInterval = new RationalInterval(other, other);
       return this.multiply(otherAsInterval);
     } else if (other.low && other.high) {
@@ -541,19 +475,19 @@ class RationalInterval {
         this.#low.multiply(other.low),
         this.#low.multiply(other.high),
         this.#high.multiply(other.low),
-        this.#high.multiply(other.high),
+        this.#high.multiply(other.high)
       ];
       let min = products[0];
       let max = products[0];
-      for (let i = 1; i < products.length; i++) {
-        if (products[i].lessThan(min)) min = products[i];
-        if (products[i].greaterThan(max)) max = products[i];
+      for (let i = 1;i < products.length; i++) {
+        if (products[i].lessThan(min))
+          min = products[i];
+        if (products[i].greaterThan(max))
+          max = products[i];
       }
       return new RationalInterval(min, max);
     } else {
-      throw new Error(
-        `Cannot multiply RationalInterval by ${other.constructor.name}`,
-      );
+      throw new Error(`Cannot multiply RationalInterval by ${other.constructor.name}`);
     }
   }
   divide(other) {
@@ -562,15 +496,9 @@ class RationalInterval {
         throw new Error("Division by zero");
       }
       const otherAsRational = new Rational(other.value, 1n);
-      const otherAsInterval = new RationalInterval(
-        otherAsRational,
-        otherAsRational,
-      );
+      const otherAsInterval = new RationalInterval(otherAsRational, otherAsRational);
       return this.divide(otherAsInterval);
-    } else if (
-      other.numerator !== undefined &&
-      other.denominator !== undefined
-    ) {
+    } else if (other.numerator !== undefined && other.denominator !== undefined) {
       if (other.numerator === 0n) {
         throw new Error("Division by zero");
       }
@@ -588,29 +516,26 @@ class RationalInterval {
         this.#low.divide(other.low),
         this.#low.divide(other.high),
         this.#high.divide(other.low),
-        this.#high.divide(other.high),
+        this.#high.divide(other.high)
       ];
       let min = quotients[0];
       let max = quotients[0];
-      for (let i = 1; i < quotients.length; i++) {
-        if (quotients[i].lessThan(min)) min = quotients[i];
-        if (quotients[i].greaterThan(max)) max = quotients[i];
+      for (let i = 1;i < quotients.length; i++) {
+        if (quotients[i].lessThan(min))
+          min = quotients[i];
+        if (quotients[i].greaterThan(max))
+          max = quotients[i];
       }
       return new RationalInterval(min, max);
     } else {
-      throw new Error(
-        `Cannot divide RationalInterval by ${other.constructor.name}`,
-      );
+      throw new Error(`Cannot divide RationalInterval by ${other.constructor.name}`);
     }
   }
   reciprocate() {
     if (this.containsZero()) {
       throw new Error("Cannot reciprocate an interval containing zero");
     }
-    return new RationalInterval(
-      this.#high.reciprocal(),
-      this.#low.reciprocal(),
-    );
+    return new RationalInterval(this.#high.reciprocal(), this.#low.reciprocal());
   }
   negate() {
     return new RationalInterval(this.#high.negate(), this.#low.negate());
@@ -623,23 +548,16 @@ class RationalInterval {
         throw new Error("Zero cannot be raised to the power of zero");
       }
       if (this.containsZero()) {
-        throw new Error(
-          "Cannot raise an interval containing zero to the power of zero",
-        );
+        throw new Error("Cannot raise an interval containing zero to the power of zero");
       }
       return new RationalInterval(Rational.one, Rational.one);
     }
     if (n < 0n) {
       if (this.containsZero()) {
-        throw new Error(
-          "Cannot raise an interval containing zero to a negative power",
-        );
+        throw new Error("Cannot raise an interval containing zero to a negative power");
       }
       const positivePower = this.pow(-n);
-      const reciprocal = new RationalInterval(
-        positivePower.high.reciprocal(),
-        positivePower.low.reciprocal(),
-      );
+      const reciprocal = new RationalInterval(positivePower.high.reciprocal(), positivePower.low.reciprocal());
       return reciprocal;
     }
     if (n === 1n) {
@@ -648,10 +566,7 @@ class RationalInterval {
     if (n % 2n === 0n) {
       let minVal;
       let maxVal;
-      if (
-        this.#low.lessThanOrEqual(zero) &&
-        this.#high.greaterThanOrEqual(zero)
-      ) {
+      if (this.#low.lessThanOrEqual(zero) && this.#high.greaterThanOrEqual(zero)) {
         minVal = new Rational(0);
         const lowPow = this.#low.abs().pow(n);
         const highPow = this.#high.abs().pow(n);
@@ -672,9 +587,7 @@ class RationalInterval {
     const n = BigInt(exponent);
     const zero = Rational.zero;
     if (n === 0n) {
-      throw new Error(
-        "Multiplicative exponentiation requires at least one factor",
-      );
+      throw new Error("Multiplicative exponentiation requires at least one factor");
     }
     if (n < 0n) {
       const recipInterval = this.reciprocate();
@@ -687,7 +600,7 @@ class RationalInterval {
       return new RationalInterval(this.#low, this.#high);
     }
     let result = new RationalInterval(this.#low, this.#high);
-    for (let i = 1n; i < n; i++) {
+    for (let i = 1n;i < n; i++) {
       result = result.multiply(this);
     }
     return result;
@@ -696,10 +609,7 @@ class RationalInterval {
     return !(this.#high.lessThan(other.low) || other.high.lessThan(this.#low));
   }
   contains(other) {
-    return (
-      this.#low.lessThanOrEqual(other.low) &&
-      this.#high.greaterThanOrEqual(other.high)
-    );
+    return this.#low.lessThanOrEqual(other.low) && this.#high.greaterThanOrEqual(other.high);
   }
   containsValue(value) {
     const r = value instanceof Rational ? value : new Rational(value);
@@ -707,9 +617,7 @@ class RationalInterval {
   }
   containsZero() {
     const zero = Rational.zero;
-    return (
-      this.#low.lessThanOrEqual(zero) && this.#high.greaterThanOrEqual(zero)
-    );
+    return this.#low.lessThanOrEqual(zero) && this.#high.greaterThanOrEqual(zero);
   }
   equals(other) {
     return this.#low.equals(other.low) && this.#high.equals(other.high);
@@ -730,9 +638,7 @@ class RationalInterval {
       return null;
     }
     const newLow = this.#low.lessThan(other.low) ? this.#low : other.low;
-    const newHigh = this.#high.greaterThan(other.high)
-      ? this.#high
-      : other.high;
+    const newHigh = this.#high.greaterThan(other.high) ? this.#high : other.high;
     return new RationalInterval(newLow, newHigh);
   }
   toString() {
@@ -771,17 +677,14 @@ class RationalInterval {
     const highStr = this.#high.toDecimal();
     let commonPrefix = "";
     const minLength = Math.min(lowStr.length, highStr.length);
-    for (let i = 0; i < minLength; i++) {
+    for (let i = 0;i < minLength; i++) {
       if (lowStr[i] === highStr[i]) {
         commonPrefix += lowStr[i];
       } else {
         break;
       }
     }
-    if (
-      commonPrefix.length <= 1 ||
-      (commonPrefix.startsWith("-") && commonPrefix.length <= 2)
-    ) {
+    if (commonPrefix.length <= 1 || commonPrefix.startsWith("-") && commonPrefix.length <= 2) {
       return `${lowStr}:${highStr}`;
     }
     const lowSuffix = lowStr.substring(commonPrefix.length);
@@ -806,9 +709,7 @@ class RationalInterval {
     const offsetLow = shortestDecimal.subtract(this.#low);
     const offsetHigh = this.#high.subtract(shortestDecimal);
     const decimalStr = shortestDecimal.toDecimal();
-    const decimalPlaces = decimalStr.includes(".")
-      ? decimalStr.split(".")[1].length
-      : 0;
+    const decimalPlaces = decimalStr.includes(".") ? decimalStr.split(".")[1].length : 0;
     let scaledOffsetLow, scaledOffsetHigh;
     if (decimalPlaces === 0) {
       scaledOffsetLow = offsetLow;
@@ -820,12 +721,8 @@ class RationalInterval {
     }
     const offsetLowStr = scaledOffsetLow.toDecimal();
     const offsetHighStr = scaledOffsetHigh.toDecimal();
-    if (
-      offsetLow.subtract(offsetHigh).abs().compareTo(new Rational(1, 1e6)) < 0
-    ) {
-      const avgOffset = scaledOffsetLow
-        .add(scaledOffsetHigh)
-        .divide(new Rational(2));
+    if (offsetLow.subtract(offsetHigh).abs().compareTo(new Rational(1, 1e6)) < 0) {
+      const avgOffset = scaledOffsetLow.add(scaledOffsetHigh).divide(new Rational(2));
       return `${decimalStr}[+-${avgOffset.toDecimal()}]`;
     } else {
       return `${decimalStr}[+${offsetHighStr},-${offsetLowStr}]`;
@@ -833,7 +730,7 @@ class RationalInterval {
   }
   #findShortestPreciseDecimal() {
     const midpoint = this.#low.add(this.#high).divide(new Rational(2));
-    for (let precision = 0; precision <= 20; precision++) {
+    for (let precision = 0;precision <= 20; precision++) {
       const scale = new Rational(10).pow(precision);
       const lowScaled = this.#low.multiply(scale);
       const highScaled = this.#high.multiply(scale);
@@ -849,13 +746,10 @@ class RationalInterval {
         if (candidates.length > 0) {
           let best = candidates[0];
           let bestDistance = best.subtract(midpoint).abs();
-          for (let i = 1; i < candidates.length; i++) {
+          for (let i = 1;i < candidates.length; i++) {
             const distance = candidates[i].subtract(midpoint).abs();
             const comparison = distance.compareTo(bestDistance);
-            if (
-              comparison < 0 ||
-              (comparison === 0 && candidates[i].compareTo(best) < 0)
-            ) {
+            if (comparison < 0 || comparison === 0 && candidates[i].compareTo(best) < 0) {
               best = candidates[i];
               bestDistance = distance;
             }
@@ -889,10 +783,7 @@ class RationalInterval {
     }
   }
   mediant() {
-    return new Rational(
-      this.#low.numerator + this.#high.numerator,
-      this.#low.denominator + this.#high.denominator,
-    );
+    return new Rational(this.#low.numerator + this.#high.numerator, this.#low.denominator + this.#high.denominator);
   }
   midpoint() {
     return this.#low.add(this.#high).divide(new Rational(2));
@@ -917,29 +808,22 @@ class RationalInterval {
       return null;
     }
     const intervalLength = this.#high.subtract(this.#low);
-    const lengthAsNumber =
-      Number(intervalLength.numerator) / Number(intervalLength.denominator);
+    const lengthAsNumber = Number(intervalLength.numerator) / Number(intervalLength.denominator);
     const baseAsNumber = Number(baseBigInt);
     let maxK = Math.ceil(Math.log(1 / lengthAsNumber) / Math.log(baseAsNumber));
     maxK = Math.max(0, maxK + 2);
     let k = 0;
     let denominator = 1n;
     while (k <= maxK) {
-      const minNumerator = this.#ceilRational(
-        this.#low.multiply(new Rational(denominator)),
-      );
-      const maxNumerator = this.#floorRational(
-        this.#high.multiply(new Rational(denominator)),
-      );
+      const minNumerator = this.#ceilRational(this.#low.multiply(new Rational(denominator)));
+      const maxNumerator = this.#floorRational(this.#high.multiply(new Rational(denominator)));
       if (minNumerator.lessThanOrEqual(maxNumerator)) {
         return new Rational(minNumerator.numerator, denominator);
       }
       k++;
       denominator *= baseBigInt;
     }
-    throw new Error(
-      "Failed to find shortest decimal representation (exceeded theoretical bound)",
-    );
+    throw new Error("Failed to find shortest decimal representation (exceeded theoretical bound)");
   }
   randomRational(maxDenominator = 1000) {
     const maxDenom = BigInt(maxDenominator);
@@ -947,14 +831,10 @@ class RationalInterval {
       throw new Error("maxDenominator must be positive");
     }
     const validRationals = [];
-    for (let denom = 1n; denom <= maxDenom; denom++) {
-      const minNum = this.#ceilRational(
-        this.#low.multiply(new Rational(denom)),
-      );
-      const maxNum = this.#floorRational(
-        this.#high.multiply(new Rational(denom)),
-      );
-      for (let num = minNum.numerator; num <= maxNum.numerator; num++) {
+    for (let denom = 1n;denom <= maxDenom; denom++) {
+      const minNum = this.#ceilRational(this.#low.multiply(new Rational(denom)));
+      const maxNum = this.#floorRational(this.#high.multiply(new Rational(denom)));
+      for (let num = minNum.numerator;num <= maxNum.numerator; num++) {
         const candidate = new Rational(num, denom);
         if (candidate.numerator === num && candidate.denominator === denom) {
           validRationals.push(candidate);
@@ -1016,11 +896,7 @@ class Integer {
     } else if (other instanceof Rational) {
       const thisAsRational = new Rational(this.#value, 1n);
       return thisAsRational.add(other);
-    } else if (
-      other.low &&
-      other.high &&
-      typeof other.low.equals === "function"
-    ) {
+    } else if (other.low && other.high && typeof other.low.equals === "function") {
       const thisAsRational = new Rational(this.#value, 1n);
       const IntervalClass = other.constructor;
       const thisAsInterval = new IntervalClass(thisAsRational, thisAsRational);
@@ -1035,11 +911,7 @@ class Integer {
     } else if (other instanceof Rational) {
       const thisAsRational = new Rational(this.#value, 1n);
       return thisAsRational.subtract(other);
-    } else if (
-      other.low &&
-      other.high &&
-      typeof other.low.equals === "function"
-    ) {
+    } else if (other.low && other.high && typeof other.low.equals === "function") {
       const thisAsRational = new Rational(this.#value, 1n);
       const IntervalClass = other.constructor;
       const thisAsInterval = new IntervalClass(thisAsRational, thisAsRational);
@@ -1054,11 +926,7 @@ class Integer {
     } else if (other instanceof Rational) {
       const thisAsRational = new Rational(this.#value, 1n);
       return thisAsRational.multiply(other);
-    } else if (
-      other.low &&
-      other.high &&
-      typeof other.low.equals === "function"
-    ) {
+    } else if (other.low && other.high && typeof other.low.equals === "function") {
       const thisAsRational = new Rational(this.#value, 1n);
       const IntervalClass = other.constructor;
       const thisAsInterval = new IntervalClass(thisAsRational, thisAsRational);
@@ -1080,11 +948,7 @@ class Integer {
     } else if (other instanceof Rational) {
       const thisAsRational = new Rational(this.#value, 1n);
       return thisAsRational.divide(other);
-    } else if (
-      other.low &&
-      other.high &&
-      typeof other.low.equals === "function"
-    ) {
+    } else if (other.low && other.high && typeof other.low.equals === "function") {
       const thisAsRational = new Rational(this.#value, 1n);
       const IntervalClass = other.constructor;
       const thisAsInterval = new IntervalClass(thisAsRational, thisAsRational);
@@ -1134,8 +998,10 @@ class Integer {
     return this.#value === other.value;
   }
   compareTo(other) {
-    if (this.#value < other.value) return -1;
-    if (this.#value > other.value) return 1;
+    if (this.#value < other.value)
+      return -1;
+    if (this.#value > other.value)
+      return 1;
     return 0;
   }
   lessThan(other) {
@@ -1154,8 +1020,10 @@ class Integer {
     return this.#value < 0n ? this.negate() : new Integer(this.#value);
   }
   sign() {
-    if (this.#value < 0n) return new Integer(-1);
-    if (this.#value > 0n) return new Integer(1);
+    if (this.#value < 0n)
+      return new Integer(-1);
+    if (this.#value > 0n)
+      return new Integer(1);
     return new Integer(0);
   }
   isEven() {
@@ -1231,7 +1099,7 @@ class Integer {
       return new Integer(1);
     }
     let result = 1n;
-    for (let i = 2n; i <= this.#value; i++) {
+    for (let i = 2n;i <= this.#value; i++) {
       result *= i;
     }
     return new Integer(result);
@@ -1244,7 +1112,7 @@ class Integer {
       return new Integer(1);
     }
     let result = 1n;
-    for (let i = this.#value; i > 0n; i -= 2n) {
+    for (let i = this.#value;i > 0n; i -= 2n) {
       result *= i;
     }
     return new Integer(result);
@@ -1260,38 +1128,23 @@ function parseDecimalUncertainty(str, allowIntegerRangeNotation = true) {
   const baseStr = uncertaintyMatch[1];
   const uncertaintyStr = uncertaintyMatch[2];
   const afterDecimalMatch = baseStr.match(/^(-?\d+\.)$/);
-  if (
-    afterDecimalMatch &&
-    !uncertaintyStr.startsWith("+-") &&
-    !uncertaintyStr.startsWith("-+")
-  ) {
+  if (afterDecimalMatch && !uncertaintyStr.startsWith("+-") && !uncertaintyStr.startsWith("-+")) {
     return parseDecimalPointUncertainty(baseStr, uncertaintyStr);
   }
   const baseRational = new Rational(baseStr);
   const decimalMatch = baseStr.match(/\.(\d+)$/);
   const baseDecimalPlaces = decimalMatch ? decimalMatch[1].length : 0;
-  if (
-    uncertaintyStr.includes(",") &&
-    !uncertaintyStr.includes("+") &&
-    !uncertaintyStr.includes("-")
-  ) {
+  if (uncertaintyStr.includes(",") && !uncertaintyStr.includes("+") && !uncertaintyStr.includes("-")) {
     if (baseDecimalPlaces === 0 && !allowIntegerRangeNotation) {
-      throw new Error(
-        "Range notation on integer bases is not supported in this context",
-      );
+      throw new Error("Range notation on integer bases is not supported in this context");
     }
     const rangeParts = uncertaintyStr.split(",");
     if (rangeParts.length !== 2) {
-      throw new Error(
-        "Range notation must have exactly two values separated by comma",
-      );
+      throw new Error("Range notation must have exactly two values separated by comma");
     }
     const lowerUncertainty = rangeParts[0].trim();
     const upperUncertainty = rangeParts[1].trim();
-    if (
-      !/^\d+(\.\d+)?$/.test(lowerUncertainty) ||
-      !/^\d+(\.\d+)?$/.test(upperUncertainty)
-    ) {
+    if (!/^\d+(\.\d+)?$/.test(lowerUncertainty) || !/^\d+(\.\d+)?$/.test(upperUncertainty)) {
       throw new Error("Range values must be valid decimal numbers");
     }
     const lowerBoundStr = baseStr + lowerUncertainty;
@@ -1299,18 +1152,12 @@ function parseDecimalUncertainty(str, allowIntegerRangeNotation = true) {
     if (baseDecimalPlaces === 0) {
       const lowerIsInteger = !lowerUncertainty.includes(".");
       const upperIsInteger = !upperUncertainty.includes(".");
-      const lowerIntPart = lowerUncertainty.includes(".")
-        ? lowerUncertainty.split(".")[0]
-        : lowerUncertainty;
-      const upperIntPart = upperUncertainty.includes(".")
-        ? upperUncertainty.split(".")[0]
-        : upperUncertainty;
+      const lowerIntPart = lowerUncertainty.includes(".") ? lowerUncertainty.split(".")[0] : lowerUncertainty;
+      const upperIntPart = upperUncertainty.includes(".") ? upperUncertainty.split(".")[0] : upperUncertainty;
       const lowerIntDigits = lowerIntPart.length;
       const upperIntDigits = upperIntPart.length;
       if (lowerIntDigits !== upperIntDigits) {
-        throw new Error(
-          `Invalid range notation: ${baseStr}[${lowerUncertainty},${upperUncertainty}] - integer parts of range values must have the same number of digits (${lowerIntPart} has ${lowerIntDigits}, ${upperIntPart} has ${upperIntDigits})`,
-        );
+        throw new Error(`Invalid range notation: ${baseStr}[${lowerUncertainty},${upperUncertainty}] - integer parts of range values must have the same number of digits (${lowerIntPart} has ${lowerIntDigits}, ${upperIntPart} has ${upperIntDigits})`);
       }
     }
     const lowerBound = new Rational(lowerBoundStr);
@@ -1319,15 +1166,10 @@ function parseDecimalUncertainty(str, allowIntegerRangeNotation = true) {
       return new RationalInterval(upperBound, lowerBound);
     }
     return new RationalInterval(lowerBound, upperBound);
-  } else if (
-    uncertaintyStr.startsWith("+-") ||
-    uncertaintyStr.startsWith("-+")
-  ) {
+  } else if (uncertaintyStr.startsWith("+-") || uncertaintyStr.startsWith("-+")) {
     const offsetStr = uncertaintyStr.substring(2);
     if (!offsetStr) {
-      throw new Error(
-        "Symmetric notation must have a valid number after +- or -+",
-      );
+      throw new Error("Symmetric notation must have a valid number after +- or -+");
     }
     const offset = parseRepeatingDecimalOrRegular(offsetStr);
     if (baseDecimalPlaces === 0) {
@@ -1335,9 +1177,7 @@ function parseDecimalUncertainty(str, allowIntegerRangeNotation = true) {
       const lowerBound = baseRational.subtract(offset);
       return new RationalInterval(lowerBound, upperBound);
     } else {
-      const nextPlaceScale = new Rational(1).divide(
-        new Rational(10).pow(baseDecimalPlaces + 1),
-      );
+      const nextPlaceScale = new Rational(1).divide(new Rational(10).pow(baseDecimalPlaces + 1));
       const scaledOffset = offset.multiply(nextPlaceScale);
       const upperBound = baseRational.add(scaledOffset);
       const lowerBound = baseRational.subtract(scaledOffset);
@@ -1346,9 +1186,7 @@ function parseDecimalUncertainty(str, allowIntegerRangeNotation = true) {
   } else {
     const relativeParts = uncertaintyStr.split(",").map((s) => s.trim());
     if (relativeParts.length !== 2) {
-      throw new Error(
-        "Relative notation must have exactly two values separated by comma",
-      );
+      throw new Error("Relative notation must have exactly two values separated by comma");
     }
     let positiveOffset = null;
     let negativeOffset = null;
@@ -1376,18 +1214,14 @@ function parseDecimalUncertainty(str, allowIntegerRangeNotation = true) {
       }
     }
     if (positiveOffset === null || negativeOffset === null) {
-      throw new Error(
-        "Relative notation must have exactly one + and one - value",
-      );
+      throw new Error("Relative notation must have exactly one + and one - value");
     }
     let upperBound, lowerBound;
     if (baseDecimalPlaces === 0) {
       upperBound = baseRational.add(positiveOffset);
       lowerBound = baseRational.subtract(negativeOffset);
     } else {
-      const nextPlaceScale = new Rational(1).divide(
-        new Rational(10).pow(baseDecimalPlaces + 1),
-      );
+      const nextPlaceScale = new Rational(1).divide(new Rational(10).pow(baseDecimalPlaces + 1));
       const scaledPositiveOffset = positiveOffset.multiply(nextPlaceScale);
       const scaledNegativeOffset = negativeOffset.multiply(nextPlaceScale);
       upperBound = baseRational.add(scaledPositiveOffset);
@@ -1400,9 +1234,7 @@ function parseDecimalPointUncertainty(baseStr, uncertaintyStr) {
   if (uncertaintyStr.includes(",")) {
     const rangeParts = uncertaintyStr.split(",");
     if (rangeParts.length !== 2) {
-      throw new Error(
-        "Range notation must have exactly two values separated by comma",
-      );
+      throw new Error("Range notation must have exactly two values separated by comma");
     }
     const lowerStr = rangeParts[0].trim();
     const upperStr = rangeParts[1].trim();
@@ -1466,9 +1298,7 @@ function parseRepeatingDecimalOrRegular(str) {
     return baseValue.multiply(powerOf10);
   } else {
     if (!/^-?(\d+\.?\d*|\.\d+)$/.test(str)) {
-      throw new Error(
-        "Symmetric notation must have a valid number after +- or -+",
-      );
+      throw new Error("Symmetric notation must have a valid number after +- or -+");
     }
     return new Rational(str);
   }
@@ -1493,9 +1323,7 @@ function parseRepeatingDecimal(str) {
   }
   const parts = str.split("#");
   if (parts.length !== 2) {
-    throw new Error(
-      'Invalid repeating decimal format. Use format like "0.12#45"',
-    );
+    throw new Error('Invalid repeating decimal format. Use format like "0.12#45"');
   }
   const [nonRepeatingPart, repeatingPart] = parts;
   if (!/^\d+$/.test(repeatingPart)) {
@@ -1510,9 +1338,7 @@ function parseRepeatingDecimal(str) {
       const integerPart2 = decimalParts2[0] || "0";
       const fractionalPart2 = decimalParts2[1] || "";
       if (!/^\d*$/.test(integerPart2) || !/^\d*$/.test(fractionalPart2)) {
-        throw new Error(
-          "Decimal must contain only digits and at most one decimal point",
-        );
+        throw new Error("Decimal must contain only digits and at most one decimal point");
       }
       let numerator2, denominator2;
       if (!fractionalPart2) {
@@ -1535,9 +1361,7 @@ function parseRepeatingDecimal(str) {
   const integerPart = decimalParts[0] || "0";
   const fractionalPart = decimalParts[1] || "";
   if (!/^\d*$/.test(integerPart) || !/^\d*$/.test(fractionalPart)) {
-    throw new Error(
-      "Non-repeating part must contain only digits and at most one decimal point",
-    );
+    throw new Error("Non-repeating part must contain only digits and at most one decimal point");
   }
   const n = fractionalPart.length;
   const m = repeatingPart.length;
@@ -1560,9 +1384,7 @@ function parseNonRepeatingDecimal(str, isNegative) {
   const integerPart = decimalParts[0] || "0";
   const fractionalPart = decimalParts[1] || "";
   if (!/^\d+$/.test(integerPart) || !/^\d*$/.test(fractionalPart)) {
-    throw new Error(
-      "Decimal must contain only digits and at most one decimal point",
-    );
+    throw new Error("Decimal must contain only digits and at most one decimal point");
   }
   if (!fractionalPart) {
     const rational = new Rational(integerPart);
@@ -1591,10 +1413,7 @@ function parseRepeatingDecimalInterval(str) {
   }
   const leftEndpoint = parseRepeatingDecimal(parts[0].trim());
   const rightEndpoint = parseRepeatingDecimal(parts[1].trim());
-  if (
-    leftEndpoint instanceof RationalInterval ||
-    rightEndpoint instanceof RationalInterval
-  ) {
+  if (leftEndpoint instanceof RationalInterval || rightEndpoint instanceof RationalInterval) {
     throw new Error("Nested intervals are not supported");
   }
   return new RationalInterval(leftEndpoint, rightEndpoint);
@@ -1618,10 +1437,7 @@ class Parser {
   static #parseExpression(expr, options = {}) {
     let result = Parser.#parseTerm(expr, options);
     let currentExpr = result.remainingExpr;
-    while (
-      currentExpr.length > 0 &&
-      (currentExpr[0] === "+" || currentExpr[0] === "-")
-    ) {
+    while (currentExpr.length > 0 && (currentExpr[0] === "+" || currentExpr[0] === "-")) {
       const operator = currentExpr[0];
       currentExpr = currentExpr.substring(1);
       const termResult = Parser.#parseTerm(currentExpr, options);
@@ -1632,21 +1448,12 @@ class Parser {
         result.value = result.value.subtract(termResult.value);
       }
     }
-    return {
-      value: Parser.#promoteType(result.value, options),
-      remainingExpr: currentExpr,
-    };
+    return { value: Parser.#promoteType(result.value, options), remainingExpr: currentExpr };
   }
   static #parseTerm(expr, options = {}) {
     let result = Parser.#parseFactor(expr, options);
     let currentExpr = result.remainingExpr;
-    while (
-      currentExpr.length > 0 &&
-      (currentExpr[0] === "*" ||
-        currentExpr[0] === "/" ||
-        currentExpr[0] === "E" ||
-        currentExpr.startsWith("TE"))
-    ) {
+    while (currentExpr.length > 0 && (currentExpr[0] === "*" || currentExpr[0] === "/" || currentExpr[0] === "E" || currentExpr.startsWith("TE"))) {
       let operator, skipLength;
       if (currentExpr.startsWith("TE")) {
         operator = "E";
@@ -1656,11 +1463,7 @@ class Parser {
         skipLength = 1;
       }
       currentExpr = currentExpr.substring(skipLength);
-      if (
-        operator === "/" &&
-        currentExpr.length > 0 &&
-        currentExpr[0] === "S"
-      ) {
+      if (operator === "/" && currentExpr.length > 0 && currentExpr[0] === "S") {
         currentExpr = currentExpr.substring(1);
       }
       const factorResult = Parser.#parseFactor(currentExpr, options);
@@ -1693,19 +1496,13 @@ class Parser {
         if (result.value.E && typeof result.value.E === "function") {
           result.value = result.value.E(exponentValue);
         } else {
-          const powerOf10 =
-            exponentValue >= 0n
-              ? new Rational(10n ** exponentValue)
-              : new Rational(1n, 10n ** -exponentValue);
+          const powerOf10 = exponentValue >= 0n ? new Rational(10n ** exponentValue) : new Rational(1n, 10n ** -exponentValue);
           const powerInterval = RationalInterval.point(powerOf10);
           result.value = result.value.multiply(powerInterval);
         }
       }
     }
-    return {
-      value: Parser.#promoteType(result.value, options),
-      remainingExpr: currentExpr,
-    };
+    return { value: Parser.#promoteType(result.value, options), remainingExpr: currentExpr };
   }
   static #parseFactor(expr, options = {}) {
     if (expr.length === 0) {
@@ -1713,99 +1510,58 @@ class Parser {
     }
     if (expr[0] === "(") {
       const subExprResult = Parser.#parseExpression(expr.substring(1), options);
-      if (
-        subExprResult.remainingExpr.length === 0 ||
-        subExprResult.remainingExpr[0] !== ")"
-      ) {
+      if (subExprResult.remainingExpr.length === 0 || subExprResult.remainingExpr[0] !== ")") {
         throw new Error("Missing closing parenthesis");
       }
       const result = {
         value: subExprResult.value,
-        remainingExpr: subExprResult.remainingExpr.substring(1),
+        remainingExpr: subExprResult.remainingExpr.substring(1)
       };
-      if (
-        result.remainingExpr.length > 0 &&
-        (result.remainingExpr[0] === "E" ||
-          result.remainingExpr.startsWith("TE"))
-      ) {
-        const eResult = Parser.#parseENotation(
-          result.value,
-          result.remainingExpr,
-          options,
-        );
+      if (result.remainingExpr.length > 0 && (result.remainingExpr[0] === "E" || result.remainingExpr.startsWith("TE"))) {
+        const eResult = Parser.#parseENotation(result.value, result.remainingExpr, options);
         let factorialResult3 = eResult;
-        if (
-          factorialResult3.remainingExpr.length > 1 &&
-          factorialResult3.remainingExpr.substring(0, 2) === "!!"
-        ) {
+        if (factorialResult3.remainingExpr.length > 1 && factorialResult3.remainingExpr.substring(0, 2) === "!!") {
           if (factorialResult3.value instanceof Integer) {
             factorialResult3 = {
               value: factorialResult3.value.doubleFactorial(),
-              remainingExpr: factorialResult3.remainingExpr.substring(2),
+              remainingExpr: factorialResult3.remainingExpr.substring(2)
             };
-          } else if (
-            factorialResult3.value instanceof Rational &&
-            factorialResult3.value.denominator === 1n
-          ) {
+          } else if (factorialResult3.value instanceof Rational && factorialResult3.value.denominator === 1n) {
             const intValue = new Integer(factorialResult3.value.numerator);
             factorialResult3 = {
               value: intValue.doubleFactorial().toRational(),
-              remainingExpr: factorialResult3.remainingExpr.substring(2),
+              remainingExpr: factorialResult3.remainingExpr.substring(2)
             };
-          } else if (
-            factorialResult3.value.low &&
-            factorialResult3.value.high &&
-            factorialResult3.value.low.equals(factorialResult3.value.high) &&
-            factorialResult3.value.low.denominator === 1n
-          ) {
+          } else if (factorialResult3.value.low && factorialResult3.value.high && factorialResult3.value.low.equals(factorialResult3.value.high) && factorialResult3.value.low.denominator === 1n) {
             const intValue = new Integer(factorialResult3.value.low.numerator);
             const factorialValue = intValue.doubleFactorial();
             const IntervalClass = factorialResult3.value.constructor;
             factorialResult3 = {
-              value: new IntervalClass(
-                factorialValue.toRational(),
-                factorialValue.toRational(),
-              ),
-              remainingExpr: factorialResult3.remainingExpr.substring(2),
+              value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+              remainingExpr: factorialResult3.remainingExpr.substring(2)
             };
           } else {
-            throw new Error(
-              "Double factorial is not defined for negative integers",
-            );
+            throw new Error("Double factorial is not defined for negative integers");
           }
-        } else if (
-          factorialResult3.remainingExpr.length > 0 &&
-          factorialResult3.remainingExpr[0] === "!"
-        ) {
+        } else if (factorialResult3.remainingExpr.length > 0 && factorialResult3.remainingExpr[0] === "!") {
           if (factorialResult3.value instanceof Integer) {
             factorialResult3 = {
               value: factorialResult3.value.factorial(),
-              remainingExpr: factorialResult3.remainingExpr.substring(1),
+              remainingExpr: factorialResult3.remainingExpr.substring(1)
             };
-          } else if (
-            factorialResult3.value instanceof Rational &&
-            factorialResult3.value.denominator === 1n
-          ) {
+          } else if (factorialResult3.value instanceof Rational && factorialResult3.value.denominator === 1n) {
             const intValue = new Integer(factorialResult3.value.numerator);
             factorialResult3 = {
               value: intValue.factorial().toRational(),
-              remainingExpr: factorialResult3.remainingExpr.substring(1),
+              remainingExpr: factorialResult3.remainingExpr.substring(1)
             };
-          } else if (
-            factorialResult3.value.low &&
-            factorialResult3.value.high &&
-            factorialResult3.value.low.equals(factorialResult3.value.high) &&
-            factorialResult3.value.low.denominator === 1n
-          ) {
+          } else if (factorialResult3.value.low && factorialResult3.value.high && factorialResult3.value.low.equals(factorialResult3.value.high) && factorialResult3.value.low.denominator === 1n) {
             const intValue = new Integer(factorialResult3.value.low.numerator);
             const factorialValue = intValue.factorial();
             const IntervalClass = factorialResult3.value.constructor;
             factorialResult3 = {
-              value: new IntervalClass(
-                factorialValue.toRational(),
-                factorialValue.toRational(),
-              ),
-              remainingExpr: factorialResult3.remainingExpr.substring(1),
+              value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+              remainingExpr: factorialResult3.remainingExpr.substring(1)
             };
           } else {
             throw new Error("Factorial is not defined for negative integers");
@@ -1817,126 +1573,78 @@ class Parser {
             const powerResult = Parser.#parseExponent(powerExpr);
             const zero = new Rational(0);
             if (factorialResult3.value.low && factorialResult3.value.high) {
-              if (
-                factorialResult3.value.low.equals(zero) &&
-                factorialResult3.value.high.equals(zero) &&
-                powerResult.value === 0n
-              ) {
+              if (factorialResult3.value.low.equals(zero) && factorialResult3.value.high.equals(zero) && powerResult.value === 0n) {
                 throw new Error("Zero cannot be raised to the power of zero");
               }
-            } else if (
-              factorialResult3.value instanceof Integer &&
-              factorialResult3.value.value === 0n &&
-              powerResult.value === 0n
-            ) {
+            } else if (factorialResult3.value instanceof Integer && factorialResult3.value.value === 0n && powerResult.value === 0n) {
               throw new Error("Zero cannot be raised to the power of zero");
-            } else if (
-              factorialResult3.value instanceof Rational &&
-              factorialResult3.value.numerator === 0n &&
-              powerResult.value === 0n
-            ) {
+            } else if (factorialResult3.value instanceof Rational && factorialResult3.value.numerator === 0n && powerResult.value === 0n) {
               throw new Error("Zero cannot be raised to the power of zero");
             }
             return {
               value: factorialResult3.value.pow(powerResult.value),
-              remainingExpr: powerResult.remainingExpr,
+              remainingExpr: powerResult.remainingExpr
             };
-          } else if (
-            factorialResult3.remainingExpr.length > 1 &&
-            factorialResult3.remainingExpr[0] === "*" &&
-            factorialResult3.remainingExpr[1] === "*"
-          ) {
+          } else if (factorialResult3.remainingExpr.length > 1 && factorialResult3.remainingExpr[0] === "*" && factorialResult3.remainingExpr[1] === "*") {
             const powerExpr = factorialResult3.remainingExpr.substring(2);
             const powerResult = Parser.#parseExponent(powerExpr);
             let base = factorialResult3.value;
             if (!(base instanceof RationalInterval)) {
-              base = RationalInterval.point(
-                base instanceof Integer ? base.toRational() : base,
-              );
+              base = RationalInterval.point(base instanceof Integer ? base.toRational() : base);
             }
             const result2 = base.mpow(powerResult.value);
             result2._skipPromotion = true;
             return {
               value: result2,
-              remainingExpr: powerResult.remainingExpr,
+              remainingExpr: powerResult.remainingExpr
             };
           }
         }
         return factorialResult3;
       }
       let factorialResult2 = result;
-      if (
-        factorialResult2.remainingExpr.length > 1 &&
-        factorialResult2.remainingExpr.substring(0, 2) === "!!"
-      ) {
+      if (factorialResult2.remainingExpr.length > 1 && factorialResult2.remainingExpr.substring(0, 2) === "!!") {
         if (factorialResult2.value instanceof Integer) {
           factorialResult2 = {
             value: factorialResult2.value.doubleFactorial(),
-            remainingExpr: factorialResult2.remainingExpr.substring(2),
+            remainingExpr: factorialResult2.remainingExpr.substring(2)
           };
-        } else if (
-          factorialResult2.value instanceof Rational &&
-          factorialResult2.value.denominator === 1n
-        ) {
+        } else if (factorialResult2.value instanceof Rational && factorialResult2.value.denominator === 1n) {
           const intValue = new Integer(factorialResult2.value.numerator);
           factorialResult2 = {
             value: intValue.doubleFactorial().toRational(),
-            remainingExpr: factorialResult2.remainingExpr.substring(2),
+            remainingExpr: factorialResult2.remainingExpr.substring(2)
           };
-        } else if (
-          factorialResult2.value.low &&
-          factorialResult2.value.high &&
-          factorialResult2.value.low.equals(factorialResult2.value.high) &&
-          factorialResult2.value.low.denominator === 1n
-        ) {
+        } else if (factorialResult2.value.low && factorialResult2.value.high && factorialResult2.value.low.equals(factorialResult2.value.high) && factorialResult2.value.low.denominator === 1n) {
           const intValue = new Integer(factorialResult2.value.low.numerator);
           const factorialValue = intValue.doubleFactorial();
           const IntervalClass = factorialResult2.value.constructor;
           factorialResult2 = {
-            value: new IntervalClass(
-              factorialValue.toRational(),
-              factorialValue.toRational(),
-            ),
-            remainingExpr: factorialResult2.remainingExpr.substring(2),
+            value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+            remainingExpr: factorialResult2.remainingExpr.substring(2)
           };
         } else {
-          throw new Error(
-            "Double factorial is not defined for negative integers",
-          );
+          throw new Error("Double factorial is not defined for negative integers");
         }
-      } else if (
-        factorialResult2.remainingExpr.length > 0 &&
-        factorialResult2.remainingExpr[0] === "!"
-      ) {
+      } else if (factorialResult2.remainingExpr.length > 0 && factorialResult2.remainingExpr[0] === "!") {
         if (factorialResult2.value instanceof Integer) {
           factorialResult2 = {
             value: factorialResult2.value.factorial(),
-            remainingExpr: factorialResult2.remainingExpr.substring(1),
+            remainingExpr: factorialResult2.remainingExpr.substring(1)
           };
-        } else if (
-          factorialResult2.value instanceof Rational &&
-          factorialResult2.value.denominator === 1n
-        ) {
+        } else if (factorialResult2.value instanceof Rational && factorialResult2.value.denominator === 1n) {
           const intValue = new Integer(factorialResult2.value.numerator);
           factorialResult2 = {
             value: intValue.factorial().toRational(),
-            remainingExpr: factorialResult2.remainingExpr.substring(1),
+            remainingExpr: factorialResult2.remainingExpr.substring(1)
           };
-        } else if (
-          factorialResult2.value.low &&
-          factorialResult2.value.high &&
-          factorialResult2.value.low.equals(factorialResult2.value.high) &&
-          factorialResult2.value.low.denominator === 1n
-        ) {
+        } else if (factorialResult2.value.low && factorialResult2.value.high && factorialResult2.value.low.equals(factorialResult2.value.high) && factorialResult2.value.low.denominator === 1n) {
           const intValue = new Integer(factorialResult2.value.low.numerator);
           const factorialValue = intValue.factorial();
           const IntervalClass = factorialResult2.value.constructor;
           factorialResult2 = {
-            value: new IntervalClass(
-              factorialValue.toRational(),
-              factorialValue.toRational(),
-            ),
-            remainingExpr: factorialResult2.remainingExpr.substring(1),
+            value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+            remainingExpr: factorialResult2.remainingExpr.substring(1)
           };
         } else {
           throw new Error("Factorial is not defined for negative integers");
@@ -1949,9 +1657,7 @@ class Parser {
           const zero = new Rational(0);
           let isZero = false;
           if (factorialResult2.value instanceof RationalInterval) {
-            isZero =
-              factorialResult2.value.low.equals(zero) &&
-              factorialResult2.value.high.equals(zero);
+            isZero = factorialResult2.value.low.equals(zero) && factorialResult2.value.high.equals(zero);
           } else if (factorialResult2.value instanceof Rational) {
             isZero = factorialResult2.value.equals(zero);
           } else if (factorialResult2.value instanceof Integer) {
@@ -1962,26 +1668,20 @@ class Parser {
           }
           return {
             value: factorialResult2.value.pow(powerResult.value),
-            remainingExpr: powerResult.remainingExpr,
+            remainingExpr: powerResult.remainingExpr
           };
-        } else if (
-          factorialResult2.remainingExpr.length > 1 &&
-          factorialResult2.remainingExpr[0] === "*" &&
-          factorialResult2.remainingExpr[1] === "*"
-        ) {
+        } else if (factorialResult2.remainingExpr.length > 1 && factorialResult2.remainingExpr[0] === "*" && factorialResult2.remainingExpr[1] === "*") {
           const powerExpr = factorialResult2.remainingExpr.substring(2);
           const powerResult = Parser.#parseExponent(powerExpr);
           let base = factorialResult2.value;
           if (!(base instanceof RationalInterval)) {
-            base = RationalInterval.point(
-              base instanceof Integer ? base.toRational() : base,
-            );
+            base = RationalInterval.point(base instanceof Integer ? base.toRational() : base);
           }
           const result2 = base.mpow(powerResult.value);
           result2._skipPromotion = true;
           return {
             value: result2,
-            remainingExpr: powerResult.remainingExpr,
+            remainingExpr: powerResult.remainingExpr
           };
         }
       }
@@ -1995,7 +1695,7 @@ class Parser {
           const result = parseDecimalUncertainty(fullMatch, true);
           return {
             value: result,
-            remainingExpr: expr.substring(fullMatch.length),
+            remainingExpr: expr.substring(fullMatch.length)
           };
         } catch (error) {
           throw error;
@@ -2019,93 +1719,55 @@ class Parser {
       }
       return {
         value: negatedValue,
-        remainingExpr: factorResult.remainingExpr,
+        remainingExpr: factorResult.remainingExpr
       };
     }
     const numberResult = Parser.#parseInterval(expr, options);
-    if (
-      numberResult.remainingExpr.length > 0 &&
-      (numberResult.remainingExpr[0] === "E" ||
-        numberResult.remainingExpr.startsWith("TE"))
-    ) {
-      const eResult = Parser.#parseENotation(
-        numberResult.value,
-        numberResult.remainingExpr,
-        options,
-      );
+    if (numberResult.remainingExpr.length > 0 && (numberResult.remainingExpr[0] === "E" || numberResult.remainingExpr.startsWith("TE"))) {
+      const eResult = Parser.#parseENotation(numberResult.value, numberResult.remainingExpr, options);
       let factorialResult2 = eResult;
-      if (
-        factorialResult2.remainingExpr.length > 1 &&
-        factorialResult2.remainingExpr.substring(0, 2) === "!!"
-      ) {
+      if (factorialResult2.remainingExpr.length > 1 && factorialResult2.remainingExpr.substring(0, 2) === "!!") {
         if (factorialResult2.value instanceof Integer) {
           factorialResult2 = {
             value: factorialResult2.value.doubleFactorial(),
-            remainingExpr: factorialResult2.remainingExpr.substring(2),
+            remainingExpr: factorialResult2.remainingExpr.substring(2)
           };
-        } else if (
-          factorialResult2.value instanceof Rational &&
-          factorialResult2.value.denominator === 1n
-        ) {
+        } else if (factorialResult2.value instanceof Rational && factorialResult2.value.denominator === 1n) {
           const intValue = new Integer(factorialResult2.value.numerator);
           factorialResult2 = {
             value: intValue.doubleFactorial().toRational(),
-            remainingExpr: factorialResult2.remainingExpr.substring(2),
+            remainingExpr: factorialResult2.remainingExpr.substring(2)
           };
-        } else if (
-          factorialResult2.value.low &&
-          factorialResult2.value.high &&
-          factorialResult2.value.low.equals(factorialResult2.value.high) &&
-          factorialResult2.value.low.denominator === 1n
-        ) {
+        } else if (factorialResult2.value.low && factorialResult2.value.high && factorialResult2.value.low.equals(factorialResult2.value.high) && factorialResult2.value.low.denominator === 1n) {
           const intValue = new Integer(factorialResult2.value.low.numerator);
           const factorialValue = intValue.doubleFactorial();
           const IntervalClass = factorialResult2.value.constructor;
           factorialResult2 = {
-            value: new IntervalClass(
-              factorialValue.toRational(),
-              factorialValue.toRational(),
-            ),
-            remainingExpr: factorialResult2.remainingExpr.substring(2),
+            value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+            remainingExpr: factorialResult2.remainingExpr.substring(2)
           };
         } else {
-          throw new Error(
-            "Double factorial is not defined for negative integers",
-          );
+          throw new Error("Double factorial is not defined for negative integers");
         }
-      } else if (
-        factorialResult2.remainingExpr.length > 0 &&
-        factorialResult2.remainingExpr[0] === "!"
-      ) {
+      } else if (factorialResult2.remainingExpr.length > 0 && factorialResult2.remainingExpr[0] === "!") {
         if (factorialResult2.value instanceof Integer) {
           factorialResult2 = {
             value: factorialResult2.value.factorial(),
-            remainingExpr: factorialResult2.remainingExpr.substring(1),
+            remainingExpr: factorialResult2.remainingExpr.substring(1)
           };
-        } else if (
-          factorialResult2.value instanceof Rational &&
-          factorialResult2.value.denominator === 1n
-        ) {
+        } else if (factorialResult2.value instanceof Rational && factorialResult2.value.denominator === 1n) {
           const intValue = new Integer(factorialResult2.value.numerator);
           factorialResult2 = {
             value: intValue.factorial().toRational(),
-            remainingExpr: factorialResult2.remainingExpr.substring(1),
+            remainingExpr: factorialResult2.remainingExpr.substring(1)
           };
-        } else if (
-          factorialResult2.value.low &&
-          factorialResult2.value.high &&
-          factorialResult2.value.low.equals(factorialResult2.value.high) &&
-          factorialResult2.value.low.denominator === 1n
-        ) {
+        } else if (factorialResult2.value.low && factorialResult2.value.high && factorialResult2.value.low.equals(factorialResult2.value.high) && factorialResult2.value.low.denominator === 1n) {
           const intValue = new Integer(factorialResult2.value.low.numerator);
           const factorialValue = intValue.factorial();
           const IntervalClass = factorialResult2.value.constructor;
           factorialResult2 = {
-            value: new IntervalClass(
-              factorialValue.toRational(),
-              factorialValue.toRational(),
-            ),
-            remainingExpr: factorialResult2.remainingExpr.substring(1),
+            value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+            remainingExpr: factorialResult2.remainingExpr.substring(1)
           };
         } else {
           throw new Error("Factorial is not defined for negative integers");
@@ -2115,132 +1777,81 @@ class Parser {
         if (factorialResult2.remainingExpr[0] === "^") {
           const powerExpr = factorialResult2.remainingExpr.substring(1);
           const powerResult = Parser.#parseExponent(powerExpr);
-          if (
-            factorialResult2.value instanceof Integer &&
-            factorialResult2.value.value === 0n &&
-            powerResult.value === 0n
-          ) {
+          if (factorialResult2.value instanceof Integer && factorialResult2.value.value === 0n && powerResult.value === 0n) {
             throw new Error("Zero cannot be raised to the power of zero");
-          } else if (
-            factorialResult2.value instanceof Rational &&
-            factorialResult2.value.numerator === 0n &&
-            powerResult.value === 0n
-          ) {
+          } else if (factorialResult2.value instanceof Rational && factorialResult2.value.numerator === 0n && powerResult.value === 0n) {
             throw new Error("Zero cannot be raised to the power of zero");
-          } else if (
-            factorialResult2.value.low &&
-            factorialResult2.value.high
-          ) {
+          } else if (factorialResult2.value.low && factorialResult2.value.high) {
             const zero = new Rational(0);
-            if (
-              factorialResult2.value.low.equals(zero) &&
-              factorialResult2.value.high.equals(zero) &&
-              powerResult.value === 0n
-            ) {
+            if (factorialResult2.value.low.equals(zero) && factorialResult2.value.high.equals(zero) && powerResult.value === 0n) {
               throw new Error("Zero cannot be raised to the power of zero");
             }
           }
           const result = factorialResult2.value.pow(powerResult.value);
           return {
             value: result,
-            remainingExpr: powerResult.remainingExpr,
+            remainingExpr: powerResult.remainingExpr
           };
-        } else if (
-          factorialResult2.remainingExpr.length > 1 &&
-          factorialResult2.remainingExpr[0] === "*" &&
-          factorialResult2.remainingExpr[1] === "*"
-        ) {
+        } else if (factorialResult2.remainingExpr.length > 1 && factorialResult2.remainingExpr[0] === "*" && factorialResult2.remainingExpr[1] === "*") {
           const powerExpr = factorialResult2.remainingExpr.substring(2);
           const powerResult = Parser.#parseExponent(powerExpr);
           let base = factorialResult2.value;
           if (!(base instanceof RationalInterval)) {
-            base = RationalInterval.point(
-              base instanceof Integer ? base.toRational() : base,
-            );
+            base = RationalInterval.point(base instanceof Integer ? base.toRational() : base);
           }
           const result = base.mpow(powerResult.value);
           result._skipPromotion = true;
           return {
             value: result,
-            remainingExpr: powerResult.remainingExpr,
+            remainingExpr: powerResult.remainingExpr
           };
         }
       }
       return factorialResult2;
     }
     let factorialResult = numberResult;
-    if (
-      factorialResult.remainingExpr.length > 1 &&
-      factorialResult.remainingExpr.substring(0, 2) === "!!"
-    ) {
+    if (factorialResult.remainingExpr.length > 1 && factorialResult.remainingExpr.substring(0, 2) === "!!") {
       if (factorialResult.value instanceof Integer) {
         factorialResult = {
           value: factorialResult.value.doubleFactorial(),
-          remainingExpr: factorialResult.remainingExpr.substring(2),
+          remainingExpr: factorialResult.remainingExpr.substring(2)
         };
-      } else if (
-        factorialResult.value instanceof Rational &&
-        factorialResult.value.denominator === 1n
-      ) {
+      } else if (factorialResult.value instanceof Rational && factorialResult.value.denominator === 1n) {
         const intValue = new Integer(factorialResult.value.numerator);
         factorialResult = {
           value: intValue.doubleFactorial().toRational(),
-          remainingExpr: factorialResult.remainingExpr.substring(2),
+          remainingExpr: factorialResult.remainingExpr.substring(2)
         };
-      } else if (
-        factorialResult.value.low &&
-        factorialResult.value.high &&
-        factorialResult.value.low.equals(factorialResult.value.high) &&
-        factorialResult.value.low.denominator === 1n
-      ) {
+      } else if (factorialResult.value.low && factorialResult.value.high && factorialResult.value.low.equals(factorialResult.value.high) && factorialResult.value.low.denominator === 1n) {
         const intValue = new Integer(factorialResult.value.low.numerator);
         const factorialValue = intValue.doubleFactorial();
         const IntervalClass = factorialResult.value.constructor;
         factorialResult = {
-          value: new IntervalClass(
-            factorialValue.toRational(),
-            factorialValue.toRational(),
-          ),
-          remainingExpr: factorialResult.remainingExpr.substring(2),
+          value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+          remainingExpr: factorialResult.remainingExpr.substring(2)
         };
       } else {
-        throw new Error(
-          "Double factorial is not defined for negative integers",
-        );
+        throw new Error("Double factorial is not defined for negative integers");
       }
-    } else if (
-      factorialResult.remainingExpr.length > 0 &&
-      factorialResult.remainingExpr[0] === "!"
-    ) {
+    } else if (factorialResult.remainingExpr.length > 0 && factorialResult.remainingExpr[0] === "!") {
       if (factorialResult.value instanceof Integer) {
         factorialResult = {
           value: factorialResult.value.factorial(),
-          remainingExpr: factorialResult.remainingExpr.substring(1),
+          remainingExpr: factorialResult.remainingExpr.substring(1)
         };
-      } else if (
-        factorialResult.value instanceof Rational &&
-        factorialResult.value.denominator === 1n
-      ) {
+      } else if (factorialResult.value instanceof Rational && factorialResult.value.denominator === 1n) {
         const intValue = new Integer(factorialResult.value.numerator);
         factorialResult = {
           value: intValue.factorial().toRational(),
-          remainingExpr: factorialResult.remainingExpr.substring(1),
+          remainingExpr: factorialResult.remainingExpr.substring(1)
         };
-      } else if (
-        factorialResult.value.low &&
-        factorialResult.value.high &&
-        factorialResult.value.low.equals(factorialResult.value.high) &&
-        factorialResult.value.low.denominator === 1n
-      ) {
+      } else if (factorialResult.value.low && factorialResult.value.high && factorialResult.value.low.equals(factorialResult.value.high) && factorialResult.value.low.denominator === 1n) {
         const intValue = new Integer(factorialResult.value.low.numerator);
         const factorialValue = intValue.factorial();
         const IntervalClass = factorialResult.value.constructor;
         factorialResult = {
-          value: new IntervalClass(
-            factorialValue.toRational(),
-            factorialValue.toRational(),
-          ),
-          remainingExpr: factorialResult.remainingExpr.substring(1),
+          value: new IntervalClass(factorialValue.toRational(), factorialValue.toRational()),
+          remainingExpr: factorialResult.remainingExpr.substring(1)
         };
       } else {
         throw new Error("Factorial is not defined for negative integers");
@@ -2250,51 +1861,33 @@ class Parser {
       if (factorialResult.remainingExpr[0] === "^") {
         const powerExpr = factorialResult.remainingExpr.substring(1);
         const powerResult = Parser.#parseExponent(powerExpr);
-        if (
-          factorialResult.value instanceof Integer &&
-          factorialResult.value.value === 0n &&
-          powerResult.value === 0n
-        ) {
+        if (factorialResult.value instanceof Integer && factorialResult.value.value === 0n && powerResult.value === 0n) {
           throw new Error("Zero cannot be raised to the power of zero");
-        } else if (
-          factorialResult.value instanceof Rational &&
-          factorialResult.value.numerator === 0n &&
-          powerResult.value === 0n
-        ) {
+        } else if (factorialResult.value instanceof Rational && factorialResult.value.numerator === 0n && powerResult.value === 0n) {
           throw new Error("Zero cannot be raised to the power of zero");
         } else if (factorialResult.value.low && factorialResult.value.high) {
           const zero = new Rational(0);
-          if (
-            factorialResult.value.low.equals(zero) &&
-            factorialResult.value.high.equals(zero) &&
-            powerResult.value === 0n
-          ) {
+          if (factorialResult.value.low.equals(zero) && factorialResult.value.high.equals(zero) && powerResult.value === 0n) {
             throw new Error("Zero cannot be raised to the power of zero");
           }
         }
         const result = factorialResult.value.pow(powerResult.value);
         return {
           value: result,
-          remainingExpr: powerResult.remainingExpr,
+          remainingExpr: powerResult.remainingExpr
         };
-      } else if (
-        factorialResult.remainingExpr.length > 1 &&
-        factorialResult.remainingExpr[0] === "*" &&
-        factorialResult.remainingExpr[1] === "*"
-      ) {
+      } else if (factorialResult.remainingExpr.length > 1 && factorialResult.remainingExpr[0] === "*" && factorialResult.remainingExpr[1] === "*") {
         const powerExpr = factorialResult.remainingExpr.substring(2);
         const powerResult = Parser.#parseExponent(powerExpr);
         let base = factorialResult.value;
         if (!(base instanceof RationalInterval)) {
-          base = RationalInterval.point(
-            base instanceof Integer ? base.toRational() : base,
-          );
+          base = RationalInterval.point(base instanceof Integer ? base.toRational() : base);
         }
         const result = base.mpow(powerResult.value);
         result._skipPromotion = true;
         return {
           value: result,
-          remainingExpr: powerResult.remainingExpr,
+          remainingExpr: powerResult.remainingExpr
         };
       }
     }
@@ -2318,7 +1911,7 @@ class Parser {
     const exponent = isNegative ? -BigInt(exponentStr) : BigInt(exponentStr);
     return {
       value: exponent,
-      remainingExpr: expr.substring(i),
+      remainingExpr: expr.substring(i)
     };
   }
   static #promoteType(value, options = {}) {
@@ -2374,29 +1967,20 @@ class Parser {
     }
     return {
       value: Parser.#promoteType(result, options),
-      remainingExpr: exponentResult.remainingExpr,
+      remainingExpr: exponentResult.remainingExpr
     };
   }
   static #parseInterval(expr, options = {}) {
-    if (
-      expr.includes("[") &&
-      expr.includes("]") &&
-      /^-?\d*\.?\d*\[/.test(expr)
-    ) {
+    if (expr.includes("[") && expr.includes("]") && /^-?\d*\.?\d*\[/.test(expr)) {
       try {
         const result = parseDecimalUncertainty(expr);
         return {
           value: result,
-          remainingExpr: "",
+          remainingExpr: ""
         };
       } catch {}
     }
-    if (
-      expr.includes(".") &&
-      !expr.includes("#") &&
-      !expr.includes(":") &&
-      !expr.includes("[")
-    ) {
+    if (expr.includes(".") && !expr.includes("#") && !expr.includes(":") && !expr.includes("[")) {
       let endIndex = 0;
       let hasDecimalPoint = false;
       if (expr[endIndex] === "-") {
@@ -2405,12 +1989,7 @@ class Parser {
       while (endIndex < expr.length) {
         if (/\d/.test(expr[endIndex])) {
           endIndex++;
-        } else if (
-          expr[endIndex] === "." &&
-          !hasDecimalPoint &&
-          endIndex + 1 < expr.length &&
-          expr[endIndex + 1] !== "."
-        ) {
+        } else if (expr[endIndex] === "." && !hasDecimalPoint && endIndex + 1 < expr.length && expr[endIndex + 1] !== ".") {
           hasDecimalPoint = true;
           endIndex++;
         } else {
@@ -2424,17 +2003,15 @@ class Parser {
             const result = new Rational(decimalStr);
             return {
               value: result,
-              remainingExpr: expr.substring(endIndex),
+              remainingExpr: expr.substring(endIndex)
             };
           } else {
             const isNegative = decimalStr.startsWith("-");
-            const absDecimalStr = isNegative
-              ? decimalStr.substring(1)
-              : decimalStr;
+            const absDecimalStr = isNegative ? decimalStr.substring(1) : decimalStr;
             const result = parseNonRepeatingDecimal(absDecimalStr, isNegative);
             return {
               value: result,
-              remainingExpr: expr.substring(endIndex),
+              remainingExpr: expr.substring(endIndex)
             };
           }
         } catch (error) {}
@@ -2445,28 +2022,23 @@ class Parser {
       if (colonIndex > 0) {
         const beforeColon = expr.substring(0, colonIndex);
         const afterColonStart = expr.substring(colonIndex + 1);
-        if (
-          /^-?[\d.#]+$/.test(beforeColon) &&
-          /^-?[\d.#]/.test(afterColonStart)
-        ) {
+        if (/^-?[\d.#]+$/.test(beforeColon) && /^-?[\d.#]/.test(afterColonStart)) {
           try {
             const possibleInterval = parseRepeatingDecimal(expr);
             if (possibleInterval instanceof RationalInterval) {
               let endIndex = expr.length;
-              for (let i = 1; i < expr.length; i++) {
+              for (let i = 1;i < expr.length; i++) {
                 const testExpr = expr.substring(0, i);
                 try {
                   const testResult = parseRepeatingDecimal(testExpr);
                   if (testResult instanceof RationalInterval) {
                     if (i === expr.length || !/[\d#.\-]/.test(expr[i])) {
                       endIndex = i;
-                      const finalResult = parseRepeatingDecimal(
-                        expr.substring(0, endIndex),
-                      );
+                      const finalResult = parseRepeatingDecimal(expr.substring(0, endIndex));
                       if (finalResult instanceof RationalInterval) {
                         return {
                           value: finalResult,
-                          remainingExpr: expr.substring(endIndex),
+                          remainingExpr: expr.substring(endIndex)
                         };
                       }
                     }
@@ -2478,7 +2050,7 @@ class Parser {
                 if (result instanceof RationalInterval) {
                   return {
                     value: result,
-                    remainingExpr: "",
+                    remainingExpr: ""
                   };
                 }
               } catch {}
@@ -2492,29 +2064,16 @@ class Parser {
     let remainingAfterFirst = firstResult.remainingExpr;
     if (remainingAfterFirst.length > 0 && remainingAfterFirst[0] === "E") {
       let eEndIndex = 1;
-      if (
-        eEndIndex < remainingAfterFirst.length &&
-        remainingAfterFirst[eEndIndex] === "-"
-      ) {
+      if (eEndIndex < remainingAfterFirst.length && remainingAfterFirst[eEndIndex] === "-") {
         eEndIndex++;
       }
-      while (
-        eEndIndex < remainingAfterFirst.length &&
-        /\d/.test(remainingAfterFirst[eEndIndex])
-      ) {
+      while (eEndIndex < remainingAfterFirst.length && /\d/.test(remainingAfterFirst[eEndIndex])) {
         eEndIndex++;
       }
-      if (
-        eEndIndex < remainingAfterFirst.length &&
-        remainingAfterFirst[eEndIndex] === ":"
-      ) {
+      if (eEndIndex < remainingAfterFirst.length && remainingAfterFirst[eEndIndex] === ":") {
         const eNotationPart = remainingAfterFirst.substring(0, eEndIndex);
         const firstInterval = RationalInterval.point(firstResult.value);
-        const eResult = Parser.#parseENotation(
-          firstInterval,
-          eNotationPart,
-          options,
-        );
+        const eResult = Parser.#parseENotation(firstInterval, eNotationPart, options);
         if (eResult.value instanceof RationalInterval) {
           firstValue = eResult.value.low;
         } else if (eResult.value instanceof Rational) {
@@ -2533,23 +2092,23 @@ class Parser {
           if (firstValue._explicitFraction) {
             return {
               value: firstValue,
-              remainingExpr: remainingAfterFirst,
+              remainingExpr: remainingAfterFirst
             };
           }
           return {
             value: new Integer(firstValue.numerator),
-            remainingExpr: remainingAfterFirst,
+            remainingExpr: remainingAfterFirst
           };
         }
         return {
           value: firstValue,
-          remainingExpr: remainingAfterFirst,
+          remainingExpr: remainingAfterFirst
         };
       } else {
         const pointValue = RationalInterval.point(firstValue);
         return {
           value: pointValue,
-          remainingExpr: remainingAfterFirst,
+          remainingExpr: remainingAfterFirst
         };
       }
     }
@@ -2559,11 +2118,7 @@ class Parser {
     let remainingExpr = secondResult.remainingExpr;
     if (remainingExpr.length > 0 && remainingExpr[0] === "E") {
       const secondInterval = RationalInterval.point(secondResult.value);
-      const eResult = Parser.#parseENotation(
-        secondInterval,
-        remainingExpr,
-        options,
-      );
+      const eResult = Parser.#parseENotation(secondInterval, remainingExpr, options);
       if (eResult.value instanceof RationalInterval) {
         secondValue = eResult.value.low;
       } else if (eResult.value instanceof Rational) {
@@ -2579,7 +2134,7 @@ class Parser {
     interval._explicitInterval = true;
     return {
       value: interval,
-      remainingExpr,
+      remainingExpr
     };
   }
   static #parseRational(expr) {
@@ -2598,17 +2153,15 @@ class Parser {
         try {
           const result = parseRepeatingDecimal(repeatingDecimalStr);
           if (result instanceof RationalInterval) {
-            const midpoint = result.low
-              .add(result.high)
-              .divide(new Rational(2));
+            const midpoint = result.low.add(result.high).divide(new Rational(2));
             return {
               value: midpoint,
-              remainingExpr: expr.substring(endIndex),
+              remainingExpr: expr.substring(endIndex)
             };
           } else {
             return {
               value: result,
-              remainingExpr: expr.substring(endIndex),
+              remainingExpr: expr.substring(endIndex)
             };
           }
         } catch (error) {
@@ -2617,11 +2170,7 @@ class Parser {
       }
     }
     let decimalIndex = expr.indexOf(".");
-    if (
-      decimalIndex !== -1 &&
-      decimalIndex + 1 < expr.length &&
-      expr[decimalIndex + 1] !== "."
-    ) {
+    if (decimalIndex !== -1 && decimalIndex + 1 < expr.length && expr[decimalIndex + 1] !== ".") {
       let endIndex = 0;
       let hasDecimalPoint = false;
       if (expr[endIndex] === "-") {
@@ -2630,12 +2179,7 @@ class Parser {
       while (endIndex < expr.length) {
         if (/\d/.test(expr[endIndex])) {
           endIndex++;
-        } else if (
-          expr[endIndex] === "." &&
-          !hasDecimalPoint &&
-          endIndex + 1 < expr.length &&
-          expr[endIndex + 1] !== "."
-        ) {
+        } else if (expr[endIndex] === "." && !hasDecimalPoint && endIndex + 1 < expr.length && expr[endIndex + 1] !== ".") {
           hasDecimalPoint = true;
           endIndex++;
         } else {
@@ -2648,7 +2192,7 @@ class Parser {
           const result = new Rational(decimalStr);
           return {
             value: result,
-            remainingExpr: expr.substring(endIndex),
+            remainingExpr: expr.substring(endIndex)
           };
         } catch (error) {}
       }
@@ -2681,9 +2225,7 @@ class Parser {
         i++;
       }
       if (numeratorStr.length === 0) {
-        throw new Error(
-          'Invalid mixed number format: missing numerator after ".."',
-        );
+        throw new Error('Invalid mixed number format: missing numerator after ".."');
       }
     }
     let explicitFraction = false;
@@ -2694,24 +2236,20 @@ class Parser {
         if (hasMixedForm) {
           throw new Error("Invalid mixed number format: missing denominator");
         }
-        const numerator2 = isNegative
-          ? -BigInt(numeratorStr)
-          : BigInt(numeratorStr);
+        const numerator2 = isNegative ? -BigInt(numeratorStr) : BigInt(numeratorStr);
         return {
           value: new Rational(numerator2, 1n),
-          remainingExpr: expr.substring(i - 1),
+          remainingExpr: expr.substring(i - 1)
         };
       }
       if (i < expr.length && expr[i] === "(") {
         if (hasMixedForm) {
           throw new Error("Invalid mixed number format: missing denominator");
         }
-        const numerator2 = isNegative
-          ? -BigInt(numeratorStr)
-          : BigInt(numeratorStr);
+        const numerator2 = isNegative ? -BigInt(numeratorStr) : BigInt(numeratorStr);
         return {
           value: new Rational(numerator2, 1n),
-          remainingExpr: expr.substring(i - 1),
+          remainingExpr: expr.substring(i - 1)
         };
       }
       while (i < expr.length && /\d/.test(expr[i])) {
@@ -2722,9 +2260,7 @@ class Parser {
         throw new Error("Invalid rational number format");
       }
       if (i < expr.length && expr[i] === "E") {
-        throw new Error(
-          "E notation not allowed directly after fraction without parentheses",
-        );
+        throw new Error("E notation not allowed directly after fraction without parentheses");
       }
     } else {
       if (hasMixedForm) {
@@ -2733,19 +2269,14 @@ class Parser {
       denominatorStr = "1";
     }
     if (hasMixedForm && i < expr.length && expr[i] === "E") {
-      throw new Error(
-        "E notation not allowed directly after mixed number without parentheses",
-      );
+      throw new Error("E notation not allowed directly after mixed number without parentheses");
     }
     let numerator, denominator;
     if (hasMixedForm) {
       numerator = BigInt(numeratorStr);
       denominator = BigInt(denominatorStr);
       const sign = wholePart < 0n ? -1n : 1n;
-      numerator =
-        sign *
-        ((wholePart.valueOf() < 0n ? -wholePart : wholePart) * denominator +
-          numerator);
+      numerator = sign * ((wholePart.valueOf() < 0n ? -wholePart : wholePart) * denominator + numerator);
     } else {
       numerator = isNegative ? -BigInt(numeratorStr) : BigInt(numeratorStr);
       denominator = BigInt(denominatorStr);
@@ -2759,7 +2290,7 @@ class Parser {
     }
     return {
       value: rational,
-      remainingExpr: expr.substring(i),
+      remainingExpr: expr.substring(i)
     };
   }
 }
@@ -2807,19 +2338,13 @@ class Fraction {
     return new Fraction(this.#numerator - other.numerator, this.#denominator);
   }
   multiply(other) {
-    return new Fraction(
-      this.#numerator * other.numerator,
-      this.#denominator * other.denominator,
-    );
+    return new Fraction(this.#numerator * other.numerator, this.#denominator * other.denominator);
   }
   divide(other) {
     if (other.numerator === 0n) {
       throw new Error("Division by zero");
     }
-    return new Fraction(
-      this.#numerator * other.denominator,
-      this.#denominator * other.numerator,
-    );
+    return new Fraction(this.#numerator * other.denominator, this.#denominator * other.numerator);
   }
   pow(exponent) {
     const n = BigInt(exponent);
@@ -2839,10 +2364,7 @@ class Fraction {
   }
   scale(factor) {
     const scaleFactor = BigInt(factor);
-    return new Fraction(
-      this.#numerator * scaleFactor,
-      this.#denominator * scaleFactor,
-    );
+    return new Fraction(this.#numerator * scaleFactor, this.#denominator * scaleFactor);
   }
   static #gcd(a, b) {
     a = a < 0n ? -a : a;
@@ -2867,10 +2389,7 @@ class Fraction {
     return new Fraction(reducedNum, reducedDen);
   }
   static mediant(a, b) {
-    return new Fraction(
-      a.numerator + b.numerator,
-      a.denominator + b.denominator,
-    );
+    return new Fraction(a.numerator + b.numerator, a.denominator + b.denominator);
   }
   toRational() {
     return new Rational(this.#numerator, this.#denominator);
@@ -2885,10 +2404,7 @@ class Fraction {
     return `${this.#numerator}/${this.#denominator}`;
   }
   equals(other) {
-    return (
-      this.#numerator === other.numerator &&
-      this.#denominator === other.denominator
-    );
+    return this.#numerator === other.numerator && this.#denominator === other.denominator;
   }
   lessThan(other) {
     const leftSide = this.#numerator * other.denominator;
@@ -2948,7 +2464,7 @@ class FractionInterval {
     const mediant = Fraction.mediant(this.#low, this.#high);
     return [
       new FractionInterval(this.#low, mediant),
-      new FractionInterval(mediant, this.#high),
+      new FractionInterval(mediant, this.#high)
     ];
   }
   partitionWithMediants(n = 1) {
@@ -2959,7 +2475,7 @@ class FractionInterval {
       return [this];
     }
     let intervals = [this];
-    for (let level = 0; level < n; level++) {
+    for (let level = 0;level < n; level++) {
       const newIntervals = [];
       for (const interval of intervals) {
         const splitIntervals = interval.mediantSplit();
@@ -2981,41 +2497,32 @@ class FractionInterval {
     }
     const allPoints = [this.#low, ...partitionPoints, this.#high];
     allPoints.sort((a, b) => {
-      if (a.equals(b)) return 0;
-      if (a.lessThan(b)) return -1;
+      if (a.equals(b))
+        return 0;
+      if (a.lessThan(b))
+        return -1;
       return 1;
     });
-    if (
-      !allPoints[0].equals(this.#low) ||
-      !allPoints[allPoints.length - 1].equals(this.#high)
-    ) {
+    if (!allPoints[0].equals(this.#low) || !allPoints[allPoints.length - 1].equals(this.#high)) {
       throw new Error("Partition points should be within the interval");
     }
     const uniquePoints = [];
-    for (let i = 0; i < allPoints.length; i++) {
+    for (let i = 0;i < allPoints.length; i++) {
       if (i === 0 || !allPoints[i].equals(allPoints[i - 1])) {
         uniquePoints.push(allPoints[i]);
       }
     }
     const intervals = [];
-    for (let i = 0; i < uniquePoints.length - 1; i++) {
-      intervals.push(
-        new FractionInterval(uniquePoints[i], uniquePoints[i + 1]),
-      );
+    for (let i = 0;i < uniquePoints.length - 1; i++) {
+      intervals.push(new FractionInterval(uniquePoints[i], uniquePoints[i + 1]));
     }
     return intervals;
   }
   toRationalInterval() {
-    return new RationalInterval(
-      this.#low.toRational(),
-      this.#high.toRational(),
-    );
+    return new RationalInterval(this.#low.toRational(), this.#high.toRational());
   }
   static fromRationalInterval(interval) {
-    return new FractionInterval(
-      Fraction.fromRational(interval.low),
-      Fraction.fromRational(interval.high),
-    );
+    return new FractionInterval(Fraction.fromRational(interval.low), Fraction.fromRational(interval.high));
   }
   toString() {
     return `${this.#low.toString()}:${this.#high.toString()}`;
@@ -3040,16 +2547,10 @@ class WebCalculator {
     this.outputHistory = [];
     this.currentEntry = null;
     this.mobileInput = "";
+    this.mobileKeypadSetup = false;
     this.initializeElements();
     this.setupEventListeners();
-    if (!this.isMobile()) {
-      this.displayWelcome();
-    } else {
-      // Initialize mobile display after DOM is ready
-      setTimeout(() => {
-        this.updateMobileDisplay();
-      }, 100);
-    }
+    this.displayWelcome();
   }
   initializeElements() {
     this.inputElement = document.getElementById("calculatorInput");
@@ -3059,15 +2560,9 @@ class WebCalculator {
     this.helpButton = document.getElementById("helpButton");
     this.clearButton = document.getElementById("clearButton");
     this.closeHelp = document.getElementById("closeHelp");
-
-    // Mobile keypad elements
     this.mobileKeypad = document.getElementById("mobileKeypad");
-    this.keypadGrid = document.getElementById("keypadGrid");
     this.commandPanel = document.getElementById("commandPanel");
     this.closeCommandPanel = document.getElementById("closeCommandPanel");
-
-    // Add debug info
-    this.addDebugInfo();
   }
   setupEventListeners() {
     this.inputElement.addEventListener("keydown", (e) => this.handleKeyDown(e));
@@ -3083,17 +2578,6 @@ class WebCalculator {
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         this.hideHelp();
-        if (this.isMobile()) {
-          this.hideCommandPanel();
-        }
-      }
-    });
-
-    // Add resize listener for debug
-    window.addEventListener("resize", () => {
-      this.updateDebugInfo();
-      if (this.isMobile() && !this.mobileKeypad.classList.contains("show")) {
-        this.setupMobileKeypad();
       }
     });
     if (!this.isMobile()) {
@@ -3109,10 +2593,7 @@ class WebCalculator {
     }
   }
   isMobile() {
-    // For easier debugging, using screen width only
-    const isMobile = window.innerWidth <= 768;
-    this.updateDebugInfo();
-    return isMobile;
+    return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768 && "ontouchstart" in window;
   }
   handleKeyDown(e) {
     switch (e.key) {
@@ -3130,7 +2611,8 @@ class WebCalculator {
     }
   }
   navigateHistory(direction) {
-    if (this.history.length === 0) return;
+    if (this.history.length === 0)
+      return;
     if (direction === -1) {
       if (this.historyIndex === -1) {
         this.historyIndex = this.history.length - 1;
@@ -3138,7 +2620,8 @@ class WebCalculator {
         this.historyIndex--;
       }
     } else {
-      if (this.historyIndex === -1) return;
+      if (this.historyIndex === -1)
+        return;
       if (this.historyIndex < this.history.length - 1) {
         this.historyIndex++;
       } else {
@@ -3149,28 +2632,19 @@ class WebCalculator {
     }
     this.inputElement.value = this.history[this.historyIndex];
     setTimeout(() => {
-      this.inputElement.setSelectionRange(
-        this.inputElement.value.length,
-        this.inputElement.value.length,
-      );
+      this.inputElement.setSelectionRange(this.inputElement.value.length, this.inputElement.value.length);
     }, 0);
   }
   processInput() {
-    // On mobile, use the mobileInput instead of input element
     if (this.isMobile()) {
       const mobileInputValue = this.mobileInput.trim();
-      if (!mobileInputValue) return;
+      if (!mobileInputValue)
+        return;
       this.processExpression(mobileInputValue);
       this.mobileInput = "";
       this.updateMobileDisplay();
-      // Ensure scroll after processing
-      requestAnimationFrame(() => {
-        this.scrollToBottom();
-      });
       return;
     }
-
-    // Desktop behavior
     const input = this.inputElement.value.trim();
     if (!input) {
       this.inputElement.focus();
@@ -3178,26 +2652,12 @@ class WebCalculator {
     }
     this.processExpression(input);
   }
-
   processExpression(input) {
-    if (
-      this.history.length === 0 ||
-      this.history[this.history.length - 1] !== input
-    ) {
+    if (this.history.length === 0 || this.history[this.history.length - 1] !== input) {
       this.history.push(input);
     }
     this.historyIndex = -1;
     this.currentEntry = { input, output: "", isError: false };
-
-    // On mobile, clear the input display before adding to output
-    if (this.isMobile()) {
-      this.mobileInput = "";
-      this.updateMobileDisplay();
-      requestAnimationFrame(() => {
-        this.scrollToBottom();
-      });
-    }
-
     this.addToOutput(input, null, false);
     const upperInput = input.toUpperCase();
     if (upperInput === "HELP") {
@@ -3263,30 +2723,20 @@ class WebCalculator {
       const hasFraction = input.includes("/");
       const hasDecimalPoint = input.includes(".");
       const isSimpleInteger = /^\s*-?\d+\s*$/.test(input);
-      const hasPlainDecimal =
-        hasDecimalPoint && !hasExactDecimal && !hasFraction;
+      const hasPlainDecimal = hasDecimalPoint && !hasExactDecimal && !hasFraction;
       const result = Parser.parse(input, {
-        typeAware:
-          hasExactDecimal || hasFraction || isSimpleInteger || !hasPlainDecimal,
+        typeAware: hasExactDecimal || hasFraction || isSimpleInteger || !hasPlainDecimal
       });
       const output = this.formatResult(result);
       this.addToOutput("", output, false);
       this.finishEntry(output);
     } catch (error) {
       let errorMessage;
-      if (
-        error.message.includes("Division by zero") ||
-        error.message.includes("Denominator cannot be zero")
-      ) {
+      if (error.message.includes("Division by zero") || error.message.includes("Denominator cannot be zero")) {
         errorMessage = "Error: Division by zero is undefined";
-      } else if (
-        error.message.includes("Factorial") &&
-        error.message.includes("negative")
-      ) {
+      } else if (error.message.includes("Factorial") && error.message.includes("negative")) {
         errorMessage = "Error: Factorial is not defined for negative numbers";
-      } else if (
-        error.message.includes("Zero cannot be raised to the power of zero")
-      ) {
+      } else if (error.message.includes("Zero cannot be raised to the power of zero")) {
         errorMessage = "Error: 0^0 is undefined";
       } else {
         errorMessage = `Error: ${error.message}`;
@@ -3300,82 +2750,6 @@ class WebCalculator {
       setTimeout(() => this.inputElement.focus(), 50);
     }
   }
-
-  reloadExpression(expression) {
-    if (this.isMobile()) {
-      this.mobileInput = expression;
-      this.updateMobileDisplay();
-      // Don't execute, just populate the input
-    } else {
-      this.inputElement.value = expression;
-      this.inputElement.focus();
-      this.inputElement.setSelectionRange(expression.length, expression.length);
-    }
-  }
-
-  injectValue(value) {
-    if (this.isMobile()) {
-      this.mobileInput = (this.mobileInput || "") + value;
-      this.updateMobileDisplay();
-    } else {
-      this.insertAtCursor(value);
-    }
-  }
-
-  extractValue(outputText) {
-    // Extract numeric value or expression from output
-    // Handle different formats: "5/4 (1.25)", "1.25", "5/4", etc.
-    const match = outputText.match(/^([^(]+?)(?:\s*\(|$)/);
-    if (match) {
-      return match[1].trim();
-    }
-    return outputText.trim();
-  }
-
-  updateMobileDisplay() {
-    if (this.isMobile()) {
-      // Show current input in a temporary div at bottom of output
-      let tempDiv = document.getElementById("mobileInputDisplay");
-
-      // Always show the prompt when on mobile
-      if (!tempDiv) {
-        tempDiv = document.createElement("div");
-        tempDiv.id = "mobileInputDisplay";
-        tempDiv.style.cssText = `
-          padding: 10px 15px;
-          background: #e8f4f8;
-          border-top: 2px solid #2563eb;
-          position: fixed;
-          bottom: auto;
-          top: 50vh;
-          left: 0;
-          right: 0;
-          font-weight: 600;
-          color: #2563eb;
-          z-index: 150;
-          transform: translateY(-100%);
-          font-family: inherit;
-          font-size: 1rem;
-        `;
-        document.body.appendChild(tempDiv);
-      }
-
-      // Update the content
-      tempDiv.innerHTML = `<span style="color: #059669; font-weight: bold;">></span> ${this.escapeHtml(this.mobileInput || "")}`;
-
-      // Ensure visibility when keypad is visible
-      if (document.body.classList.contains("keypad-visible")) {
-        tempDiv.style.display = "block";
-        // Always scroll to bottom when updating mobile display
-        requestAnimationFrame(() => {
-          this.scrollToBottom();
-        });
-      } else {
-        tempDiv.style.display = "none";
-      }
-    }
-  }
-
   finishEntry(output) {
     if (this.currentEntry) {
       this.currentEntry.output = output;
@@ -3404,9 +2778,7 @@ class WebCalculator {
     const decimal = this.formatDecimal(rational);
     const fraction = rational.toString();
     const isTerminatingDecimal = repeatingDecimal.endsWith("#0");
-    const displayDecimal = isTerminatingDecimal
-      ? repeatingDecimal
-      : this.formatRepeatingDecimal(rational);
+    const displayDecimal = isTerminatingDecimal ? repeatingDecimal : this.formatRepeatingDecimal(rational);
     const periodInfo = period > 0 ? ` {period: ${period}}` : "";
     switch (this.outputMode) {
       case "DECI":
@@ -3427,10 +2799,7 @@ class WebCalculator {
     const decimal = rational.toDecimal();
     if (decimal.length > this.decimalLimit + 2) {
       const dotIndex = decimal.indexOf(".");
-      if (
-        dotIndex !== -1 &&
-        decimal.length - dotIndex - 1 > this.decimalLimit
-      ) {
+      if (dotIndex !== -1 && decimal.length - dotIndex - 1 > this.decimalLimit) {
         return decimal.substring(0, dotIndex + this.decimalLimit + 1) + "...";
       }
     }
@@ -3442,20 +2811,11 @@ class WebCalculator {
       return repeatingDecimal;
     }
     if (repeatingDecimal.endsWith("#0")) {
-      const withoutRepeating = repeatingDecimal.substring(
-        0,
-        repeatingDecimal.length - 2,
-      );
+      const withoutRepeating = repeatingDecimal.substring(0, repeatingDecimal.length - 2);
       if (withoutRepeating.length > this.decimalLimit + 2) {
         const dotIndex = withoutRepeating.indexOf(".");
-        if (
-          dotIndex !== -1 &&
-          withoutRepeating.length - dotIndex - 1 > this.decimalLimit
-        ) {
-          return (
-            withoutRepeating.substring(0, dotIndex + this.decimalLimit + 1) +
-            "..."
-          );
+        if (dotIndex !== -1 && withoutRepeating.length - dotIndex - 1 > this.decimalLimit) {
+          return withoutRepeating.substring(0, dotIndex + this.decimalLimit + 1) + "...";
         }
       }
       return withoutRepeating;
@@ -3471,9 +2831,7 @@ class WebCalculator {
       if (remainingSpace <= 1) {
         return beforeHash + "#...";
       } else if (afterHash.length > remainingSpace - 1) {
-        return (
-          beforeHash + "#" + afterHash.substring(0, remainingSpace - 1) + "..."
-        );
+        return beforeHash + "#" + afterHash.substring(0, remainingSpace - 1) + "...";
       }
     }
     return repeatingDecimal;
@@ -3491,17 +2849,15 @@ class WebCalculator {
     const highFraction = interval.high.toString();
     const lowIsTerminating = lowRepeating.endsWith("#0");
     const highIsTerminating = highRepeating.endsWith("#0");
-    const lowDisplay = lowIsTerminating
-      ? lowRepeating.substring(0, lowRepeating.length - 2)
-      : this.formatRepeatingDecimal(interval.low);
-    const highDisplay = highIsTerminating
-      ? highRepeating.substring(0, highRepeating.length - 2)
-      : this.formatRepeatingDecimal(interval.high);
+    const lowDisplay = lowIsTerminating ? lowRepeating.substring(0, lowRepeating.length - 2) : this.formatRepeatingDecimal(interval.low);
+    const highDisplay = highIsTerminating ? highRepeating.substring(0, highRepeating.length - 2) : this.formatRepeatingDecimal(interval.high);
     let periodInfo = "";
     if (lowPeriod > 0 || highPeriod > 0) {
       const periodParts = [];
-      if (lowPeriod > 0) periodParts.push(`low: ${lowPeriod}`);
-      if (highPeriod > 0) periodParts.push(`high: ${highPeriod}`);
+      if (lowPeriod > 0)
+        periodParts.push(`low: ${lowPeriod}`);
+      if (highPeriod > 0)
+        periodParts.push(`high: ${highPeriod}`);
       periodInfo = ` {period: ${periodParts.join(", ")}}`;
     }
     switch (this.outputMode) {
@@ -3521,40 +2877,28 @@ class WebCalculator {
         return `${lowFraction}:${highFraction}`;
     }
   }
-  addToOutput(input, output, isError = false) {
+  addToOutput(input = null, output = null, isError = false) {
     const entry = document.createElement("div");
     entry.className = "output-entry";
     if (input) {
       const inputLine = document.createElement("div");
       inputLine.className = "input-line";
       inputLine.innerHTML = `<span class="prompt">></span><span>${this.escapeHtml(input)}</span><span class="reload-icon" title="Reload expression">↻</span>`;
-
-      // Add click handler for reload
       inputLine.addEventListener("click", (e) => {
-        if (
-          e.target.classList.contains("reload-icon") ||
-          e.currentTarget === inputLine
-        ) {
+        if (e.target.classList.contains("reload-icon") || e.currentTarget === inputLine) {
           e.stopPropagation();
           this.reloadExpression(input);
         }
       });
-
       entry.appendChild(inputLine);
     }
     if (output) {
       const outputLine = document.createElement("div");
       outputLine.className = isError ? "error-line" : "output-line";
-
       if (!isError) {
         outputLine.innerHTML = `${this.escapeHtml(output)}<span class="inject-icon" title="Inject value">→</span>`;
-
-        // Add click handler for inject
         outputLine.addEventListener("click", (e) => {
-          if (
-            e.target.classList.contains("inject-icon") ||
-            e.currentTarget === outputLine
-          ) {
+          if (e.target.classList.contains("inject-icon") || e.currentTarget === outputLine) {
             e.stopPropagation();
             const value = this.extractValue(output);
             this.injectValue(value);
@@ -3563,33 +2907,18 @@ class WebCalculator {
       } else {
         outputLine.textContent = output;
       }
-
       entry.appendChild(outputLine);
     }
     this.outputHistoryElement.appendChild(entry);
-    // Use requestAnimationFrame to ensure DOM updates are complete
-    requestAnimationFrame(() => {
-      this.scrollToBottom();
-    });
-  }
-
-  scrollToBottom() {
-    setTimeout(() => {
-      this.outputHistoryElement.scrollTop =
-        this.outputHistoryElement.scrollHeight;
-
-      // For mobile, ensure scroll happens when keyboard is shown
-      if (
-        this.isMobile() &&
-        document.body.classList.contains("keypad-visible")
-      ) {
-        // Double-check scroll after keyboard animation
-        setTimeout(() => {
-          this.outputHistoryElement.scrollTop =
-            this.outputHistoryElement.scrollHeight;
-        }, 300);
-      }
-    }, 10);
+    if (this.isMobile() && document.body.classList.contains("keypad-visible")) {
+      requestAnimationFrame(() => {
+        this.scrollToKeepAboveInput();
+      });
+    } else {
+      requestAnimationFrame(() => {
+        this.outputHistoryElement.scrollTop = this.outputHistoryElement.scrollHeight;
+      });
+    }
   }
   escapeHtml(text) {
     const div = document.createElement("div");
@@ -3597,22 +2926,20 @@ class WebCalculator {
     return div.innerHTML;
   }
   displayWelcome() {
-    if (!this.isMobile()) {
-      const welcome = document.createElement("div");
-      welcome.className = "output-entry";
-      welcome.innerHTML = `
-        <div class="output-line" style="color: #059669; font-weight: 600;">
-          Welcome to Ratmath Calculator!
-        </div>
-        <div class="output-line" style="margin-top: 0.5rem;">
-          Type mathematical expressions and press Enter to calculate.
-        </div>
-        <div class="output-line">
-          Use the Help button or type HELP for detailed instructions.
-        </div>
-      `;
-      this.outputHistoryElement.appendChild(welcome);
-    }
+    const welcome = document.createElement("div");
+    welcome.className = "output-entry";
+    welcome.innerHTML = `
+      <div class="output-line" style="color: #059669; font-weight: 600;">
+        Welcome to Ratmath Calculator!
+      </div>
+      <div class="output-line" style="margin-top: 0.5rem;">
+        Type mathematical expressions and press Enter to calculate.
+      </div>
+      <div class="output-line">
+        Use the Help button or type HELP for detailed instructions.
+      </div>
+    `;
+    this.outputHistoryElement.appendChild(welcome);
   }
   showHelp() {
     this.helpModal.style.display = "block";
@@ -3629,8 +2956,8 @@ class WebCalculator {
     this.outputHistoryElement.innerHTML = "";
     this.outputHistory = [];
     this.currentEntry = null;
+    this.displayWelcome();
     if (!this.isMobile()) {
-      this.displayWelcome();
       setTimeout(() => this.inputElement.focus(), 100);
     }
   }
@@ -3652,9 +2979,7 @@ class WebCalculator {
     }
     let text = `Ratmath Calculator Session
 `;
-    text +=
-      "=".repeat(30) +
-      `
+    text += "=".repeat(30) + `
 
 `;
     for (const entry of this.outputHistory) {
@@ -3713,29 +3038,20 @@ class WebCalculator {
     }
   }
   setupMobileKeypad() {
-    // Check if already setup to prevent duplicate listeners
     if (this.mobileKeypadSetup) {
-      // Just show the keypad and update display
       this.mobileKeypad.classList.add("show");
       document.body.classList.add("keypad-visible");
       this.updateMobileDisplay();
-      this.scrollToBottom();
+      this.scrollToKeepAboveInput();
       return;
     }
     this.mobileKeypadSetup = true;
-
-    // Show keypad by default on mobile
     this.mobileKeypad.classList.add("show");
     document.body.classList.add("keypad-visible");
-    this.updateDebugInfo();
-
-    // Show the input prompt immediately
     setTimeout(() => {
       this.updateMobileDisplay();
-      this.scrollToBottom();
+      this.scrollToKeepAboveInput();
     }, 50);
-
-    // Setup keypad buttons
     const keypadButtons = document.querySelectorAll(".keypad-btn[data-key]");
     keypadButtons.forEach((button) => {
       button.addEventListener("click", (e) => {
@@ -3743,11 +3059,8 @@ class WebCalculator {
         e.stopPropagation();
         const key = button.getAttribute("data-key");
         this.insertAtCursor(key);
-        // Don't focus input on mobile to prevent native keyboard
       });
     });
-
-    // Setup action buttons
     const actionButtons = document.querySelectorAll(".keypad-btn[data-action]");
     actionButtons.forEach((button) => {
       button.addEventListener("click", (e) => {
@@ -3773,13 +3086,9 @@ class WebCalculator {
         }
       });
     });
-
-    // Setup command panel
     this.closeCommandPanel.addEventListener("click", () => {
       this.hideCommandPanel();
     });
-
-    // Setup command buttons
     const cmdButtons = document.querySelectorAll(".command-btn");
     cmdButtons.forEach((button) => {
       button.addEventListener("click", (e) => {
@@ -3807,99 +3116,81 @@ class WebCalculator {
         }
       });
     });
-
-    // Prevent keyboard from showing on input focus when keypad is active
     this.inputElement.addEventListener("focus", (e) => {
       if (this.isMobile() && this.mobileKeypad.classList.contains("show")) {
-        // Prevent native keyboard by blurring immediately
         e.preventDefault();
         this.inputElement.blur();
       }
     });
-
-    // Handle click on input to show cursor position
-    this.inputElement.addEventListener("click", (e) => {
-      if (this.isMobile() && this.inputElement.readOnly) {
-        // Allow cursor positioning even when readonly
-        const rect = this.inputElement.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const charWidth = 8; // Approximate character width
-        const position = Math.round(x / charWidth);
-        const maxPosition = this.inputElement.value.length;
-        const newPosition = Math.min(Math.max(0, position), maxPosition);
-        this.inputElement.setSelectionRange(newPosition, newPosition);
+    this.outputHistoryElement.addEventListener("scroll", () => {
+      if (document.body.classList.contains("keypad-visible")) {
+        requestAnimationFrame(() => this.enforceScrollBoundary());
       }
     });
   }
-
-  showCommandPanel() {
-    this.commandPanel.classList.add("show");
-  }
-
-  hideCommandPanel() {
-    this.commandPanel.classList.remove("show");
-  }
-
-  insertAtCursor(text) {
+  updateMobileDisplay() {
     if (this.isMobile()) {
-      this.mobileInput = (this.mobileInput || "") + text;
+      let tempDiv = document.getElementById("mobileInputDisplay");
+      if (!tempDiv) {
+        tempDiv = document.createElement("div");
+        tempDiv.id = "mobileInputDisplay";
+        const calculator = document.querySelector(".calculator");
+        if (calculator) {
+          calculator.appendChild(tempDiv);
+        }
+      }
+      tempDiv.innerHTML = `<span style="color: #059669; font-weight: bold; font-size: 0.95rem; margin-right: 6px;">></span> <span style="font-size: 0.9rem;">${this.escapeHtml(this.mobileInput || "")}</span>`;
+      if (document.body.classList.contains("keypad-visible")) {
+        tempDiv.style.display = "flex";
+        this.scrollToKeepAboveInput();
+      } else {
+        tempDiv.style.display = "none";
+      }
+    }
+  }
+  scrollToKeepAboveInput() {
+    this.outputHistoryElement.scrollTop = this.outputHistoryElement.scrollHeight;
+  }
+  enforceScrollBoundary() {
+    const inputDisplay = document.getElementById("mobileInputDisplay");
+    if (!inputDisplay)
+      return;
+    this.scrollToKeepAboveInput();
+  }
+  reloadExpression(expression) {
+    if (this.isMobile()) {
+      this.mobileInput = expression;
       this.updateMobileDisplay();
     } else {
-      const input = this.inputElement;
-      const startPos = input.selectionStart || 0;
-      const endPos = input.selectionEnd || 0;
-      const currentValue = input.value;
-
-      input.value =
-        currentValue.substring(0, startPos) +
-        text +
-        currentValue.substring(endPos);
-
-      // Set cursor position after the inserted text
-      const newPos = startPos + text.length;
-      input.setSelectionRange(newPos, newPos);
-      input.focus();
-    }
-    this.updateDebugInfo();
-  }
-
-  addDebugInfo() {
-    if (window.location.hash === "#debug") {
-      const debugDiv = document.createElement("div");
-      debugDiv.id = "debugInfo";
-      debugDiv.style.cssText = `
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 10px;
-        font-size: 12px;
-        font-family: monospace;
-        z-index: 9999;
-        border-radius: 4px;
-        max-width: 200px;
-      `;
-      document.body.appendChild(debugDiv);
-      this.debugDiv = debugDiv;
-      this.updateDebugInfo();
+      this.inputElement.value = expression;
+      this.inputElement.focus();
     }
   }
-
-  updateDebugInfo() {
-    if (this.debugDiv) {
-      const info = [
-        `Width: ${window.innerWidth}px`,
-        `Height: ${window.innerHeight}px`,
-        `Mobile: ${window.innerWidth <= 768 ? "YES" : "NO"}`,
-        `Keypad: ${this.mobileKeypad && this.mobileKeypad.classList.contains("show") ? "SHOWN" : "HIDDEN"}`,
-        `Body Class: ${document.body.classList.contains("keypad-visible") ? "keypad-visible" : "none"}`,
-        `Touch: ${"ontouchstart" in window ? "YES" : "NO"}`,
-      ];
-      this.debugDiv.innerHTML = info.join("<br>");
+  injectValue(value) {
+    if (this.isMobile()) {
+      this.mobileInput += value;
+      this.updateMobileDisplay();
+    } else {
+      this.insertAtCursor(value);
     }
   }
-
+  extractValue(output) {
+    const match = output.match(/^([\d\/.:\-]+)/);
+    return match ? match[1] : "";
+  }
+  insertAtCursor(text) {
+    if (this.isMobile()) {
+      this.mobileInput += text;
+      this.updateMobileDisplay();
+    } else {
+      const start = this.inputElement.selectionStart;
+      const end = this.inputElement.selectionEnd;
+      const value = this.inputElement.value;
+      this.inputElement.value = value.substring(0, start) + text + value.substring(end);
+      this.inputElement.selectionStart = this.inputElement.selectionEnd = start + text.length;
+      this.inputElement.focus();
+    }
+  }
   handleBackspace() {
     if (this.isMobile()) {
       if (this.mobileInput.length > 0) {
@@ -3907,38 +3198,31 @@ class WebCalculator {
         this.updateMobileDisplay();
       }
     } else {
-      const input = this.inputElement;
-      const startPos = input.selectionStart || 0;
-      const endPos = input.selectionEnd || 0;
-      const currentValue = input.value;
-
-      if (startPos !== endPos) {
-        // Delete selected text
-        input.value =
-          currentValue.substring(0, startPos) + currentValue.substring(endPos);
-        input.setSelectionRange(startPos, startPos);
-      } else if (startPos > 0) {
-        // Delete character before cursor
-        input.value =
-          currentValue.substring(0, startPos - 1) +
-          currentValue.substring(startPos);
-        input.setSelectionRange(startPos - 1, startPos - 1);
+      const start = this.inputElement.selectionStart;
+      const end = this.inputElement.selectionEnd;
+      const value = this.inputElement.value;
+      if (start !== end) {
+        this.inputElement.value = value.substring(0, start) + value.substring(end);
+        this.inputElement.selectionStart = this.inputElement.selectionEnd = start;
+      } else if (start > 0) {
+        this.inputElement.value = value.substring(0, start - 1) + value.substring(start);
+        this.inputElement.selectionStart = this.inputElement.selectionEnd = start - 1;
       }
-      input.focus();
+      this.inputElement.focus();
     }
   }
-
   showCommandPanel() {
     this.commandPanel.classList.add("show");
   }
-
   hideCommandPanel() {
     this.commandPanel.classList.remove("show");
   }
 }
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded", () => {
-    new WebCalculator();
+    new WebCalculator;
   });
 }
-export { WebCalculator };
+export {
+  WebCalculator
+};
