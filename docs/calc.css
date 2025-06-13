@@ -581,8 +581,9 @@ header p {
     /* Show mobile keypad */
     .mobile-keypad {
         display: flex;
+        position: static;
         flex-direction: column;
-        height: 40vh;
+        height: 40vdh;
     }
 
     /* When keypad is visible */
