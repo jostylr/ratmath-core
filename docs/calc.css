@@ -341,6 +341,7 @@ header p {
 
 .command-panel.show {
     transform: translateY(0);
+    display: block;
 }
 
 .command-panel-header {
