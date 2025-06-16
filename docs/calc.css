@@ -71,8 +71,8 @@ header p {
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 1.5rem;
-    font-size: 0.95rem;
+    padding: 0.5rem;
+    font-size: 1.5rem;
     line-height: 1.4;
     -webkit-overflow-scrolling: touch;
 }
@@ -92,7 +92,7 @@ header p {
     color: #059669;
     font-weight: bold;
     margin-right: 0.75rem;
-    font-size: 1.1rem;
+    font-size: 1.5rem;
 }
 
 .calculator-input {
@@ -533,7 +533,9 @@ header p {
         padding: 0;
         height: 100dvh;
     }
-
+    body.keypad-visible .calculator {
+        font-size: 1.5rem;
+    }
     header {
         padding: 1rem;
         margin-bottom: 0;
@@ -665,7 +667,8 @@ header p {
     }
 
     .keypad-btn {
-        font-size: 1.1rem;
+        font-size: 1.5rem;
+        font-weight: 700;
     }
 
     .mobile-keypad {
@@ -674,6 +677,7 @@ header p {
 
     body.keypad-visible .calculator {
         height: calc(55dvh - 2.5rem);
+        font-size: 1.5rem;
     }
 
     .command-buttons {
