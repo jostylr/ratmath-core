@@ -5,7 +5,7 @@
  * Run with: bun examples/basic-usage.js
  */
 
-import { Rational, RationalInterval, Parser } from '../src/index.js';
+import { Rational, RationalInterval, Parser } from '../index.js';
 
 // ---- Rational arithmetic examples ----
 console.log('=== Rational Arithmetic ===');

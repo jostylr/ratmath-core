@@ -5,7 +5,7 @@
  * different power operations (pow vs mpow).
  */
 
-import { Rational, RationalInterval, Parser } from '../src/index.js';
+import { Rational, RationalInterval, Parser } from '../index.js';
 
 console.log('=== Static Constants ===');
 console.log('Rational.zero:', Rational.zero.toString());

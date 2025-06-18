@@ -2,7 +2,7 @@
  * Examples demonstrating repeating decimal parsing and conversion to exact rationals
  */
 
-import { parseRepeatingDecimal, Rational, Parser } from '../src/index.js';
+import { parseRepeatingDecimal, Rational, Parser } from '../index.js';
 
 console.log('=== Repeating Decimal Examples ===\n');
 

@@ -8,6 +8,29 @@
 export class Rational {
   #numerator;
   #denominator;
+  
+  // Lazy computation cache
+  #isNegative;
+  #wholePart;
+  #remainder;
+  #initialSegment;
+  #periodDigits;
+  #periodLength;
+  #isTerminating;
+  
+  // Class variables for decimal computation
+  static DEFAULT_PERIOD_DIGITS = 20;
+  static MAX_PERIOD_CHECK = 10000000; // 10^7
+  
+  // Precomputed powers of 5 for efficient factor counting
+  static POWERS_OF_5 = {
+    '16': 5n ** 16n, // 152587890625
+    '8': 5n ** 8n,   // 390625
+    '4': 5n ** 4n,   // 625
+    '2': 5n ** 2n,   // 25
+    '1': 5n          // 5
+  };
+  
   static zero = new Rational(0, 1);
   static one = new Rational(1, 1);
 
@@ -108,6 +131,9 @@ export class Rational {
 
     // Normalize the representation
     this.#normalize();
+    
+    // Set isNegative flag for display purposes
+    this.#isNegative = this.#numerator < 0n;
   }
 
   /**
@@ -473,27 +499,22 @@ export class Rational {
       return this.#numerator.toString();
     }
     
-    // Handle negative numbers
-    const isNegative = this.#numerator < 0n;
-    const absNum = isNegative ? -this.#numerator : this.#numerator;
-    
-    // Calculate whole part and remainder (both positive)
-    const wholePart = absNum / this.#denominator;
-    const remainder = absNum % this.#denominator;
+    // Use lazy computation for whole part and remainder
+    this.#computeWholePart();
     
     // If there's no remainder, just return the whole part with sign
-    if (remainder === 0n) {
-      return isNegative ? `-${wholePart}` : `${wholePart}`;
+    if (this.#remainder === 0n) {
+      return this.#isNegative ? `-${this.#wholePart}` : `${this.#wholePart}`;
     }
     
     // For numbers with whole and fractional parts
-    if (wholePart === 0n) {
+    if (this.#wholePart === 0n) {
       // For fractions with no whole part (e.g., -1/2 -> -0..1/2)
-      return isNegative ? `-0..${remainder}/${this.#denominator}` : `0..${remainder}/${this.#denominator}`;
+      return this.#isNegative ? `-0..${this.#remainder}/${this.#denominator}` : `0..${this.#remainder}/${this.#denominator}`;
     } else {
       // For mixed numbers (e.g., -2 1/4 -> -2..1/4)
-      return isNegative ? `-${wholePart}..${remainder}/${this.#denominator}` : 
-                           `${wholePart}..${remainder}/${this.#denominator}`;
+      return this.#isNegative ? `-${this.#wholePart}..${this.#remainder}/${this.#denominator}` : 
+                                 `${this.#wholePart}..${this.#remainder}/${this.#denominator}`;
     }
   }
 
@@ -510,62 +531,9 @@ export class Rational {
    * @returns {string} Repeating decimal string (e.g., "1/3" becomes "0.#3")
    */
   toRepeatingDecimal() {
-    // Handle special cases
-    if (this.#numerator === 0n) {
-      return '0';
-    }
-
-    // Handle negative numbers
-    const isNegative = this.#numerator < 0n;
-    const num = isNegative ? -this.#numerator : this.#numerator;
-    const den = this.#denominator;
-
-    // Get integer part
-    const integerPart = num / den;
-    let remainder = num % den;
-
-    // If no remainder, it's a terminating decimal
-    if (remainder === 0n) {
-      return (isNegative ? '-' : '') + integerPart.toString();
-    }
-
-    // Perform long division to find the repeating pattern
-    const seenRemainders = new Map();
-    const digits = [];
-    let position = 0;
-
-    while (remainder !== 0n && !seenRemainders.has(remainder.toString())) {
-      seenRemainders.set(remainder.toString(), position);
-      remainder *= 10n;
-      const digit = remainder / den;
-      digits.push(digit.toString());
-      remainder = remainder % den;
-      position++;
-    }
-
-    let result = (isNegative ? '-' : '') + integerPart.toString();
-
-    if (remainder === 0n) {
-      // Terminating decimal
-      if (digits.length > 0) {
-        result += '.' + digits.join('') + '#0';
-      } else {
-        result += '#0';
-      }
-    } else {
-      // Repeating decimal
-      const repeatStart = seenRemainders.get(remainder.toString());
-      const nonRepeatingPart = digits.slice(0, repeatStart);
-      const repeatingPart = digits.slice(repeatStart);
-
-      if (nonRepeatingPart.length > 0) {
-        result += '.' + nonRepeatingPart.join('') + '#' + repeatingPart.join('');
-      } else {
-        result += '.#' + repeatingPart.join('');
-      }
-    }
-
-    return result;
+    // Use the new efficient method
+    const result = this.toRepeatingDecimalWithPeriod();
+    return result.decimal;
   }
 
   /**
@@ -578,64 +546,259 @@ export class Rational {
       return { decimal: '0', period: 0 };
     }
 
-    // Handle negative numbers
-    const isNegative = this.#numerator < 0n;
-    const num = isNegative ? -this.#numerator : this.#numerator;
-    const den = this.#denominator;
-
-    // Get integer part
-    const integerPart = num / den;
-    let remainder = num % den;
-
-    // If no remainder, it's a terminating decimal
-    if (remainder === 0n) {
-      return { 
-        decimal: (isNegative ? '-' : '') + integerPart.toString(),
-        period: 0
-      };
-    }
-
-    // Perform long division to find the repeating pattern
-    const seenRemainders = new Map();
-    const digits = [];
-    let position = 0;
-
-    while (remainder !== 0n && !seenRemainders.has(remainder.toString())) {
-      seenRemainders.set(remainder.toString(), position);
-      remainder *= 10n;
-      const digit = remainder / den;
-      digits.push(digit.toString());
-      remainder = remainder % den;
-      position++;
-    }
-
-    let result = (isNegative ? '-' : '') + integerPart.toString();
-
-    if (remainder === 0n) {
+    // Ensure whole part and decimal metadata are computed
+    this.#computeWholePart();
+    this.#computeDecimalMetadata();
+    
+    let result = (this.#isNegative ? '-' : '') + this.#wholePart.toString();
+    
+    if (this.#isTerminating) {
       // Terminating decimal
-      if (digits.length > 0) {
-        result += '.' + digits.join('') + '#0';
+      if (this.#initialSegment) {
+        result += '.' + this.#initialSegment + '#0';
       } else {
-        result += '#0';
+        // For pure integers, don't add #0
       }
       return { decimal: result, period: 0 };
     } else {
-      // Repeating decimal
-      const repeatStart = seenRemainders.get(remainder.toString());
-      const nonRepeatingPart = digits.slice(0, repeatStart);
-      const repeatingPart = digits.slice(repeatStart);
-
-      if (nonRepeatingPart.length > 0) {
-        result += '.' + nonRepeatingPart.join('') + '#' + repeatingPart.join('');
+      // Repeating decimal - use full period if possible for exact roundtrip
+      let periodDigits = this.#periodDigits;
+      
+      // If period is reasonable size and we only have partial digits, compute full period
+      if (this.#periodLength > 0 && this.#periodLength <= 1000 && 
+          this.#periodDigits.length < this.#periodLength) {
+        periodDigits = this.extractPeriodSegment(this.#initialSegment, this.#periodLength, this.#periodLength);
+      }
+      
+      if (this.#initialSegment) {
+        result += '.' + this.#initialSegment + '#' + periodDigits;
       } else {
-        result += '.#' + repeatingPart.join('');
+        result += '.#' + periodDigits;
       }
       
       return { 
         decimal: result, 
-        period: repeatingPart.length 
+        period: this.#periodLength 
       };
     }
+  }
+
+  /**
+   * Efficiently counts factors of 2 using bit shifting
+   * @param {bigint} n - The number to factor
+   * @returns {number} Number of factors of 2
+   * @private
+   */
+  static #countFactorsOf2(n) {
+    if (n === 0n) return 0;
+    let count = 0;
+    while ((n & 1n) === 0n) {
+      n >>= 1n;
+      count++;
+    }
+    return count;
+  }
+
+  /**
+   * Efficiently counts factors of 5 using chunking algorithm
+   * @param {bigint} n - The number to factor
+   * @returns {number} Number of factors of 5
+   * @private
+   */
+  static #countFactorsOf5(n) {
+    if (n === 0n) return 0;
+    let count = 0;
+    
+    // Use precomputed powers for efficient factoring
+    const powers = [
+      { exp: 16, value: Rational.POWERS_OF_5['16'] },
+      { exp: 8, value: Rational.POWERS_OF_5['8'] },
+      { exp: 4, value: Rational.POWERS_OF_5['4'] },
+      { exp: 2, value: Rational.POWERS_OF_5['2'] },
+      { exp: 1, value: Rational.POWERS_OF_5['1'] }
+    ];
+    
+    for (const { exp, value } of powers) {
+      while (n % value === 0n) {
+        n /= value;
+        count += exp;
+      }
+    }
+    
+    return count;
+  }
+
+  /**
+   * Computes whole part and remainder (lazy computation)
+   * @private
+   */
+  #computeWholePart() {
+    if (this.#wholePart !== undefined) return;
+    
+    const absNumerator = this.#numerator < 0n ? -this.#numerator : this.#numerator;
+    this.#wholePart = absNumerator / this.#denominator;
+    this.#remainder = absNumerator % this.#denominator;
+  }
+
+  /**
+   * Computes decimal representation metadata with caching and efficient algorithms
+   * @param {number} maxPeriodDigits - Maximum number of period digits to compute (default: class DEFAULT_PERIOD_DIGITS)
+   * @private
+   */
+  #computeDecimalMetadata(maxPeriodDigits = Rational.DEFAULT_PERIOD_DIGITS) {
+    // Return cached values if already computed
+    if (this.#periodLength !== undefined) return;
+    
+    // Ensure whole part and remainder are computed
+    this.#computeWholePart();
+    
+    if (this.#remainder === 0n) {
+      // Pure integer - no fractional part
+      this.#initialSegment = '';
+      this.#periodDigits = '';
+      this.#periodLength = 0;
+      this.#isTerminating = true;
+      return;
+    }
+
+    // Use efficient factor counting
+    const factors2 = Rational.#countFactorsOf2(this.#denominator);
+    const factors5 = Rational.#countFactorsOf5(this.#denominator);
+    
+    const initialSegmentLength = Math.max(factors2, factors5);
+    
+    // Remove factors of 2 and 5 to get reduced denominator
+    let reducedDen = this.#denominator;
+    for (let i = 0; i < factors2; i++) {
+      reducedDen /= 2n;
+    }
+    for (let i = 0; i < factors5; i++) {
+      reducedDen /= 5n;
+    }
+    
+    // If reduced denominator is 1, it's a terminating decimal
+    if (reducedDen === 1n) {
+      // Compute the initial segment (all digits after decimal point)
+      const digits = [];
+      let currentRemainder = this.#remainder;
+      for (let i = 0; i < initialSegmentLength && currentRemainder !== 0n; i++) {
+        currentRemainder *= 10n;
+        const digit = currentRemainder / this.#denominator;
+        digits.push(digit.toString());
+        currentRemainder = currentRemainder % this.#denominator;
+      }
+      
+      this.#initialSegment = digits.join('');
+      this.#periodDigits = '';
+      this.#periodLength = 0;
+      this.#isTerminating = true;
+      return;
+    }
+    
+    // Find period length using multiplicative order of 10 modulo reducedDen
+    let periodLength = 1;
+    let remainder = 10n % reducedDen;
+    
+    while (remainder !== 1n && periodLength < Rational.MAX_PERIOD_CHECK) {
+      periodLength++;
+      remainder = (remainder * 10n) % reducedDen;
+    }
+    
+    // Set period length (or -1 if too large)
+    this.#periodLength = periodLength >= Rational.MAX_PERIOD_CHECK ? -1 : periodLength;
+    this.#isTerminating = false;
+    
+    // Compute initial non-repeating segment
+    const initialDigits = [];
+    let currentRemainder = this.#remainder;
+    
+    for (let i = 0; i < initialSegmentLength && currentRemainder !== 0n; i++) {
+      currentRemainder *= 10n;
+      const digit = currentRemainder / this.#denominator;
+      initialDigits.push(digit.toString());
+      currentRemainder = currentRemainder % this.#denominator;
+    }
+    
+    // Compute period digits using simplified ternary logic
+    const periodDigitsToCompute = (this.#periodLength === -1) ? maxPeriodDigits : 
+                                   (this.#periodLength > maxPeriodDigits ? maxPeriodDigits : this.#periodLength);
+    const periodDigits = [];
+    
+    if (currentRemainder !== 0n) {
+      for (let i = 0; i < periodDigitsToCompute; i++) {
+        currentRemainder *= 10n;
+        const digit = currentRemainder / this.#denominator;
+        periodDigits.push(digit.toString());
+        currentRemainder = currentRemainder % this.#denominator;
+      }
+    }
+    
+    this.#initialSegment = initialDigits.join('');
+    this.#periodDigits = periodDigits.join('');
+  }
+
+  /**
+   * Public method for getting decimal metadata (backwards compatibility)
+   * @param {number} maxPeriodDigits - Maximum number of period digits to compute
+   * @returns {object} Object containing decimal metadata
+   */
+  computeDecimalMetadata(maxPeriodDigits = Rational.DEFAULT_PERIOD_DIGITS) {
+    if (this.#numerator === 0n) {
+      return {
+        initialSegment: '',
+        periodDigits: '',
+        periodLength: 0,
+        isTerminating: true
+      };
+    }
+
+    this.#computeDecimalMetadata(maxPeriodDigits);
+    
+    return {
+      initialSegment: this.#initialSegment,
+      periodDigits: this.#periodDigits,
+      periodLength: this.#periodLength,
+      isTerminating: this.#isTerminating
+    };
+  }
+
+  /**
+   * Extracts a specific portion of the repeating period.
+   * @param {string} initialSegment - The non-repeating part after decimal point
+   * @param {number} periodLength - The full period length
+   * @param {number} digitsRequested - Number of period digits to return
+   * @returns {string} The requested portion of the period (capped at full period length)
+   */
+  extractPeriodSegment(initialSegment, periodLength, digitsRequested) {
+    if (periodLength === 0 || periodLength === -1) {
+      return '';
+    }
+    
+    const digitsToReturn = Math.min(digitsRequested, periodLength);
+    const periodDigits = [];
+    
+    // Start computation from where initial segment left off
+    let currentRemainder = this.#numerator % this.#denominator;
+    const isNegative = this.#numerator < 0n;
+    if (isNegative) {
+      currentRemainder = -currentRemainder;
+    }
+    
+    // Skip through the initial segment
+    for (let i = 0; i < initialSegment.length; i++) {
+      currentRemainder *= 10n;
+      currentRemainder = currentRemainder % this.#denominator;
+    }
+    
+    // Compute the requested period digits
+    for (let i = 0; i < digitsToReturn; i++) {
+      currentRemainder *= 10n;
+      const digit = currentRemainder / this.#denominator;
+      periodDigits.push(digit.toString());
+      currentRemainder = currentRemainder % this.#denominator;
+    }
+    
+    return periodDigits.join('');
   }
 
   /**

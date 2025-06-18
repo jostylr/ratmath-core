@@ -3,7 +3,7 @@
  * Shows how intervals like [1/3, 1/2] can be converted to "0.#3:0.5#0" and back perfectly
  */
 
-import { Rational, RationalInterval, parseRepeatingDecimal } from '../src/index.js';
+import { Rational, RationalInterval, parseRepeatingDecimal } from '../index.js';
 
 console.log('🔄 INTERVAL ROUNDTRIP CONVERSION DEMO 🔄\n');
 

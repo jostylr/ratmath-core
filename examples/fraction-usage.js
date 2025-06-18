@@ -5,7 +5,7 @@
  * maintaining the exact numerator/denominator values.
  */
 
-import { Fraction, Rational } from '../src/index.js';
+import { Fraction, Rational } from '../index.js';
 
 // =============== BASIC USAGE =================
 

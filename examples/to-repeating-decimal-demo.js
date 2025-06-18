@@ -2,7 +2,7 @@
  * Demonstration of the toRepeatingDecimal() method on Rational numbers
  */
 
-import { Rational, parseRepeatingDecimal } from '../src/index.js';
+import { Rational, parseRepeatingDecimal } from '../index.js';
 
 console.log('📊 TO REPEATING DECIMAL DEMO 📊\n');
 

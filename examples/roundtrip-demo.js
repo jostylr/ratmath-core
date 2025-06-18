@@ -2,7 +2,7 @@
  * Demonstration of roundtrip conversion between Rational numbers and repeating decimals
  */
 
-import { Rational, parseRepeatingDecimal } from '../src/index.js';
+import { Rational, parseRepeatingDecimal } from '../index.js';
 
 console.log('🔄 ROUNDTRIP CONVERSION DEMO 🔄\n');
 

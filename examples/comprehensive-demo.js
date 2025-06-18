@@ -3,7 +3,7 @@
  * in the ratmath library, showcasing all features and edge cases.
  */
 
-import { parseRepeatingDecimal, Rational, RationalInterval, Parser } from '../src/index.js';
+import { parseRepeatingDecimal, Rational, RationalInterval, Parser } from '../index.js';
 
 console.log('🔢 RATMATH REPEATING DECIMAL COMPREHENSIVE DEMO 🔢\n');
 

@@ -2,6 +2,22 @@
 class Rational {
   #numerator;
   #denominator;
+  #isNegative;
+  #wholePart;
+  #remainder;
+  #initialSegment;
+  #periodDigits;
+  #periodLength;
+  #isTerminating;
+  static DEFAULT_PERIOD_DIGITS = 20;
+  static MAX_PERIOD_CHECK = 1e7;
+  static POWERS_OF_5 = {
+    "16": 5n ** 16n,
+    "8": 5n ** 8n,
+    "4": 5n ** 4n,
+    "2": 5n ** 2n,
+    "1": 5n
+  };
   static zero = new Rational(0, 1);
   static one = new Rational(1, 1);
   constructor(numerator, denominator = 1n) {
@@ -65,6 +81,7 @@ class Rational {
       throw new Error("Denominator cannot be zero");
     }
     this.#normalize();
+    this.#isNegative = this.#numerator < 0n;
   }
   #normalize() {
     if (this.#denominator < 0n) {
@@ -255,112 +272,191 @@ class Rational {
     if (this.#denominator === 1n || this.#numerator === 0n) {
       return this.#numerator.toString();
     }
-    const isNegative = this.#numerator < 0n;
-    const absNum = isNegative ? -this.#numerator : this.#numerator;
-    const wholePart = absNum / this.#denominator;
-    const remainder = absNum % this.#denominator;
-    if (remainder === 0n) {
-      return isNegative ? `-${wholePart}` : `${wholePart}`;
+    this.#computeWholePart();
+    if (this.#remainder === 0n) {
+      return this.#isNegative ? `-${this.#wholePart}` : `${this.#wholePart}`;
     }
-    if (wholePart === 0n) {
-      return isNegative ? `-0..${remainder}/${this.#denominator}` : `0..${remainder}/${this.#denominator}`;
+    if (this.#wholePart === 0n) {
+      return this.#isNegative ? `-0..${this.#remainder}/${this.#denominator}` : `0..${this.#remainder}/${this.#denominator}`;
     } else {
-      return isNegative ? `-${wholePart}..${remainder}/${this.#denominator}` : `${wholePart}..${remainder}/${this.#denominator}`;
+      return this.#isNegative ? `-${this.#wholePart}..${this.#remainder}/${this.#denominator}` : `${this.#wholePart}..${this.#remainder}/${this.#denominator}`;
     }
   }
   toNumber() {
     return Number(this.#numerator) / Number(this.#denominator);
   }
   toRepeatingDecimal() {
-    if (this.#numerator === 0n) {
-      return "0";
-    }
-    const isNegative = this.#numerator < 0n;
-    const num = isNegative ? -this.#numerator : this.#numerator;
-    const den = this.#denominator;
-    const integerPart = num / den;
-    let remainder = num % den;
-    if (remainder === 0n) {
-      return (isNegative ? "-" : "") + integerPart.toString();
-    }
-    const seenRemainders = new Map;
-    const digits = [];
-    let position = 0;
-    while (remainder !== 0n && !seenRemainders.has(remainder.toString())) {
-      seenRemainders.set(remainder.toString(), position);
-      remainder *= 10n;
-      const digit = remainder / den;
-      digits.push(digit.toString());
-      remainder = remainder % den;
-      position++;
-    }
-    let result = (isNegative ? "-" : "") + integerPart.toString();
-    if (remainder === 0n) {
-      if (digits.length > 0) {
-        result += "." + digits.join("") + "#0";
-      } else {
-        result += "#0";
-      }
-    } else {
-      const repeatStart = seenRemainders.get(remainder.toString());
-      const nonRepeatingPart = digits.slice(0, repeatStart);
-      const repeatingPart = digits.slice(repeatStart);
-      if (nonRepeatingPart.length > 0) {
-        result += "." + nonRepeatingPart.join("") + "#" + repeatingPart.join("");
-      } else {
-        result += ".#" + repeatingPart.join("");
-      }
-    }
-    return result;
+    const result = this.toRepeatingDecimalWithPeriod();
+    return result.decimal;
   }
   toRepeatingDecimalWithPeriod() {
     if (this.#numerator === 0n) {
       return { decimal: "0", period: 0 };
     }
-    const isNegative = this.#numerator < 0n;
-    const num = isNegative ? -this.#numerator : this.#numerator;
-    const den = this.#denominator;
-    const integerPart = num / den;
-    let remainder = num % den;
-    if (remainder === 0n) {
-      return {
-        decimal: (isNegative ? "-" : "") + integerPart.toString(),
-        period: 0
-      };
-    }
-    const seenRemainders = new Map;
-    const digits = [];
-    let position = 0;
-    while (remainder !== 0n && !seenRemainders.has(remainder.toString())) {
-      seenRemainders.set(remainder.toString(), position);
-      remainder *= 10n;
-      const digit = remainder / den;
-      digits.push(digit.toString());
-      remainder = remainder % den;
-      position++;
-    }
-    let result = (isNegative ? "-" : "") + integerPart.toString();
-    if (remainder === 0n) {
-      if (digits.length > 0) {
-        result += "." + digits.join("") + "#0";
-      } else {
-        result += "#0";
-      }
+    this.#computeWholePart();
+    this.#computeDecimalMetadata();
+    let result = (this.#isNegative ? "-" : "") + this.#wholePart.toString();
+    if (this.#isTerminating) {
+      if (this.#initialSegment) {
+        result += "." + this.#initialSegment + "#0";
+      } else {}
       return { decimal: result, period: 0 };
     } else {
-      const repeatStart = seenRemainders.get(remainder.toString());
-      const nonRepeatingPart = digits.slice(0, repeatStart);
-      const repeatingPart = digits.slice(repeatStart);
-      if (nonRepeatingPart.length > 0) {
-        result += "." + nonRepeatingPart.join("") + "#" + repeatingPart.join("");
+      let periodDigits = this.#periodDigits;
+      if (this.#periodLength > 0 && this.#periodLength <= 1000 && this.#periodDigits.length < this.#periodLength) {
+        periodDigits = this.extractPeriodSegment(this.#initialSegment, this.#periodLength, this.#periodLength);
+      }
+      if (this.#initialSegment) {
+        result += "." + this.#initialSegment + "#" + periodDigits;
       } else {
-        result += ".#" + repeatingPart.join("");
+        result += ".#" + periodDigits;
       }
       return {
         decimal: result,
-        period: repeatingPart.length
+        period: this.#periodLength
       };
     }
+  }
+  static #countFactorsOf2(n) {
+    if (n === 0n)
+      return 0;
+    let count = 0;
+    while ((n & 1n) === 0n) {
+      n >>= 1n;
+      count++;
+    }
+    return count;
+  }
+  static #countFactorsOf5(n) {
+    if (n === 0n)
+      return 0;
+    let count = 0;
+    const powers = [
+      { exp: 16, value: Rational.POWERS_OF_5["16"] },
+      { exp: 8, value: Rational.POWERS_OF_5["8"] },
+      { exp: 4, value: Rational.POWERS_OF_5["4"] },
+      { exp: 2, value: Rational.POWERS_OF_5["2"] },
+      { exp: 1, value: Rational.POWERS_OF_5["1"] }
+    ];
+    for (const { exp, value } of powers) {
+      while (n % value === 0n) {
+        n /= value;
+        count += exp;
+      }
+    }
+    return count;
+  }
+  #computeWholePart() {
+    if (this.#wholePart !== undefined)
+      return;
+    const absNumerator = this.#numerator < 0n ? -this.#numerator : this.#numerator;
+    this.#wholePart = absNumerator / this.#denominator;
+    this.#remainder = absNumerator % this.#denominator;
+  }
+  #computeDecimalMetadata(maxPeriodDigits = Rational.DEFAULT_PERIOD_DIGITS) {
+    if (this.#periodLength !== undefined)
+      return;
+    this.#computeWholePart();
+    if (this.#remainder === 0n) {
+      this.#initialSegment = "";
+      this.#periodDigits = "";
+      this.#periodLength = 0;
+      this.#isTerminating = true;
+      return;
+    }
+    const factors2 = Rational.#countFactorsOf2(this.#denominator);
+    const factors5 = Rational.#countFactorsOf5(this.#denominator);
+    const initialSegmentLength = Math.max(factors2, factors5);
+    let reducedDen = this.#denominator;
+    for (let i = 0;i < factors2; i++) {
+      reducedDen /= 2n;
+    }
+    for (let i = 0;i < factors5; i++) {
+      reducedDen /= 5n;
+    }
+    if (reducedDen === 1n) {
+      const digits = [];
+      let currentRemainder2 = this.#remainder;
+      for (let i = 0;i < initialSegmentLength && currentRemainder2 !== 0n; i++) {
+        currentRemainder2 *= 10n;
+        const digit = currentRemainder2 / this.#denominator;
+        digits.push(digit.toString());
+        currentRemainder2 = currentRemainder2 % this.#denominator;
+      }
+      this.#initialSegment = digits.join("");
+      this.#periodDigits = "";
+      this.#periodLength = 0;
+      this.#isTerminating = true;
+      return;
+    }
+    let periodLength = 1;
+    let remainder = 10n % reducedDen;
+    while (remainder !== 1n && periodLength < Rational.MAX_PERIOD_CHECK) {
+      periodLength++;
+      remainder = remainder * 10n % reducedDen;
+    }
+    this.#periodLength = periodLength >= Rational.MAX_PERIOD_CHECK ? -1 : periodLength;
+    this.#isTerminating = false;
+    const initialDigits = [];
+    let currentRemainder = this.#remainder;
+    for (let i = 0;i < initialSegmentLength && currentRemainder !== 0n; i++) {
+      currentRemainder *= 10n;
+      const digit = currentRemainder / this.#denominator;
+      initialDigits.push(digit.toString());
+      currentRemainder = currentRemainder % this.#denominator;
+    }
+    const periodDigitsToCompute = this.#periodLength === -1 ? maxPeriodDigits : this.#periodLength > maxPeriodDigits ? maxPeriodDigits : this.#periodLength;
+    const periodDigits = [];
+    if (currentRemainder !== 0n) {
+      for (let i = 0;i < periodDigitsToCompute; i++) {
+        currentRemainder *= 10n;
+        const digit = currentRemainder / this.#denominator;
+        periodDigits.push(digit.toString());
+        currentRemainder = currentRemainder % this.#denominator;
+      }
+    }
+    this.#initialSegment = initialDigits.join("");
+    this.#periodDigits = periodDigits.join("");
+  }
+  computeDecimalMetadata(maxPeriodDigits = Rational.DEFAULT_PERIOD_DIGITS) {
+    if (this.#numerator === 0n) {
+      return {
+        initialSegment: "",
+        periodDigits: "",
+        periodLength: 0,
+        isTerminating: true
+      };
+    }
+    this.#computeDecimalMetadata(maxPeriodDigits);
+    return {
+      initialSegment: this.#initialSegment,
+      periodDigits: this.#periodDigits,
+      periodLength: this.#periodLength,
+      isTerminating: this.#isTerminating
+    };
+  }
+  extractPeriodSegment(initialSegment, periodLength, digitsRequested) {
+    if (periodLength === 0 || periodLength === -1) {
+      return "";
+    }
+    const digitsToReturn = Math.min(digitsRequested, periodLength);
+    const periodDigits = [];
+    let currentRemainder = this.#numerator % this.#denominator;
+    const isNegative = this.#numerator < 0n;
+    if (isNegative) {
+      currentRemainder = -currentRemainder;
+    }
+    for (let i = 0;i < initialSegment.length; i++) {
+      currentRemainder *= 10n;
+      currentRemainder = currentRemainder % this.#denominator;
+    }
+    for (let i = 0;i < digitsToReturn; i++) {
+      currentRemainder *= 10n;
+      const digit = currentRemainder / this.#denominator;
+      periodDigits.push(digit.toString());
+      currentRemainder = currentRemainder % this.#denominator;
+    }
+    return periodDigits.join("");
   }
   toDecimal() {
     if (this.#numerator === 0n) {
@@ -2537,6 +2633,301 @@ class FractionInterval {
   }
 }
 
+// src/var.js
+class VariableManager {
+  constructor() {
+    this.variables = new Map;
+    this.functions = new Map;
+  }
+  processInput(input) {
+    const trimmed = input.trim();
+    const assignmentMatch = trimmed.match(/^([a-zA-Z])\s*=\s*(.+)$/);
+    if (assignmentMatch) {
+      const [, varName, expression] = assignmentMatch;
+      return this.handleAssignment(varName, expression);
+    }
+    const functionMatch = trimmed.match(/^([A-Z])\[([a-zA-Z,\s]+)\]\s*=\s*(.+)$/);
+    if (functionMatch) {
+      const [, funcName, paramStr, expression] = functionMatch;
+      const params = paramStr.split(",").map((p) => p.trim()).filter((p) => p.length === 1);
+      return this.handleFunctionDefinition(funcName, params, expression);
+    }
+    const callMatch = trimmed.match(/^([A-Z])\(([^)]*)\)$/);
+    if (callMatch) {
+      const [, funcName, argsStr] = callMatch;
+      return this.handleFunctionCall(funcName, argsStr);
+    }
+    const specialMatch = trimmed.match(/^(SUM|PROD|SEQ)\[([a-zA-Z])\]\(([^,]+),\s*([^,]+),\s*([^,]+)(?:,\s*([^)]+))?\)$/);
+    if (specialMatch) {
+      const [, keyword, variable, expression, start, end, increment] = specialMatch;
+      return this.handleSpecialFunction(keyword, variable, expression, start, end, increment || "1");
+    }
+    return this.evaluateExpression(trimmed);
+  }
+  handleAssignment(varName, expression) {
+    try {
+      const result = this.evaluateExpression(expression);
+      if (result.type === "error") {
+        return result;
+      }
+      let valueToStore = result.result;
+      let displayValue = result.result;
+      if (result.result && result.result.type === "sequence") {
+        valueToStore = result.result.lastValue;
+        displayValue = result.result;
+      }
+      this.variables.set(varName, valueToStore);
+      let message;
+      if (result.result && result.result.type === "sequence") {
+        message = `${varName} = ${this.formatValue(valueToStore)} (assigned last value of ${this.formatValue(displayValue)})`;
+      } else {
+        message = `${varName} = ${this.formatValue(displayValue)}`;
+      }
+      return {
+        type: "assignment",
+        result: displayValue,
+        message
+      };
+    } catch (error) {
+      return {
+        type: "error",
+        message: `Assignment error: ${error.message}`
+      };
+    }
+  }
+  handleFunctionDefinition(funcName, params, expression) {
+    for (const param of params) {
+      if (param.length !== 1 || !/[a-zA-Z]/.test(param)) {
+        return {
+          type: "error",
+          message: `Function parameters must be single letters, got: ${param}`
+        };
+      }
+    }
+    this.functions.set(funcName, { params, expression });
+    return {
+      type: "function",
+      result: null,
+      message: `Function ${funcName}[${params.join(",")}] defined`
+    };
+  }
+  handleFunctionCall(funcName, argsStr) {
+    if (!this.functions.has(funcName)) {
+      return {
+        type: "error",
+        message: `Function ${funcName} not defined`
+      };
+    }
+    const func = this.functions.get(funcName);
+    const args = argsStr.trim() ? argsStr.split(",").map((s) => s.trim()) : [];
+    if (args.length !== func.params.length) {
+      return {
+        type: "error",
+        message: `Function ${funcName} expects ${func.params.length} arguments, got ${args.length}`
+      };
+    }
+    try {
+      const argValues = [];
+      for (const arg of args) {
+        const result2 = this.evaluateExpression(arg);
+        if (result2.type === "error") {
+          return result2;
+        }
+        argValues.push(result2.result);
+      }
+      const oldValues = new Map;
+      for (let i = 0;i < func.params.length; i++) {
+        const param = func.params[i];
+        if (this.variables.has(param)) {
+          oldValues.set(param, this.variables.get(param));
+        }
+        this.variables.set(param, argValues[i]);
+      }
+      const result = this.evaluateExpression(func.expression);
+      for (const [param, oldValue] of oldValues) {
+        this.variables.set(param, oldValue);
+      }
+      for (const param of func.params) {
+        if (!oldValues.has(param)) {
+          this.variables.delete(param);
+        }
+      }
+      return result;
+    } catch (error) {
+      return {
+        type: "error",
+        message: `Function call error: ${error.message}`
+      };
+    }
+  }
+  handleSpecialFunction(keyword, variable, expression, startStr, endStr, incrementStr) {
+    try {
+      const startResult = this.evaluateExpression(startStr);
+      if (startResult.type === "error")
+        return startResult;
+      const endResult = this.evaluateExpression(endStr);
+      if (endResult.type === "error")
+        return endResult;
+      const incrementResult = this.evaluateExpression(incrementStr);
+      if (incrementResult.type === "error")
+        return incrementResult;
+      const start = this.toInteger(startResult.result);
+      const end = this.toInteger(endResult.result);
+      const increment = this.toInteger(incrementResult.result);
+      if (increment <= 0) {
+        return {
+          type: "error",
+          message: "Increment must be positive integer"
+        };
+      }
+      if (end < start) {
+        return {
+          type: "error",
+          message: "The end cannot be less than start"
+        };
+      }
+      const oldValue = this.variables.get(variable);
+      let result;
+      let iterationCount = 0;
+      let interrupted = false;
+      let progressCallback = this.progressCallback;
+      const values = keyword === "SEQ" ? [] : null;
+      let accumulator = null;
+      if (keyword === "SUM") {
+        accumulator = new Integer(0);
+      } else if (keyword === "PROD") {
+        accumulator = new Integer(1);
+      }
+      for (let i = start;i <= end; i += increment) {
+        iterationCount++;
+        if (progressCallback) {
+          const shouldContinue = progressCallback(keyword, variable, i, end, accumulator, iterationCount);
+          if (!shouldContinue) {
+            interrupted = true;
+            break;
+          }
+        }
+        this.variables.set(variable, new Integer(i));
+        const exprResult = this.evaluateExpression(expression);
+        if (exprResult.type === "error") {
+          this.restoreVariable(variable, oldValue);
+          return exprResult;
+        }
+        if (keyword === "SUM") {
+          accumulator = accumulator.add(exprResult.result);
+        } else if (keyword === "PROD") {
+          accumulator = accumulator.multiply(exprResult.result);
+        } else if (keyword === "SEQ") {
+          values.push(exprResult.result);
+        }
+      }
+      this.restoreVariable(variable, oldValue);
+      if (interrupted) {
+        return {
+          type: "error",
+          message: `${keyword} computation interrupted at ${variable}=${start + (iterationCount - 1) * increment} (${iterationCount} iterations completed, current value: ${this.formatValue(accumulator || values && values[values.length - 1])})`
+        };
+      }
+      if (iterationCount === 0) {
+        result = keyword === "PROD" ? new Integer(1) : new Integer(0);
+      } else if (keyword === "SUM" || keyword === "PROD") {
+        result = accumulator;
+      } else if (keyword === "SEQ") {
+        result = {
+          type: "sequence",
+          values,
+          lastValue: values[values.length - 1]
+        };
+      }
+      return {
+        type: "expression",
+        result
+      };
+    } catch (error) {
+      return {
+        type: "error",
+        message: `${keyword} error: ${error.message}`
+      };
+    }
+  }
+  evaluateExpression(expression) {
+    try {
+      const specialMatch = expression.match(/^(SUM|PROD|SEQ)\[([a-zA-Z])\]\(([^,]+),\s*([^,]+),\s*([^,]+)(?:,\s*([^)]+))?\)$/);
+      if (specialMatch) {
+        const [, keyword, variable, expr, start, end, increment] = specialMatch;
+        return this.handleSpecialFunction(keyword, variable, expr, start, end, increment || "1");
+      }
+      let substituted = expression;
+      for (const [varName, value] of this.variables) {
+        const pattern = new RegExp(`\\b${varName}\\b`, "g");
+        substituted = substituted.replace(pattern, `(${this.formatValue(value)})`);
+      }
+      const result = Parser.parse(substituted, { typeAware: true });
+      return {
+        type: "expression",
+        result
+      };
+    } catch (error) {
+      return {
+        type: "error",
+        message: error.message
+      };
+    }
+  }
+  formatValue(value) {
+    if (value && value.type === "sequence") {
+      const formattedValues = value.values.map((v) => this.formatValue(v));
+      if (formattedValues.length <= 10) {
+        return `[${formattedValues.join(", ")}]`;
+      } else {
+        const start = formattedValues.slice(0, 3);
+        const end = formattedValues.slice(-3);
+        return `[${start.join(", ")}, ..., ${end.join(", ")}] (${formattedValues.length} values)`;
+      }
+    } else if (value instanceof RationalInterval) {
+      return `${value.low.toString()}:${value.high.toString()}`;
+    } else if (value instanceof Rational) {
+      return value.toString();
+    } else if (value instanceof Integer) {
+      return value.value.toString();
+    } else {
+      return value.toString();
+    }
+  }
+  toInteger(value) {
+    if (value instanceof Integer) {
+      return Number(value.value);
+    } else if (value instanceof Rational) {
+      if (value.denominator !== 1n) {
+        throw new Error("Iterator bounds must be integers");
+      }
+      return Number(value.numerator);
+    } else {
+      throw new Error("Iterator bounds must be integers");
+    }
+  }
+  restoreVariable(variable, oldValue) {
+    if (oldValue !== undefined) {
+      this.variables.set(variable, oldValue);
+    } else {
+      this.variables.delete(variable);
+    }
+  }
+  getVariables() {
+    return new Map(this.variables);
+  }
+  getFunctions() {
+    return new Map(this.functions);
+  }
+  clear() {
+    this.variables.clear();
+    this.functions.clear();
+  }
+  setProgressCallback(callback) {
+    this.progressCallback = callback;
+  }
+}
+
 // src/web-calc.js
 class WebCalculator {
   constructor() {
@@ -2548,6 +2939,7 @@ class WebCalculator {
     this.currentEntry = null;
     this.mobileInput = "";
     this.mobileKeypadSetup = false;
+    this.variableManager = new VariableManager;
     this.initializeElements();
     this.setupEventListeners();
     this.displayWelcome();
@@ -2672,6 +3064,12 @@ class WebCalculator {
       this.currentEntry = null;
       return;
     }
+    if (upperInput === "VARS") {
+      this.showVariables();
+      this.inputElement.value = "";
+      this.currentEntry = null;
+      return;
+    }
     if (upperInput === "DECI") {
       this.outputMode = "DECI";
       const output = "Output mode set to decimal";
@@ -2718,32 +3116,35 @@ class WebCalculator {
       this.inputElement.value = "";
       return;
     }
-    try {
-      const hasExactDecimal = input.includes("#") || input.includes("#0");
-      const hasFraction = input.includes("/");
-      const hasDecimalPoint = input.includes(".");
-      const isSimpleInteger = /^\s*-?\d+\s*$/.test(input);
-      const hasPlainDecimal = hasDecimalPoint && !hasExactDecimal && !hasFraction;
-      const result = Parser.parse(input, {
-        typeAware: hasExactDecimal || hasFraction || isSimpleInteger || !hasPlainDecimal
-      });
-      const output = this.formatResult(result);
+    const varResult = this.variableManager.processInput(input);
+    if (varResult.type === "error") {
+      this.addToOutput("", varResult.message, true);
+      this.currentEntry.isError = true;
+      this.finishEntry(varResult.message);
+    } else if (varResult.type === "assignment" || varResult.type === "function") {
+      const output = varResult.message;
       this.addToOutput("", output, false);
       this.finishEntry(output);
-    } catch (error) {
-      let errorMessage;
-      if (error.message.includes("Division by zero") || error.message.includes("Denominator cannot be zero")) {
-        errorMessage = "Error: Division by zero is undefined";
-      } else if (error.message.includes("Factorial") && error.message.includes("negative")) {
-        errorMessage = "Error: Factorial is not defined for negative numbers";
-      } else if (error.message.includes("Zero cannot be raised to the power of zero")) {
-        errorMessage = "Error: 0^0 is undefined";
-      } else {
-        errorMessage = `Error: ${error.message}`;
+    } else {
+      try {
+        const output = this.formatResult(varResult.result);
+        this.addToOutput("", output, false);
+        this.finishEntry(output);
+      } catch (error) {
+        let errorMessage;
+        if (error.message.includes("Division by zero") || error.message.includes("Denominator cannot be zero")) {
+          errorMessage = "Error: Division by zero is undefined";
+        } else if (error.message.includes("Factorial") && error.message.includes("negative")) {
+          errorMessage = "Error: Factorial is not defined for negative numbers";
+        } else if (error.message.includes("Zero cannot be raised to the power of zero")) {
+          errorMessage = "Error: 0^0 is undefined";
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+        this.addToOutput("", errorMessage, true);
+        this.currentEntry.isError = true;
+        this.finishEntry(errorMessage);
       }
-      this.addToOutput("", errorMessage, true);
-      this.currentEntry.isError = true;
-      this.finishEntry(errorMessage);
     }
     this.inputElement.value = "";
     if (!this.isMobile()) {
@@ -2758,7 +3159,9 @@ class WebCalculator {
     }
   }
   formatResult(result) {
-    if (result instanceof RationalInterval) {
+    if (result && result.type === "sequence") {
+      return this.variableManager.formatValue(result);
+    } else if (result instanceof RationalInterval) {
       return this.formatInterval(result);
     } else if (result instanceof Rational) {
       return this.formatRational(result);
@@ -2956,10 +3359,44 @@ class WebCalculator {
     this.outputHistoryElement.innerHTML = "";
     this.outputHistory = [];
     this.currentEntry = null;
+    this.variableManager.clear();
     this.displayWelcome();
     if (!this.isMobile()) {
       setTimeout(() => this.inputElement.focus(), 100);
     }
+  }
+  showVariables() {
+    const variables = this.variableManager.getVariables();
+    const functions = this.variableManager.getFunctions();
+    if (variables.size === 0 && functions.size === 0) {
+      const output2 = "No variables or functions defined";
+      this.addToOutput("", output2, false);
+      this.finishEntry(output2);
+      return;
+    }
+    let output = "";
+    if (variables.size > 0) {
+      output += `Variables:
+`;
+      for (const [name, value] of variables) {
+        output += `  ${name} = ${this.formatResult(value)}
+`;
+      }
+    }
+    if (functions.size > 0) {
+      if (output)
+        output += `
+`;
+      output += `Functions:
+`;
+      for (const [name, func] of functions) {
+        output += `  ${name}[${func.params.join(",")}] = ${func.expression}
+`;
+      }
+    }
+    output = output.trim();
+    this.addToOutput("", output, false);
+    this.finishEntry(output);
   }
   async copySession() {
     if (this.outputHistory.length === 0) {

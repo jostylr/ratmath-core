@@ -7,7 +7,7 @@
  * Run with: bun examples/mixed-numbers.js
  */
 
-import { Rational, RationalInterval, Parser } from '../src/index.js';
+import { Rational, RationalInterval, Parser } from '../index.js';
 
 // ---- Creating Rational numbers with mixed number notation ----
 console.log('=== Creating Mixed Numbers ===');

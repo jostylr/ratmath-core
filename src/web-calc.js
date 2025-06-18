@@ -6,6 +6,7 @@
  */
 
 import { Parser, Rational, RationalInterval, Integer } from "../index.js";
+import { VariableManager } from "./var.js";
 
 class WebCalculator {
   constructor() {
@@ -17,6 +18,7 @@ class WebCalculator {
     this.currentEntry = null; // Track current entry being built
     this.mobileInput = ""; // Track mobile input separately
     this.mobileKeypadSetup = false; // Track if mobile keypad is setup
+    this.variableManager = new VariableManager(); // Variable and function management
 
     this.initializeElements();
     this.setupEventListeners();
@@ -181,6 +183,13 @@ class WebCalculator {
       return;
     }
 
+    if (upperInput === "VARS") {
+      this.showVariables();
+      this.inputElement.value = "";
+      this.currentEntry = null; // Don't track vars command
+      return;
+    }
+
     if (upperInput === "DECI") {
       this.outputMode = "DECI";
       const output = "Output mode set to decimal";
@@ -231,44 +240,46 @@ class WebCalculator {
       return;
     }
 
-    // Try to parse and evaluate the expression
-    try {
-      const hasExactDecimal = input.includes("#") || input.includes("#0");
-      const hasFraction = input.includes("/");
-      const hasDecimalPoint = input.includes(".");
-      const isSimpleInteger = /^\s*-?\d+\s*$/.test(input);
-      const hasPlainDecimal =
-        hasDecimalPoint && !hasExactDecimal && !hasFraction;
-
-      const result = Parser.parse(input, {
-        typeAware:
-          hasExactDecimal || hasFraction || isSimpleInteger || !hasPlainDecimal,
-      });
-      const output = this.formatResult(result);
+    // Try to process with variable manager first
+    const varResult = this.variableManager.processInput(input);
+    
+    if (varResult.type === 'error') {
+      this.addToOutput("", varResult.message, true);
+      this.currentEntry.isError = true;
+      this.finishEntry(varResult.message);
+    } else if (varResult.type === 'assignment' || varResult.type === 'function') {
+      const output = varResult.message;
       this.addToOutput("", output, false);
       this.finishEntry(output);
-    } catch (error) {
-      let errorMessage;
-      if (
-        error.message.includes("Division by zero") ||
-        error.message.includes("Denominator cannot be zero")
-      ) {
-        errorMessage = "Error: Division by zero is undefined";
-      } else if (
-        error.message.includes("Factorial") &&
-        error.message.includes("negative")
-      ) {
-        errorMessage = "Error: Factorial is not defined for negative numbers";
-      } else if (
-        error.message.includes("Zero cannot be raised to the power of zero")
-      ) {
-        errorMessage = "Error: 0^0 is undefined";
-      } else {
-        errorMessage = `Error: ${error.message}`;
+    } else {
+      // Regular expression evaluation
+      try {
+        const output = this.formatResult(varResult.result);
+        this.addToOutput("", output, false);
+        this.finishEntry(output);
+      } catch (error) {
+        let errorMessage;
+        if (
+          error.message.includes("Division by zero") ||
+          error.message.includes("Denominator cannot be zero")
+        ) {
+          errorMessage = "Error: Division by zero is undefined";
+        } else if (
+          error.message.includes("Factorial") &&
+          error.message.includes("negative")
+        ) {
+          errorMessage = "Error: Factorial is not defined for negative numbers";
+        } else if (
+          error.message.includes("Zero cannot be raised to the power of zero")
+        ) {
+          errorMessage = "Error: 0^0 is undefined";
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+        this.addToOutput("", errorMessage, true);
+        this.currentEntry.isError = true;
+        this.finishEntry(errorMessage);
       }
-      this.addToOutput("", errorMessage, true);
-      this.currentEntry.isError = true;
-      this.finishEntry(errorMessage);
     }
 
     this.inputElement.value = "";
@@ -288,7 +299,9 @@ class WebCalculator {
   }
 
   formatResult(result) {
-    if (result instanceof RationalInterval) {
+    if (result && result.type === 'sequence') {
+      return this.variableManager.formatValue(result);
+    } else if (result instanceof RationalInterval) {
       return this.formatInterval(result);
     } else if (result instanceof Rational) {
       return this.formatRational(result);
@@ -549,10 +562,45 @@ class WebCalculator {
     this.outputHistoryElement.innerHTML = "";
     this.outputHistory = [];
     this.currentEntry = null;
+    this.variableManager.clear(); // Clear variables and functions
     this.displayWelcome();
     if (!this.isMobile()) {
       setTimeout(() => this.inputElement.focus(), 100);
     }
+  }
+
+  showVariables() {
+    const variables = this.variableManager.getVariables();
+    const functions = this.variableManager.getFunctions();
+    
+    if (variables.size === 0 && functions.size === 0) {
+      const output = "No variables or functions defined";
+      this.addToOutput("", output, false);
+      this.finishEntry(output);
+      return;
+    }
+
+    let output = "";
+    
+    if (variables.size > 0) {
+      output += "Variables:\n";
+      for (const [name, value] of variables) {
+        output += `  ${name} = ${this.formatResult(value)}\n`;
+      }
+    }
+    
+    if (functions.size > 0) {
+      if (output) output += "\n";
+      output += "Functions:\n";
+      for (const [name, func] of functions) {
+        output += `  ${name}[${func.params.join(',')}] = ${func.expression}\n`;
+      }
+    }
+
+    // Remove trailing newline
+    output = output.trim();
+    this.addToOutput("", output, false);
+    this.finishEntry(output);
   }
 
   async copySession() {

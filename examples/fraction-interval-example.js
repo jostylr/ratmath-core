@@ -5,7 +5,7 @@
  * and convert between FractionInterval and RationalInterval.
  */
 
-import { Fraction, FractionInterval, RationalInterval } from '../src/index.js';
+import { Fraction, FractionInterval, RationalInterval } from '../index.js';
 
 // Creating a unit interval from 0 to 1 with fractions
 const zero = new Fraction(0, 1);
