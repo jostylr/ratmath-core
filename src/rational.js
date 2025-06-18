@@ -17,6 +17,9 @@ export class Rational {
   #periodDigits;
   #periodLength;
   #isTerminating;
+  #factorsOf2;
+  #factorsOf5;
+  #leadingZerosInPeriod;
   
   // Class variables for decimal computation
   static DEFAULT_PERIOD_DIGITS = 20;
@@ -641,6 +644,27 @@ export class Rational {
   }
 
   /**
+   * Efficiently computes leading zeros in the repeating part
+   * @param {bigint} reducedDen - Denominator with factors of 2 and 5 removed
+   * @param {number} initialSegmentLength - Length of non-repeating part
+   * @returns {number} Number of leading zeros in the repeating part
+   * @private
+   */
+  #computeLeadingZerosInPeriod(reducedDen, initialSegmentLength) {
+    // Adjust the numerator by multiplying by 10^k where k is the non-repeating length
+    let adjustedNumerator = this.#remainder * (10n ** BigInt(initialSegmentLength));
+    
+    // Count how many times we multiply by 10 until adjusted numerator >= reduced denominator
+    let leadingZeros = 0;
+    while (adjustedNumerator < reducedDen && leadingZeros < 20) { // Limit to prevent infinite loops
+      adjustedNumerator *= 10n;
+      leadingZeros++;
+    }
+    
+    return leadingZeros;
+  }
+
+  /**
    * Computes decimal representation metadata with caching and efficient algorithms
    * @param {number} maxPeriodDigits - Maximum number of period digits to compute (default: class DEFAULT_PERIOD_DIGITS)
    * @private
@@ -658,21 +682,24 @@ export class Rational {
       this.#periodDigits = '';
       this.#periodLength = 0;
       this.#isTerminating = true;
+      this.#factorsOf2 = 0;
+      this.#factorsOf5 = 0;
+      this.#leadingZerosInPeriod = 0;
       return;
     }
 
-    // Use efficient factor counting
-    const factors2 = Rational.#countFactorsOf2(this.#denominator);
-    const factors5 = Rational.#countFactorsOf5(this.#denominator);
+    // Use efficient factor counting and store as metadata
+    this.#factorsOf2 = Rational.#countFactorsOf2(this.#denominator);
+    this.#factorsOf5 = Rational.#countFactorsOf5(this.#denominator);
     
-    const initialSegmentLength = Math.max(factors2, factors5);
+    const initialSegmentLength = Math.max(this.#factorsOf2, this.#factorsOf5);
     
     // Remove factors of 2 and 5 to get reduced denominator
     let reducedDen = this.#denominator;
-    for (let i = 0; i < factors2; i++) {
+    for (let i = 0; i < this.#factorsOf2; i++) {
       reducedDen /= 2n;
     }
-    for (let i = 0; i < factors5; i++) {
+    for (let i = 0; i < this.#factorsOf5; i++) {
       reducedDen /= 5n;
     }
     
@@ -692,6 +719,7 @@ export class Rational {
       this.#periodDigits = '';
       this.#periodLength = 0;
       this.#isTerminating = true;
+      this.#leadingZerosInPeriod = 0;
       return;
     }
     
@@ -707,6 +735,9 @@ export class Rational {
     // Set period length (or -1 if too large)
     this.#periodLength = periodLength >= Rational.MAX_PERIOD_CHECK ? -1 : periodLength;
     this.#isTerminating = false;
+    
+    // Compute leading zeros in period efficiently
+    this.#leadingZerosInPeriod = this.#computeLeadingZerosInPeriod(reducedDen, initialSegmentLength);
     
     // Compute initial non-repeating segment
     const initialDigits = [];

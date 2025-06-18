@@ -13,8 +13,9 @@ import { createInterface } from "readline";
 
 class Calculator {
   constructor() {
-    this.outputMode = "BOTH"; // 'DECI', 'RAT', 'BOTH'
+    this.outputMode = "BOTH"; // 'DECI', 'RAT', 'BOTH', 'SCI'
     this.decimalLimit = 20; // Maximum decimal places before showing ...
+    this.mixedDisplay = true; // Whether to show fractions as mixed numbers by default
     this.variableManager = new VariableManager(); // Variable and function management
     this.shouldInterrupt = false; // Flag for computation interruption
     this.rl = createInterface({
@@ -109,6 +110,18 @@ class Calculator {
       return;
     }
 
+    if (upperInput === "SCI") {
+      this.outputMode = "SCI";
+      console.log("Output mode set to scientific notation");
+      return;
+    }
+
+    if (upperInput === "MIX") {
+      this.mixedDisplay = !this.mixedDisplay;
+      console.log(`Mixed number display ${this.mixedDisplay ? 'enabled' : 'disabled'}`);
+      return;
+    }
+
     if (upperInput.startsWith("LIMIT")) {
       const limitStr = upperInput.substring(5).trim();
       if (limitStr === "") {
@@ -195,8 +208,9 @@ class Calculator {
   }
 
   displayInteger(integer) {
-    const value = integer.value.toString();
-    console.log(value);
+    // Convert Integer to Rational for consistent formatting
+    const rational = new Rational(integer.value, 1n);
+    this.displayRational(rational);
   }
 
   displayRational(rational) {
@@ -204,7 +218,7 @@ class Calculator {
     const repeatingDecimal = repeatingInfo.decimal;
     const period = repeatingInfo.period;
     const decimal = this.formatDecimal(rational);
-    const fraction = rational.toString();
+    const fraction = this.mixedDisplay ? rational.toMixedString() : rational.toString();
 
     // For fractions that convert to terminating decimals, show #0 notation
     const isTerminatingDecimal = repeatingDecimal.endsWith("#0");
@@ -224,11 +238,15 @@ class Calculator {
         console.log(fraction);
         break;
       case "BOTH":
-        if (fraction.includes("/")) {
+        if (fraction.includes("/") || fraction.includes("..")) {
           console.log(`${displayDecimal}${periodInfo} (${fraction})`);
         } else {
           console.log(decimal);
         }
+        break;
+      case "SCI":
+        const scientificNotation = this.toScientificNotation(rational);
+        console.log(`${scientificNotation} (${fraction})`);
         break;
     }
   }
@@ -414,6 +432,8 @@ COMMANDS:
   DECI              Show results as decimals only
   RAT               Show results as fractions only
   BOTH              Show both decimal and fraction (default)
+  SCI               Show results in scientific notation
+  MIX               Toggle mixed number display (default: on)
   LIMIT <n>         Set decimal display limit to n digits (default: 20)
   LIMIT             Show current decimal display limit
   EXIT, QUIT, BYE   Exit calculator
@@ -451,6 +471,152 @@ Press Ctrl+C to exit
     }
   }
 
+  /**
+   * Converts a rational to scientific notation
+   * @param {Rational} rational - The rational number to convert
+   * @returns {string} Scientific notation string
+   */
+  toScientificNotation(rational) {
+    // Check if it's zero
+    if (rational.toString() === "0") {
+      return "0";
+    }
+
+    const repeatingInfo = rational.toRepeatingDecimalWithPeriod();
+    let decimal = repeatingInfo.decimal;
+    const isNegative = decimal.startsWith('-');
+    const prefix = isNegative ? "-" : "";
+    
+    if (isNegative) {
+      decimal = decimal.substring(1); // Remove the negative sign
+    }
+
+    // Find the first non-zero digit and decimal point
+    let firstNonZeroIndex = -1;
+    let decimalPointIndex = decimal.indexOf('.');
+    let hashIndex = decimal.indexOf('#');
+    
+    for (let i = 0; i < decimal.length; i++) {
+      const char = decimal[i];
+      if (char === '.' || char === '#') {
+        continue;
+      }
+      if (char >= '1' && char <= '9') {
+        firstNonZeroIndex = i;
+        break;
+      }
+    }
+
+    if (firstNonZeroIndex === -1) {
+      return prefix + "0";
+    }
+
+    // Calculate the exponent: how many places to move decimal to get first digit
+    let exponent;
+    if (decimalPointIndex === -1 || firstNonZeroIndex < decimalPointIndex) {
+      // Number >= 1: count digits after the first non-zero digit
+      let digitsAfterFirst = 0;
+      const endPos = decimalPointIndex === -1 ? decimal.length : decimalPointIndex;
+      for (let i = firstNonZeroIndex + 1; i < endPos; i++) {
+        if (decimal[i] >= '0' && decimal[i] <= '9') {
+          digitsAfterFirst++;
+        }
+      }
+      exponent = digitsAfterFirst;
+    } else {
+      // Number < 1: count positions after decimal point to first non-zero digit
+      let positionsAfterDecimal = 0;
+      for (let i = decimalPointIndex + 1; i < firstNonZeroIndex; i++) {
+        if (decimal[i] >= '0' && decimal[i] <= '9') {
+          positionsAfterDecimal++;
+        }
+      }
+      exponent = -(positionsAfterDecimal + 1);
+    }
+
+    // Build the mantissa
+    let mantissa = "";
+    let afterFirstDigit = false;
+    let needDecimalPoint = true;
+    
+    for (let i = firstNonZeroIndex; i < decimal.length; i++) {
+      const char = decimal[i];
+      
+      if (char === '.') {
+        continue;
+      }
+      
+      if (char === '#') {
+        if (!afterFirstDigit) {
+          // # is the first character (shouldn't happen, but handle it)
+          mantissa += '#';
+        } else if (needDecimalPoint) {
+          // Add decimal point before #
+          mantissa += '.#';
+          needDecimalPoint = false;
+        } else {
+          mantissa += '#';
+        }
+        continue;
+      }
+      
+      if (char >= '0' && char <= '9') {
+        if (!afterFirstDigit) {
+          // First significant digit
+          mantissa += char;
+          afterFirstDigit = true;
+        } else if (needDecimalPoint) {
+          // Second digit - add decimal point first
+          mantissa += '.' + char;
+          needDecimalPoint = false;
+        } else {
+          // Subsequent digits
+          mantissa += char;
+        }
+      }
+    }
+
+    // Handle case where we need to adjust repeating pattern due to decimal shift
+    if (hashIndex !== -1 && repeatingInfo.period > 0) {
+      const nonRepeatingLength = hashIndex - decimalPointIndex - 1;
+      
+      // Check if the first non-zero digit is in the repeating part
+      if (firstNonZeroIndex > hashIndex) {
+        // First digit is in the repeating part, need to adjust the cycle
+        const positionInCycle = (firstNonZeroIndex - hashIndex - 1) % repeatingInfo.period;
+        
+        // Get the full repeating cycle
+        let fullRepeatingCycle = "";
+        for (let i = hashIndex + 1; i < decimal.length; i++) {
+          const char = decimal[i];
+          if (char >= '0' && char <= '9') {
+            fullRepeatingCycle += char;
+          }
+        }
+        
+        // Create the shifted repeating pattern starting from the next position
+        let shiftedRepeating = "";
+        if (fullRepeatingCycle.length > 0) {
+          const periodLength = Math.min(repeatingInfo.period, fullRepeatingCycle.length);
+          const startPos = (positionInCycle + 1) % periodLength;
+          
+          // Rebuild the repeating cycle starting from the shifted position
+          for (let i = 0; i < Math.min(periodLength, 10); i++) {
+            const cycleIndex = (startPos + i) % periodLength;
+            shiftedRepeating += fullRepeatingCycle[cycleIndex];
+          }
+        }
+        
+        const firstDigit = decimal[firstNonZeroIndex];
+        mantissa = firstDigit + '.#' + shiftedRepeating;
+      }
+    }
+
+    // Add exponent (always show E even for E0 to maintain exactness)
+    const expStr = `E${exponent >= 0 ? '+' : ''}${exponent}`;
+    return `${prefix}${mantissa}${expStr}`;
+  }
+
   formatResult(result) {
     if (result && result.type === "sequence") {
       return this.variableManager.formatValue(result);
@@ -459,28 +625,33 @@ Press Ctrl+C to exit
     } else if (result instanceof Rational) {
       return this.formatRational(result);
     } else if (result instanceof Integer) {
-      return result.value.toString();
+      // Convert Integer to Rational for consistent formatting
+      const rational = new Rational(result.value, 1n);
+      return this.formatRational(rational);
     } else {
       return result.toString();
     }
   }
 
   formatRational(rational) {
+    const fraction = this.mixedDisplay ? rational.toMixedString() : rational.toString();
+    
     switch (this.outputMode) {
       case "DECI":
         return this.formatRepeatingDecimal(rational);
       case "RAT":
-        return rational.toString();
+        return fraction;
       case "BOTH":
-        const fraction = rational.toString();
-        if (fraction.includes("/")) {
+        if (fraction.includes("/") || fraction.includes("..")) {
           const decimal = this.formatRepeatingDecimal(rational);
           return `${decimal} (${fraction})`;
         } else {
           return this.formatDecimal(rational);
         }
+      case "SCI":
+        return this.toScientificNotation(rational);
       default:
-        return rational.toString();
+        return fraction;
     }
   }
 
