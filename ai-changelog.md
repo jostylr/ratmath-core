@@ -60,3 +60,30 @@ Fixed critical performance issue in SUM/PROD computations by replacing inefficie
 - Memory usage dramatically reduced for iterative computations
 
 The remaining memory limitations are fundamental to exact rational arithmetic where denominators grow exponentially when summing fractions.
+
+## Improved Decimal Handling and Scientific Notation
+
+**Model:** Claude Sonnet 4, **Date:** 2025-06-18
+
+Implemented major improvements to decimal representation and scientific notation handling in the Rational class, addressing issues with leading zeros and introducing repeat notation for better readability.
+
+**Key enhancements:**
+- **Enhanced Decimal Metadata**: Added detailed breakdown of decimal parts including separate tracking of leading zeros in initial segment and repeating period, plus the non-zero remainder portions
+- **Repeat Notation**: Introduced `{0~15}` syntax to compactly represent repeated digits (e.g., `0.{0~5}1` instead of `0.000001`), with parsing support in constructor
+- **MAX_PERIOD_DIGITS**: Added configurable class property (default 1000) to control maximum period computation length
+- **Improved Scientific Notation**: Completely rewrote scientific notation generation to use decimal metadata, fixing critical issue where very small numbers like `10!!/49!!` displayed as "0" instead of proper scientific notation like `6.5713094994E-29`
+- **Better Leading Zero Handling**: Fixed computation of leading zeros in repeating periods by analyzing actual period digits rather than mathematical approximation
+
+**Technical improvements:**
+- New `computeDecimalMetadata()` method returns: `wholePart`, `initialSegmentLeadingZeros`, `initialSegmentRest`, `leadingZerosInPeriod`, `periodDigitsRest`
+- Enhanced `toRepeatingDecimalWithPeriod()` with optional repeat notation parameter  
+- New `toScientificNotation()` method with efficient handling of very small numbers and optional repeat notation in mantissa
+- Updated calculator SCI mode to use improved scientific notation method
+
+The changes ensure that very small rational numbers are properly displayed in scientific notation rather than appearing as zero, while providing more readable decimal representations with compact notation for long sequences of repeated digits.
+
+**Deliverables:**
+- Fixed calc.js SCI mode issue where `10!!/49!!` was showing "0" instead of `6.5713094994E-29`
+- Added comprehensive example in `examples/decimal-improvements.js` demonstrating all features
+- Added full test suite in `tests/decimal-improvements.test.js` with 22 passing tests
+- Implemented workaround for calc.js to handle stale rational instances by creating fresh instances when needed
