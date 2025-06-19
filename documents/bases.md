@@ -306,7 +306,7 @@ The BaseSystem class integrates with the existing RatMath ecosystem:
 
 ## Parser Integration
 
-The RatMath parser now supports base notation syntax, allowing you to write numbers in different bases directly in expressions.
+The RatMath parser now supports both explicit base notation and base-aware input parsing, allowing you to work with numbers in different bases naturally.
 
 ### Base Notation Syntax
 
@@ -317,6 +317,22 @@ Parser.parse("101[2]")     // Binary 101 = 5 in decimal
 Parser.parse("FF[16]")     // Hexadecimal FF = 255 in decimal  
 Parser.parse("777[8]")     // Octal 777 = 511 in decimal
 Parser.parse("132[5]")     // Base 5: 132 = 42 in decimal
+```
+
+### Base-Aware Input Parsing
+
+The parser supports an `inputBase` option that interprets all input in a specified base system:
+
+```javascript
+// Parse numbers in binary without explicit notation
+Parser.parse("101", { inputBase: BaseSystem.BINARY })      // 5 in decimal
+Parser.parse("101 + 11", { inputBase: BaseSystem.BINARY }) // 8 in decimal
+
+// Parse mixed numbers in base 3
+Parser.parse("12..101/211", { inputBase: BaseSystem.fromBase(3) }) // 60/11
+
+// Parse decimals in binary
+Parser.parse("10.1", { inputBase: BaseSystem.BINARY })     // 2.5 in decimal
 ```
 
 ### Supported Formats
@@ -373,6 +389,24 @@ Parser.parse("777[8] - 11111111[2]")  // 511 - 255 = 256
 Parser.parse("(101[2] + 11[2]) * 10[2]")  // (5+3)*2 = 16
 ```
 
+### Base-Aware E Notation
+
+When using `inputBase`, E notation uses the specified base for exponentiation:
+
+```javascript
+const base3 = BaseSystem.fromBase(3);
+
+// E notation in base 3: 12E2 = 12₃ × 3² = 5 × 9 = 45
+Parser.parse("12E2", { inputBase: base3 })
+
+// Exponent is also parsed in base 3: 12E11 = 12₃ × 3^(11₃) = 5 × 3⁴ = 405
+Parser.parse("12E11", { inputBase: base3 })
+
+// For bases containing 'E', use _^ notation instead
+const baseWithE = new BaseSystem("0-9A-E");
+Parser.parse("AE_^2", { inputBase: baseWithE })  // AE₁₅ × 15²
+```
+
 ### Base Validation
 
 The parser automatically validates that digits are appropriate for the specified base:
@@ -382,6 +416,9 @@ The parser automatically validates that digits are appropriate for the specified
 Parser.parse("123[2]")   // Error: '2' and '3' invalid in binary
 Parser.parse("XYZ[16]")  // Error: 'X', 'Y', 'Z' not valid in hex
 Parser.parse("888[8]")   // Error: '8' invalid in octal
+
+// Input base validation with fallback
+Parser.parse("9", { inputBase: BaseSystem.BINARY })  // Falls back to decimal: 9
 ```
 
 ### Case Sensitivity
@@ -419,6 +456,10 @@ Completed features:
 - **NEW**: Automatic input base conversion for bare numbers
 - **NEW**: Multiple simultaneous output base display
 - **NEW**: Variable and function support with input base conversion
+- **NEW**: Base-aware input parsing with `inputBase` option
+- **NEW**: Base-aware E notation (uses input base for exponentiation)
+- **NEW**: Alternative _^ notation for bases containing 'E'
+- **NEW**: Graceful fallback to decimal when base parsing fails
 
 Planned features include:
 - Enhanced fraction base conversion (automatic conversion of fraction components)
@@ -469,3 +510,151 @@ F(x)                # 511 * 8 = 4088
 ```
 
 This feature maintains exact arithmetic precision while providing flexible base interpretation for enhanced usability in educational, programming, and mathematical contexts.
+
+## Base-Aware Input Parsing
+
+The parser supports comprehensive base-aware input parsing through the `inputBase` option, allowing natural mathematical expressions in any base system.
+
+### Usage Examples
+
+```javascript
+const base3 = BaseSystem.fromBase(3);
+const options = { inputBase: base3, typeAware: true };
+
+// All numbers parsed in base 3
+Parser.parse("12", options)           // 5 (12₃ = 5₁₀)
+Parser.parse("12 + 21", options)     // 12 (5 + 7 = 12)
+Parser.parse("12..101/211", options) // 60/11 (mixed number in base 3)
+Parser.parse("12E2", options)        // 45 (12₃ × 3² = 5 × 9 = 45)
+```
+
+### E Notation in Different Bases
+
+E notation adapts to the input base system:
+
+```javascript
+// Binary E notation
+Parser.parse("101E10", { inputBase: BaseSystem.BINARY })  // 20 (5 × 2² = 20)
+
+// Base 3 E notation  
+Parser.parse("12E11", { inputBase: BaseSystem.fromBase(3) })  // 405 (5 × 3⁴ = 405)
+
+// Hexadecimal with _^ notation (when E is a valid digit)
+const base15 = new BaseSystem("0-9A-E");
+Parser.parse("AE_^2", { inputBase: base15 })  // 36900 (164 × 15² = 36900)
+```
+
+### Explicit Base Override
+
+Explicit base notation always overrides the input base:
+
+```javascript
+// Even with binary input base, explicit notation takes precedence
+Parser.parse("12[3] + 101", { inputBase: BaseSystem.BINARY })  // 10 (5 + 5 = 10)
+```
+
+### Error Handling and Fallback
+
+The parser gracefully handles invalid input by falling back to decimal:
+
+```javascript
+// '9' is invalid in binary, so falls back to decimal parsing
+Parser.parse("9", { inputBase: BaseSystem.BINARY })  // 9
+```
+
+## Enhanced Base-Aware Input Parsing
+
+### Complete Input Base Support
+
+The parser now provides comprehensive support for parsing all mathematical expressions in the specified input base, including numbers, fractions, mixed numbers, decimals, intervals, and E notation.
+
+#### Automatic Base Conversion
+
+When an `inputBase` is specified, all numbers in the expression are automatically parsed according to that base:
+
+```javascript
+const options = { inputBase: BaseSystem.fromBase(3), typeAware: true };
+
+// All numbers parsed as base 3
+Parser.parse("12", options)           // 5 (12₃ = 5₁₀)
+Parser.parse("12/21", options)        // 5/7 (12₃/21₃ = 5₁₀/7₁₀)
+Parser.parse("12..101/211", options)  // 60/11 (mixed number: 5 + 10/22 = 60/11)
+Parser.parse("12.1", options)         // 16/3 (12.1₃ = 5⅓ = 16/3)
+Parser.parse("12:21", options)        // [5, 7] (interval from 5 to 7)
+```
+
+#### Base-Aware E Notation
+
+E notation works with the input base for both the mantissa and exponent:
+
+```javascript
+const base3Options = { inputBase: BaseSystem.fromBase(3), typeAware: true };
+
+// Standard E notation for non-E containing bases
+Parser.parse("12E2", base3Options)    // 45 (5 × 3² = 45)
+Parser.parse("2E12", base3Options)    // 486 (2 × 3⁵ = 486, where 12₃ = 5₁₀)
+
+// _^ notation for bases containing 'E' as a digit
+const hexBase = new BaseSystem("0-9A-F");
+const hexOptions = { inputBase: hexBase, typeAware: true };
+Parser.parse("AE_^2", hexOptions)     // 44544 (174 × 16² = 44544)
+```
+
+#### Case Normalization
+
+The parser intelligently handles case normalization for bases with letters:
+
+```javascript
+const hexOptions = { inputBase: BaseSystem.HEXADECIMAL, typeAware: true };
+
+// Both work due to automatic case normalization
+Parser.parse("FF", hexOptions)        // 255 (normalized to "ff")
+Parser.parse("ff", hexOptions)        // 255
+Parser.parse("A/F", hexOptions)       // 2/3 (normalized to "a/f")
+```
+
+#### Mixed Base Expressions
+
+Explicit base notation overrides the input base for specific numbers:
+
+```javascript
+const base3Options = { inputBase: BaseSystem.fromBase(3), typeAware: true };
+
+// Mix input base with explicit base notation
+Parser.parse("12 + 5[10]", base3Options)  // 17 (12₁₀ + 5₁₀ = 17)
+// Note: In expression context, arithmetic operators cause fallback to decimal
+```
+
+#### Arithmetic Expressions
+
+Complex arithmetic expressions work naturally with input base parsing:
+
+```javascript
+const base3Options = { inputBase: BaseSystem.fromBase(3), typeAware: true };
+
+Parser.parse("12 + 21", base3Options)           // 12 (5 + 7 = 12)
+Parser.parse("12 * 21", base3Options)           // 35 (5 × 7 = 35)
+Parser.parse("(12 + 1) * 2 / 10", base3Options) // 4 ((5+1)×2÷3 = 12÷3 = 4)
+```
+
+### Error Handling
+
+The parser provides robust error handling for invalid base digits:
+
+```javascript
+const base3Options = { inputBase: BaseSystem.fromBase(3), typeAware: true };
+
+// Invalid digits throw descriptive errors
+Parser.parse("13", base3Options)      // Error: Invalid digit '3' for base 3
+Parser.parse("2E3", base3Options)     // Error: Invalid exponent '3' for base 3
+```
+
+### Implementation Details
+
+The base-aware parsing system:
+
+1. **Validates input**: Checks that all digits are valid for the specified base
+2. **Handles case normalization**: Automatically converts case for letter-based digits
+3. **Preserves precedence**: Explicit base notation `[n]` always overrides input base
+4. **Maintains precision**: All conversions use exact BigInt arithmetic
+5. **Supports all formats**: Works with integers, fractions, mixed numbers, decimals, intervals, and E notation

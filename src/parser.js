@@ -542,9 +542,9 @@ function parseRepeatingDecimalInterval(str) {
 
 /**
  * Parses a number string in a specific base system
- * Supports integers, decimals, mixed numbers, and intervals
+ * Supports integers, decimals, mixed numbers, intervals, and E notation
  *
- * @param {string} numberStr - The number string to parse (e.g., "101", "10.1", "1..1/2", "A:F")
+ * @param {string} numberStr - The number string to parse (e.g., "101", "10.1", "1..1/2", "A:F", "12E2", "12_^2")
  * @param {BaseSystem} baseSystem - The base system to use for parsing
  * @param {Object} options - Parsing options
  * @returns {Integer|Rational|RationalInterval} The parsed value
@@ -557,15 +557,124 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
     numberStr = numberStr.substring(1);
   }
 
-  // Normalize case for standard bases that use letters
+  // Check for base-aware E notation or _^ notation first
+  let eNotationIndex = -1;
+  let eNotationType = null;
+
+  // Check if base contains 'E' character - if so, use _^ notation
+  const baseContainsE =
+    baseSystem.characters.includes("E") || baseSystem.characters.includes("e");
+
+  if (baseContainsE) {
+    // Look for _^ notation
+    eNotationIndex = numberStr.indexOf("_^");
+    if (eNotationIndex !== -1) {
+      eNotationType = "_^";
+    }
+  } else {
+    // Look for E notation (case insensitive)
+    const upperStr = numberStr.toUpperCase();
+    const eIndex = upperStr.indexOf("E");
+    if (eIndex !== -1) {
+      eNotationIndex = eIndex;
+      eNotationType = "E";
+    }
+  }
+
+  // If E notation found, split the number
+  let baseNumber = numberStr;
+  let exponentStr = null;
+
+  if (eNotationIndex !== -1) {
+    baseNumber = numberStr.substring(0, eNotationIndex);
+    const exponentStart = eNotationIndex + (eNotationType === "_^" ? 2 : 1);
+    exponentStr = numberStr.substring(exponentStart);
+
+    // Validate exponent string contains only valid base characters
+    if (!baseSystem.isValidString(exponentStr.replace("-", ""))) {
+      throw new Error(
+        `Invalid exponent "${exponentStr}" for base ${baseSystem.base}`,
+      );
+    }
+  }
+
+  // Normalize case for bases that use letters, but respect the base system's character case
   if (baseSystem.base <= 36 && baseSystem.base > 10) {
-    // For bases 11-36, normalize to lowercase to match the BaseSystem presets
-    numberStr = numberStr.toLowerCase();
+    // Check if the base system uses lowercase or uppercase for letters
+    const usesLowercase = baseSystem.characters.some(
+      (char) => char >= "a" && char <= "z",
+    );
+    const usesUppercase = baseSystem.characters.some(
+      (char) => char >= "A" && char <= "Z",
+    );
+
+    if (usesLowercase && !usesUppercase) {
+      // Base uses only lowercase letters
+      baseNumber = baseNumber.toLowerCase();
+      if (exponentStr) {
+        exponentStr = exponentStr.toLowerCase();
+      }
+    } else if (usesUppercase && !usesLowercase) {
+      // Base uses only uppercase letters
+      baseNumber = baseNumber.toUpperCase();
+      if (exponentStr) {
+        exponentStr = exponentStr.toUpperCase();
+      }
+    }
+    // If base uses mixed case or no letters, don't normalize
+  }
+
+  // Handle E notation if found
+  if (eNotationIndex !== -1) {
+    // Parse the base number (without exponent)
+    const baseValue = parseBaseNotation(baseNumber, baseSystem, options);
+
+    // Parse the exponent in the same base system
+    let exponentDecimal;
+    if (exponentStr.startsWith("-")) {
+      const positiveExponent = baseSystem.toDecimal(exponentStr.substring(1));
+      exponentDecimal = -positiveExponent;
+    } else {
+      exponentDecimal = baseSystem.toDecimal(exponentStr);
+    }
+
+    // Apply E notation: multiply by base^exponent
+    let powerOfBase;
+    const baseBigInt = BigInt(baseSystem.base);
+
+    if (exponentDecimal >= 0n) {
+      // Positive exponent: base^n
+      powerOfBase = new Rational(baseBigInt ** exponentDecimal);
+    } else {
+      // Negative exponent: 1/(base^(-n))
+      powerOfBase = new Rational(1n, baseBigInt ** -exponentDecimal);
+    }
+
+    // Convert baseValue to Rational for multiplication
+    let baseRational;
+    if (baseValue instanceof Integer) {
+      baseRational = baseValue.toRational();
+    } else if (baseValue instanceof Rational) {
+      baseRational = baseValue;
+    } else {
+      throw new Error(
+        "E notation can only be applied to simple numbers, not intervals",
+      );
+    }
+
+    let result = baseRational.multiply(powerOfBase);
+    if (isNegative) {
+      result = result.negate();
+    }
+
+    return options.typeAware && result.denominator === 1n
+      ? new Integer(result.numerator)
+      : result;
   }
 
   // Check for interval notation first (contains colon)
-  if (numberStr.includes(":")) {
-    const parts = numberStr.split(":");
+  if (baseNumber.includes(":")) {
+    const parts = baseNumber.split(":");
     if (parts.length !== 2) {
       throw new Error(
         'Base notation intervals must have exactly two endpoints separated by ":"',
@@ -615,8 +724,8 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
   }
 
   // Check for mixed number notation (double dot)
-  if (numberStr.includes("..")) {
-    const parts = numberStr.split("..");
+  if (baseNumber.includes("..")) {
+    const parts = baseNumber.split("..");
     if (parts.length !== 2) {
       throw new Error(
         'Mixed number notation must have exactly one ".." separator',
@@ -665,8 +774,8 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
   }
 
   // Check for fraction notation (contains slash)
-  if (numberStr.includes("/")) {
-    const parts = numberStr.split("/");
+  if (baseNumber.includes("/")) {
+    const parts = baseNumber.split("/");
     if (parts.length !== 2) {
       throw new Error('Fraction notation must have exactly one "/" separator');
     }
@@ -691,8 +800,8 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
   }
 
   // Check for decimal notation (contains single dot)
-  if (numberStr.includes(".")) {
-    const parts = numberStr.split(".");
+  if (baseNumber.includes(".")) {
+    const parts = baseNumber.split(".");
     if (parts.length !== 2) {
       throw new Error('Decimal notation must have exactly one "." separator');
     }
@@ -708,7 +817,7 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
     const fullStr = integerPart + fractionalPart;
     if (!baseSystem.isValidString(fullStr)) {
       throw new Error(
-        `String "${numberStr}" contains characters not valid for ${baseSystem.name}`,
+        `String "${baseNumber}" contains characters not valid for ${baseSystem.name}`,
       );
     }
 
@@ -743,13 +852,13 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
   }
 
   // Simple integer case
-  if (!baseSystem.isValidString(numberStr)) {
+  if (!baseSystem.isValidString(baseNumber)) {
     throw new Error(
-      `String "${numberStr}" contains characters not valid for ${baseSystem.name}`,
+      `String "${baseNumber}" contains characters not valid for ${baseSystem.name}`,
     );
   }
 
-  let decimalValue = baseSystem.toDecimal(numberStr);
+  let decimalValue = baseSystem.toDecimal(baseNumber);
   if (isNegative) {
     decimalValue = -decimalValue;
   }
@@ -768,6 +877,7 @@ export class Parser {
    * @param {string} expression - The expression to parse
    * @param {Object} options - Parsing options
    * @param {boolean} options.typeAware - If true, returns Integer/Rational/RationalInterval based on input
+   * @param {BaseSystem} options.inputBase - Base system for parsing input (default: decimal)
    * @returns {Integer|Rational|RationalInterval} The result of evaluating the expression
    * @throws {Error} If the expression syntax is invalid
    */
@@ -947,7 +1057,8 @@ export class Parser {
       if (
         result.remainingExpr.length > 0 &&
         (result.remainingExpr[0] === "E" ||
-          result.remainingExpr.startsWith("TE"))
+          result.remainingExpr.startsWith("TE") ||
+          result.remainingExpr.startsWith("_^"))
       ) {
         const eResult = Parser.#parseENotation(
           result.value,
@@ -1250,7 +1361,8 @@ export class Parser {
       // Look for base notation pattern at the start of expression
       // This handles single values like 101[2], decimals like 10.1[2], fractions like 1/10[2],
       // mixed numbers like 1..1/2[2], and intervals like A[16]:F[16]
-      const baseMatch = expr.match(/^([^[\]]+(?::[^[\]]+)?)\[(\d+)\]/);
+      // Use a more restrictive pattern that doesn't capture operators
+      const baseMatch = expr.match(/^([-\w./:^]+(?::[-\w./:^]+)?)\[(\d+)\]/);
       if (baseMatch) {
         const [fullMatch, numberStr, baseStr] = baseMatch;
         const baseNum = parseInt(baseStr, 10);
@@ -1326,11 +1438,12 @@ export class Parser {
 
     // Try to parse a number (could be Integer, Rational, or RationalInterval)
     const numberResult = Parser.#parseInterval(expr, options);
-    // Check for tight E notation after number parsing (higher precedence than exponentiation)
+    // Check for tight E notation after the number (higher precedence than exponentiation)
     if (
       numberResult.remainingExpr.length > 0 &&
       (numberResult.remainingExpr[0] === "E" ||
-        numberResult.remainingExpr.startsWith("TE"))
+        numberResult.remainingExpr.startsWith("TE") ||
+        numberResult.remainingExpr.startsWith("_^"))
     ) {
       const eResult = Parser.#parseENotation(
         numberResult.value,
@@ -1715,9 +1828,15 @@ export class Parser {
 
   /**
    * Parses E notation and applies it to the given value
+   * Uses base 10 for traditional E notation (when not in base-aware mode)
    * @private
    */
   static #parseENotation(value, expr, options = {}) {
+    // Check if we should use base-aware E notation
+    if (options.inputBase && options.inputBase !== BaseSystem.DECIMAL) {
+      return Parser.#parseBaseAwareENotation(value, expr, options);
+    }
+
     // expr should start with 'E' or 'TE'
     let spaceBeforeE = false;
     let startIndex = 1;
@@ -1741,7 +1860,7 @@ export class Parser {
     if (value.E && typeof value.E === "function") {
       result = value.E(exponent);
     } else {
-      // Create 10^exponent as a rational
+      // Create 10^exponent as a rational (always base 10 for standard E notation)
       let powerOf10;
       if (exponent >= 0n) {
         // Positive exponent: 10^n
@@ -1758,6 +1877,120 @@ export class Parser {
     return {
       value: Parser.#promoteType(result, options),
       remainingExpr: exponentResult.remainingExpr,
+    };
+  }
+
+  /**
+   * Parses base-aware E notation (or _^ notation) and applies it to the given value
+   * Uses the input base for both mantissa and exponent parsing
+   * @private
+   */
+  static #parseBaseAwareENotation(value, expr, options = {}) {
+    const baseSystem = options.inputBase;
+    if (!baseSystem) {
+      throw new Error("Base-aware E notation requires inputBase option");
+    }
+
+    // Determine notation type based on whether base contains E
+    const baseContainsE =
+      baseSystem.characters.includes("E") ||
+      baseSystem.characters.includes("e");
+
+    let notationType;
+    let startIndex;
+
+    if (baseContainsE) {
+      // Use _^ notation
+      if (!expr.startsWith("_^")) {
+        throw new Error("Expected _^ notation for bases containing E");
+      }
+      notationType = "_^";
+      startIndex = 2;
+    } else {
+      // Use E notation
+      if (!expr.startsWith("E") && !expr.startsWith("e")) {
+        throw new Error("Expected E notation");
+      }
+      notationType = "E";
+      startIndex = 1;
+    }
+
+    // Extract exponent string
+    let endIndex = startIndex;
+
+    // Handle negative exponent
+    if (endIndex < expr.length && expr[endIndex] === "-") {
+      endIndex++;
+    }
+
+    // Parse exponent digits in the input base
+    while (endIndex < expr.length) {
+      const char = expr[endIndex];
+      if (baseSystem.charMap.has(char)) {
+        endIndex++;
+      } else {
+        break;
+      }
+    }
+
+    if (
+      endIndex === startIndex ||
+      (endIndex === startIndex + 1 && expr[startIndex] === "-")
+    ) {
+      throw new Error(`Missing exponent after ${notationType} notation`);
+    }
+
+    const exponentStr = expr.substring(startIndex, endIndex);
+
+    // Validate exponent contains only valid base characters
+    const testExponentStr = exponentStr.startsWith("-")
+      ? exponentStr.substring(1)
+      : exponentStr;
+    if (!baseSystem.isValidString(testExponentStr)) {
+      throw new Error(
+        `Invalid exponent "${exponentStr}" for base ${baseSystem.base}`,
+      );
+    }
+
+    // Parse exponent in the input base
+    let exponentDecimal;
+    try {
+      exponentDecimal = baseSystem.toDecimal(exponentStr);
+    } catch (error) {
+      throw new Error(
+        `Failed to parse exponent "${exponentStr}": ${error.message}`,
+      );
+    }
+
+    // Apply base-aware E notation: multiply by inputBase^exponent
+    let powerOfBase;
+    const baseBigInt = BigInt(baseSystem.base);
+
+    if (exponentDecimal >= 0n) {
+      // Positive exponent: base^n
+      powerOfBase = new Rational(baseBigInt ** exponentDecimal);
+    } else {
+      // Negative exponent: 1/(base^(-n))
+      powerOfBase = new Rational(1n, baseBigInt ** -exponentDecimal);
+    }
+
+    // Convert value to Rational for multiplication
+    let valueRational;
+    if (value instanceof Integer) {
+      valueRational = value.toRational();
+    } else if (value instanceof Rational) {
+      valueRational = value;
+    } else {
+      throw new Error(
+        `${notationType} notation can only be applied to simple numbers, not intervals`,
+      );
+    }
+
+    const result = valueRational.multiply(powerOfBase);
+
+    return {
+      value: Parser.#promoteType(result, options),
+      remainingExpr: expr.substring(endIndex),
     };
   }
 
@@ -1799,12 +2032,14 @@ export class Parser {
         endIndex++;
       }
 
-      // Parse digits and decimal point
+      // Parse digits and decimal point - use input base if provided
+      const baseSystem = options.inputBase || BaseSystem.DECIMAL;
       while (endIndex < expr.length) {
-        if (/\d/.test(expr[endIndex])) {
+        const char = expr[endIndex];
+        if (baseSystem.charMap.has(char)) {
           endIndex++;
         } else if (
-          expr[endIndex] === "." &&
+          char === "." &&
           !hasDecimalPoint &&
           endIndex + 1 < expr.length &&
           expr[endIndex + 1] !== "."
@@ -1819,7 +2054,18 @@ export class Parser {
       if (hasDecimalPoint && endIndex > (expr[0] === "-" ? 2 : 1)) {
         const decimalStr = expr.substring(0, endIndex);
         try {
-          if (options.typeAware) {
+          if (options.inputBase && options.inputBase !== BaseSystem.DECIMAL) {
+            // Parse using input base
+            const result = parseBaseNotation(
+              decimalStr,
+              options.inputBase,
+              options,
+            );
+            return {
+              value: result,
+              remainingExpr: expr.substring(endIndex),
+            };
+          } else if (options.typeAware) {
             // Parse as exact rational using Rational constructor for type-aware parsing
             const result = new Rational(decimalStr);
             return {
@@ -1911,8 +2157,105 @@ export class Parser {
       }
     }
 
+    // Check for input base parsing first if specified
+    if (
+      options.inputBase &&
+      options.inputBase !== BaseSystem.DECIMAL &&
+      !expr.includes("[") &&
+      !expr.includes("#")
+    ) {
+      // Try to parse the entire expression with input base first
+      try {
+        // Find the end of what could be a number in the input base
+        let endIndex = 0;
+        let hasDecimalPoint = false;
+        let hasMixedNumber = false;
+        let hasFraction = false;
+        let hasColon = false;
+
+        // Handle negative sign
+        if (expr[endIndex] === "-") {
+          endIndex++;
+        }
+
+        // Parse the number pattern
+        while (endIndex < expr.length) {
+          const char = expr[endIndex];
+
+          if (options.inputBase.charMap.has(char)) {
+            endIndex++;
+          } else if (
+            char === "." &&
+            endIndex + 1 < expr.length &&
+            expr[endIndex + 1] === "."
+          ) {
+            // Mixed number notation
+            if (hasMixedNumber || hasDecimalPoint || hasFraction || hasColon)
+              break;
+            hasMixedNumber = true;
+            endIndex += 2;
+          } else if (char === "." && !hasDecimalPoint && !hasMixedNumber) {
+            // Decimal point
+            hasDecimalPoint = true;
+            endIndex++;
+          } else if (char === "/" && !hasFraction) {
+            // Fraction
+            hasFraction = true;
+            endIndex++;
+          } else if (
+            char === ":" &&
+            !hasColon &&
+            !hasMixedNumber &&
+            !hasDecimalPoint
+          ) {
+            // Interval notation
+            hasColon = true;
+            endIndex++;
+          } else {
+            break;
+          }
+        }
+
+        // If we found a valid pattern, try parsing with input base
+        if (endIndex > (expr[0] === "-" ? 1 : 0)) {
+          const numberStr = expr.substring(0, endIndex);
+
+          // Validate that all parts are valid in the input base
+          const testStr = numberStr.startsWith("-")
+            ? numberStr.substring(1)
+            : numberStr;
+          const parts = testStr.split(/[\.\/\:]/);
+          const isValidInBase = parts.every((part, index) => {
+            if (part === "") {
+              return (
+                testStr.includes(".") &&
+                (index === 0 || index === parts.length - 1)
+              );
+            }
+            return part
+              .split("")
+              .every((char) => options.inputBase.charMap.has(char));
+          });
+
+          if (isValidInBase) {
+            const result = parseBaseNotation(
+              numberStr,
+              options.inputBase,
+              options,
+            );
+            return {
+              value: result,
+              remainingExpr: expr.substring(endIndex),
+            };
+          }
+        }
+      } catch (error) {
+        // Fall through to regular parsing
+      }
+    }
+
     // Parse the first rational number
-    const firstResult = Parser.#parseRational(expr);
+    const firstResult = Parser.#parseRational(expr, options);
 
     // Check if there's E notation followed by a colon (like "3E1:4E1")
     let firstValue = firstResult.value;
@@ -1999,13 +2342,16 @@ export class Parser {
 
     // Parse the second rational after the colon
     const secondRationalExpr = remainingAfterFirst.substring(1);
-    const secondResult = Parser.#parseRational(secondRationalExpr);
+    const secondResult = Parser.#parseRational(secondRationalExpr, options);
 
     // Check if the second part has tight E notation
     let secondValue = secondResult.value;
     let remainingExpr = secondResult.remainingExpr;
 
-    if (remainingExpr.length > 0 && remainingExpr[0] === "E") {
+    if (
+      remainingExpr.length > 0 &&
+      (remainingExpr[0] === "E" || remainingExpr.startsWith("_^"))
+    ) {
       // Apply E notation to the second value only (only for tight binding, not spaced)
       const secondInterval = RationalInterval.point(secondResult.value);
       const eResult = Parser.#parseENotation(
@@ -2040,11 +2386,185 @@ export class Parser {
 
   /**
    * Parses a rational number of the form "a/b", "a", mixed number "a..b/c", or repeating decimal "a.b#c"
+   * Supports input base parsing when options.inputBase is provided
    * @private
    */
-  static #parseRational(expr) {
+  static #parseRational(expr, options = {}) {
     if (expr.length === 0) {
       throw new Error("Unexpected end of expression");
+    }
+
+    // If inputBase is specified and this doesn't look like explicit base notation,
+    // try parsing with the input base first
+    if (
+      options.inputBase &&
+      options.inputBase !== BaseSystem.DECIMAL &&
+      !expr.includes("[") &&
+      !expr.includes("#")
+    ) {
+      // Find the end of what could be a number in the input base
+      let endIndex = 0;
+      let hasDecimalPoint = false;
+      let hasMixedNumber = false;
+      let hasFraction = false;
+
+      // Handle negative sign
+      if (expr[endIndex] === "-") {
+        endIndex++;
+      }
+
+      // Parse the number pattern
+      while (endIndex < expr.length) {
+        const char = expr[endIndex];
+
+        // Check if character is valid in base (with case normalization)
+        let isValidChar = options.inputBase.charMap.has(char);
+
+        // Handle case normalization for bases with letters
+        if (!isValidChar) {
+          const baseUsesLowercase = options.inputBase.characters.some(
+            (ch) => ch >= "a" && ch <= "z",
+          );
+          const baseUsesUppercase = options.inputBase.characters.some(
+            (ch) => ch >= "A" && ch <= "Z",
+          );
+
+          // If base uses only lowercase letters, accept uppercase input
+          if (
+            baseUsesLowercase &&
+            !baseUsesUppercase &&
+            char >= "A" &&
+            char <= "Z"
+          ) {
+            isValidChar = options.inputBase.charMap.has(char.toLowerCase());
+          }
+          // If base uses only uppercase letters, accept lowercase input
+          else if (
+            baseUsesUppercase &&
+            !baseUsesLowercase &&
+            char >= "a" &&
+            char <= "z"
+          ) {
+            isValidChar = options.inputBase.charMap.has(char.toUpperCase());
+          }
+        }
+
+        if (isValidChar) {
+          endIndex++;
+        } else if (
+          char === "." &&
+          endIndex + 1 < expr.length &&
+          expr[endIndex + 1] === "."
+        ) {
+          // Mixed number notation
+          if (hasMixedNumber || hasDecimalPoint || hasFraction) break;
+          hasMixedNumber = true;
+          endIndex += 2;
+        } else if (char === "." && !hasDecimalPoint && !hasMixedNumber) {
+          // Decimal point
+          hasDecimalPoint = true;
+          endIndex++;
+        } else if (char === "/" && !hasFraction) {
+          // Fraction
+          hasFraction = true;
+          endIndex++;
+        } else if (
+          (char === "E" || char === "e") &&
+          !options.inputBase.characters.includes("E") &&
+          !options.inputBase.characters.includes("e")
+        ) {
+          // E notation in decimal (not part of base characters)
+          break;
+        } else if (
+          char === "_" &&
+          endIndex + 1 < expr.length &&
+          expr[endIndex + 1] === "^"
+        ) {
+          // _^ notation
+          break;
+        } else {
+          break;
+        }
+      }
+
+      // If we found a valid number pattern and it looks like a valid base number, try parsing
+      if (endIndex > (expr[0] === "-" ? 1 : 0)) {
+        const numberStr = expr.substring(0, endIndex);
+
+        // Check if this looks like a valid number in the input base
+        const testStr = numberStr.startsWith("-")
+          ? numberStr.substring(1)
+          : numberStr;
+
+        // Split on decimal point and slash, but handle empty parts correctly
+        // For mixed numbers (12..101/211), we need special handling since ".." creates empty parts
+        const parts = testStr.split(/[\.\/]/);
+        const isValidInBase = parts.every((part, index) => {
+          // Allow empty parts for decimal points (e.g., ".5" or "5.")
+          // and for mixed numbers (e.g., "12..101" becomes ["12", "", "101"])
+          if (part === "") {
+            return (
+              testStr.includes(".") &&
+              (index === 0 ||
+                index === parts.length - 1 ||
+                testStr.includes(".."))
+            );
+          }
+          // Check if all characters in this part are valid for the base
+          // Handle case normalization for bases with letters
+          const baseUsesLowercase = options.inputBase.characters.some(
+            (char) => char >= "a" && char <= "z",
+          );
+          const baseUsesUppercase = options.inputBase.characters.some(
+            (char) => char >= "A" && char <= "Z",
+          );
+
+          return part.split("").every((char) => {
+            // Check direct match first
+            if (options.inputBase.charMap.has(char)) {
+              return true;
+            }
+
+            // If base uses only lowercase letters, check uppercase input
+            if (
+              baseUsesLowercase &&
+              !baseUsesUppercase &&
+              char >= "A" &&
+              char <= "Z"
+            ) {
+              return options.inputBase.charMap.has(char.toLowerCase());
+            }
+
+            // If base uses only uppercase letters, check lowercase input
+            if (
+              baseUsesUppercase &&
+              !baseUsesLowercase &&
+              char >= "a" &&
+              char <= "z"
+            ) {
+              return options.inputBase.charMap.has(char.toUpperCase());
+            }
+
+            return false;
+          });
+        });
+
+        if (isValidInBase) {
+          try {
+            const result = parseBaseNotation(
+              numberStr,
+              options.inputBase,
+              options,
+            );
+            return {
+              value: result,
+              remainingExpr: expr.substring(endIndex),
+            };
+          } catch (error) {
+            // If base parsing fails, fall through to decimal parsing
+          }
+        }
+      }
     }
 
     // Check for repeating decimal notation first

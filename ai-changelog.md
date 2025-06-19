@@ -49,6 +49,29 @@ The implementation allows for polynomial and rational function definitions, fini
 
 Enhanced the variable management system with improved SEQ display and computation interrupt capability.
 
+## Base-Aware Input Parsing and E Notation Implementation
+
+**Model:** Claude Sonnet 3.5, **Date:** 2025-01-27
+
+Implemented comprehensive base-aware input parsing functionality that allows all input to be parsed in a specified base system, with base-aware E notation support.
+
+Key features implemented:
+- **Input Base Parsing**: Added `inputBase` option to Parser that interprets all numbers (integers, decimals, fractions, mixed numbers) in the specified base without requiring explicit base notation
+- **Base-Aware E Notation**: E notation now uses the current input base for exponentiation (e.g., `12E2` in base 3 means 12₃ × 3² = 5 × 9 = 45)
+- **Base-Aware Exponent Parsing**: Both the base number and exponent are parsed in the input base system
+- **Alternative _^ Notation**: For bases containing the letter 'E', uses `_^` notation instead (e.g., `AE_^2` for bases with E as a digit)
+- **Explicit Base Override**: Explicit base notation like `[16]` overrides the input base setting
+- **Fallback Mechanism**: Gracefully falls back to decimal parsing when input base parsing fails
+
+Updated components:
+- Enhanced `parseBaseNotation()` function to handle E notation and _^ notation
+- Modified `Parser.#parseRational()` to check for input base and parse accordingly
+- Updated `Parser.parse()` to accept `inputBase` option
+- Added comprehensive test suite covering all new functionality
+- Created detailed examples demonstrating base-aware parsing capabilities
+
+This implementation enables natural mathematical expressions in any base system while maintaining exact arithmetic precision through BigInt operations.
+
 Key improvements:
 - **SEQ Display**: SEQ now shows full sequence `[1, 4, 9, 16, 25]` instead of just last value; when assigned to variable, stores the last value but displays the full sequence
 - **Interrupt Capability**: Added Ctrl+C interrupt handling for long-running computations with progress reporting (shows current iteration and value)

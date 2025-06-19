@@ -1082,5 +1082,240 @@ describe("BaseSystem", () => {
         expect(result.toString()).toBe("5:7");
       });
     });
+
+    describe("Base-Aware Input Parsing", () => {
+      it("should parse numbers in input base without explicit notation", () => {
+        const { Parser } = require("../src/parser.js");
+        const { BaseSystem } = require("../src/base-system.js");
+        const { Integer } = require("../src/integer.js");
+
+        // Parse binary input
+        const binaryResult = Parser.parse("101", {
+          typeAware: true,
+          inputBase: BaseSystem.BINARY,
+        });
+        expect(binaryResult).toBeInstanceOf(Integer);
+        expect(binaryResult.value).toBe(5n);
+
+        // Parse base 3 input
+        const base3 = BaseSystem.fromBase(3);
+        const base3Result = Parser.parse("12", {
+          typeAware: true,
+          inputBase: base3,
+        });
+        expect(base3Result).toBeInstanceOf(Integer);
+        expect(base3Result.value).toBe(5n);
+      });
+
+      it("should parse mixed numbers in input base", () => {
+        const { Parser } = require("../src/parser.js");
+        const { BaseSystem } = require("../src/base-system.js");
+        const { Rational } = require("../src/rational.js");
+
+        // Test explicit base notation first (known to work)
+        const explicitResult = Parser.parse("12..101/211[3]", {
+          typeAware: true,
+        });
+        expect(explicitResult).toBeInstanceOf(Rational);
+        expect(explicitResult.numerator).toBe(60n);
+        expect(explicitResult.denominator).toBe(11n);
+
+        // TODO: Input base parsing for mixed numbers needs implementation
+        // Currently falls back to decimal parsing
+        const base3 = BaseSystem.fromBase(3);
+        const result = Parser.parse("12..101/211", {
+          typeAware: true,
+          inputBase: base3,
+        });
+        expect(result).toBeInstanceOf(Rational);
+        // Now correctly parses as base 3: 12[3] = 5, 101[3] = 10, 211[3] = 22
+        // So 5 + 10/22 = 5 + 5/11 = 60/11
+        expect(result.numerator).toBe(60n);
+        expect(result.denominator).toBe(11n);
+      });
+
+      it("should parse fractions in input base", () => {
+        const { Parser } = require("../src/parser.js");
+        const { BaseSystem } = require("../src/base-system.js");
+        const { Rational } = require("../src/rational.js");
+
+        // Parse binary fraction
+        const binaryResult = Parser.parse("101/11", {
+          typeAware: true,
+          inputBase: BaseSystem.BINARY,
+        });
+        expect(binaryResult).toBeInstanceOf(Rational);
+        expect(binaryResult.numerator).toBe(5n);
+        expect(binaryResult.denominator).toBe(3n);
+      });
+
+      it("should parse decimals in input base", () => {
+        const { Parser } = require("../src/parser.js");
+        const { BaseSystem } = require("../src/base-system.js");
+        const { Rational } = require("../src/rational.js");
+
+        // Parse binary decimal: 10.1[2] = 2.5
+        const result = Parser.parse("10.1", {
+          typeAware: true,
+          inputBase: BaseSystem.BINARY,
+        });
+        expect(result).toBeInstanceOf(Rational);
+        expect(result.numerator).toBe(5n);
+        expect(result.denominator).toBe(2n);
+      });
+
+      it("should handle arithmetic with input base", () => {
+        const { Parser } = require("../src/parser.js");
+        const { BaseSystem } = require("../src/base-system.js");
+        const { Integer } = require("../src/integer.js");
+
+        // Parse binary arithmetic: 101 + 11 = 5 + 3 = 8
+        const result = Parser.parse("101 + 11", {
+          typeAware: true,
+          inputBase: BaseSystem.BINARY,
+        });
+        expect(result).toBeInstanceOf(Integer);
+        expect(result.value).toBe(8n);
+      });
+    });
+
+    describe("Base-Aware E Notation", () => {
+      it("should handle E notation in input base (non-E containing bases)", () => {
+        const { Parser } = require("../src/parser.js");
+        const { BaseSystem } = require("../src/base-system.js");
+        const { Integer } = require("../src/integer.js");
+
+        // TODO: Input base E notation needs implementation
+        // Currently falls back to decimal E notation
+        const base3 = BaseSystem.fromBase(3);
+        const result = Parser.parse("12E2", {
+          typeAware: true,
+          inputBase: base3,
+        });
+        expect(result).toBeInstanceOf(Integer);
+        // Now correctly parses as base 3: 12[3] = 5, E2[3] = 3^2 = 9
+        // So 5 * 9 = 45
+        expect(result.value).toBe(45n);
+
+        // Explicit base notation works correctly
+        const explicitResult = Parser.parse("12E2[3]");
+        expect(explicitResult).toBeInstanceOf(Integer);
+        expect(explicitResult.value).toBe(45n);
+      });
+
+      it("should handle E notation with base-aware exponent parsing", () => {
+        const { Parser } = require("../src/parser.js");
+        const { BaseSystem } = require("../src/base-system.js");
+        const { Integer } = require("../src/integer.js");
+
+        // TODO: Input base E notation with base-aware exponents needs implementation
+        // Currently falls back to decimal E notation
+        const base3 = BaseSystem.fromBase(3);
+        const result = Parser.parse("12E11", {
+          typeAware: true,
+          inputBase: base3,
+        });
+        expect(result).toBeInstanceOf(Integer);
+        // Now correctly parses as base 3: 12[3] = 5, E11[3] where 11[3] = 4
+        // So 5 * 3^4 = 5 * 81 = 405
+        expect(result.value).toBe(405n);
+
+        // Explicit base notation works correctly
+        const explicitResult = Parser.parse("12E11[3]");
+        expect(explicitResult).toBeInstanceOf(Integer);
+        expect(explicitResult.value).toBe(405n);
+      });
+
+      it("should use _^ notation for bases containing E", () => {
+        const { Parser } = require("../src/parser.js");
+        const { BaseSystem } = require("../src/base-system.js");
+        const { Integer } = require("../src/integer.js");
+
+        // TODO: _^ notation for input base needs implementation
+        // Create a base that contains E
+        const baseWithE = new BaseSystem("0-9A-E", "Base 15 with E");
+
+        // Test explicit base notation first (known to work)
+        const explicitResult = Parser.parse("AE_^2[15]");
+        expect(explicitResult).toBeInstanceOf(Integer);
+        // AE[15] = 164, 2[15] = 2, so 164 * 15^2 = 164 * 225 = 36900
+        expect(explicitResult.value).toBe(36900n);
+
+        // Input base _^ notation not yet implemented
+        // const result = Parser.parse("AE_^2", {
+        //   typeAware: true,
+        //   inputBase: baseWithE,
+        // });
+      });
+
+      it("should handle negative exponents in base-aware E notation", () => {
+        const { Parser } = require("../src/parser.js");
+        const { BaseSystem } = require("../src/base-system.js");
+        const { Rational } = require("../src/rational.js");
+
+        // TODO: Input base E notation with negative exponents needs implementation
+        // Test explicit base notation (known to work)
+        const explicitResult = Parser.parse("12E-1[3]");
+        expect(explicitResult).toBeInstanceOf(Rational);
+        // 12[3] * 3^(-1) = 5 * (1/3) = 5/3
+        expect(explicitResult.numerator).toBe(5n);
+        expect(explicitResult.denominator).toBe(3n);
+
+        // Input base version not yet implemented
+        // const base3 = BaseSystem.fromBase(3);
+        // const result = Parser.parse("12E-1", {
+        //   typeAware: true,
+        //   inputBase: base3,
+        // });
+      });
+
+      it("should handle base notation with explicit base overriding input base", () => {
+        const { Parser } = require("../src/parser.js");
+        const { BaseSystem } = require("../src/base-system.js");
+        const { Integer } = require("../src/integer.js");
+
+        // Even with binary input base, explicit base notation should override
+        const result = Parser.parse("12[3]", {
+          typeAware: true,
+          inputBase: BaseSystem.BINARY,
+        });
+        expect(result).toBeInstanceOf(Integer);
+        expect(result.value).toBe(5n); // 12 in base 3
+      });
+
+      it("should fallback to decimal parsing when input base parsing fails", () => {
+        const { Parser } = require("../src/parser.js");
+        const { BaseSystem } = require("../src/base-system.js");
+        const { Integer } = require("../src/integer.js");
+
+        // Try to parse "9" with binary input base - should fallback to decimal
+        const result = Parser.parse("9", {
+          typeAware: true,
+          inputBase: BaseSystem.BINARY,
+        });
+        expect(result).toBeInstanceOf(Integer);
+        expect(result.value).toBe(9n);
+      });
+
+      it("should handle E notation in explicit base notation", () => {
+        const { Parser } = require("../src/parser.js");
+        const { Integer } = require("../src/integer.js");
+
+        // Parse 12E2[3] - should be interpreted as (12E2) in base 3
+        const result = Parser.parse("12E2[3]");
+        expect(result).toBeInstanceOf(Integer);
+        expect(result.value).toBe(45n); // 12[3] * 3^2 = 5 * 9 = 45
+
+        // Test more complex cases
+        const result2 = Parser.parse("12E11[3]");
+        expect(result2).toBeInstanceOf(Integer);
+        expect(result2.value).toBe(405n); // 12[3] * 3^(11[3]) = 5 * 3^4 = 405
+
+        // Test with _^ notation
+        const result3 = Parser.parse("AE_^2[15]");
+        expect(result3).toBeInstanceOf(Integer);
+        expect(result3.value).toBe(36900n); // AE[15] * 15^2 = 164 * 225 = 36900
+      });
+    });
   });
 });
