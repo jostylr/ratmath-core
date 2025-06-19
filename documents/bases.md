@@ -217,6 +217,45 @@ hex.isValidString("");    // false (empty string)
 ## Advanced Features
 
 ### Pattern-Based Base Creation
+## Calculator Commands
+
+### Enhanced BASE Command
+
+The calculator now supports advanced BASE command syntax for separate input and output bases:
+
+#### Basic Usage
+```
+BASE                    # Show current base configuration
+BASE <n>               # Set both input and output to base n
+BASE <sequence>        # Set both input and output to custom base
+BIN, HEX, OCT, DEC     # Quick shortcuts for common bases
+```
+
+#### **NEW**: Input-Output Base Separation
+```
+BASE <input>-><output>              # Set input and output bases separately
+BASE 3->10                          # Input in base 3, output in base 10
+BASE 16->2                          # Input in hex, output in binary
+BASE 2->[10,16,8]                   # Input in binary, output in multiple bases
+BASE 0-9a-f->0-1                    # Custom input base to binary output
+```
+
+#### Examples in Calculator
+```
+> BASE 2->10
+Input base: Base 2 (base 2)
+Output base: Base 10 (base 10)
+
+> 101
+5
+
+> BASE 16->[10,2,8]
+Input base: Base 16 (base 16) 
+Output bases: Base 10 (base 10), Base 2 (base 2), Base 8 (base 8)
+
+> FF
+255 (11111111[2], 377[8])
+```
 
 Use `createPattern()` for common base system patterns:
 
@@ -265,6 +304,109 @@ The BaseSystem class integrates with the existing RatMath ecosystem:
 - Supports the library's design principles of mathematical accuracy
 - Compatible with parser extensions for base notation
 
+## Parser Integration
+
+The RatMath parser now supports base notation syntax, allowing you to write numbers in different bases directly in expressions.
+
+### Base Notation Syntax
+
+Use square brackets to specify the base after a number:
+
+```javascript
+Parser.parse("101[2]")     // Binary 101 = 5 in decimal
+Parser.parse("FF[16]")     // Hexadecimal FF = 255 in decimal  
+Parser.parse("777[8]")     // Octal 777 = 511 in decimal
+Parser.parse("132[5]")     // Base 5: 132 = 42 in decimal
+```
+
+### Supported Formats
+
+#### Basic Numbers
+```javascript
+Parser.parse("101[2]")     // Binary integer
+Parser.parse("-FF[16]")    // Negative hexadecimal
+Parser.parse("123[10]")    // Explicit decimal notation
+```
+
+#### Decimal Numbers
+```javascript
+Parser.parse("10.1[2]")    // Binary decimal = 2.5
+Parser.parse("A.8[16]")    // Hexadecimal decimal = 10.5
+Parser.parse("7.4[8]")     // Octal decimal = 7.5
+```
+
+#### Fractions
+```javascript
+Parser.parse("1/10[2]")    // Binary fraction = 1/2
+Parser.parse("F/10[16]")   // Hexadecimal fraction = 15/16
+Parser.parse("A/C[16]")    // Hexadecimal fraction = 5/6
+```
+
+#### Mixed Numbers
+```javascript
+Parser.parse("1..1/10[2]")    // Binary mixed number = 1.5
+Parser.parse("A..8/10[16]")   // Hexadecimal mixed number = 10.5
+```
+
+#### Intervals
+```javascript
+Parser.parse("101:111[2]")    // Binary interval = 5:7
+Parser.parse("A:F[16]")       // Hexadecimal interval = 10:15
+Parser.parse("A.8:F.F[16]")   // Decimal interval = 10.5:15.9375
+```
+
+### Arithmetic with Base Notation
+
+Base notation integrates seamlessly with arithmetic expressions:
+
+```javascript
+Parser.parse("101[2] + 11[2]")        // 5 + 3 = 8
+Parser.parse("FF[16] - A[16]")        // 255 - 10 = 245
+Parser.parse("777[8] * 2")            // 511 * 2 = 1022
+Parser.parse("100[2] / 10[2]")        // 4 / 2 = 2
+
+// Mixed bases in expressions
+Parser.parse("FF[16] + 101[2]")       // 255 + 5 = 260
+Parser.parse("777[8] - 11111111[2]")  // 511 - 255 = 256
+
+// Complex expressions with parentheses
+Parser.parse("(101[2] + 11[2]) * 10[2]")  // (5+3)*2 = 16
+```
+
+### Base Validation
+
+The parser automatically validates that digits are appropriate for the specified base:
+
+```javascript
+// These will throw errors:
+Parser.parse("123[2]")   // Error: '2' and '3' invalid in binary
+Parser.parse("XYZ[16]")  // Error: 'X', 'Y', 'Z' not valid in hex
+Parser.parse("888[8]")   // Error: '8' invalid in octal
+```
+
+### Case Sensitivity
+
+Base notation is case-insensitive for standard bases. Both uppercase and lowercase letters are accepted and normalized:
+
+```javascript
+Parser.parse("FF[16]")   // Same as "ff[16]"
+Parser.parse("aB[16]")   // Same as "ab[16]"
+```
+
+### Type Promotion
+
+Base notation respects the parser's type-aware mode:
+
+```javascript
+// Type-aware mode (default)
+Parser.parse("101[2]")         // Returns Integer(5)
+Parser.parse("1/10[2]")        // Returns Rational(1/2)
+Parser.parse("101:111[2]")     // Returns RationalInterval(5:7)
+
+// Backward-compatible mode
+Parser.parse("101[2]", { typeAware: false })  // Returns RationalInterval point
+```
+
 ## Future Enhancements
 
 Completed features:
@@ -272,13 +414,18 @@ Completed features:
 - Pattern-based base system creation
 - Enhanced validation and case sensitivity control
 - Comprehensive character sequence parsing
+- Parser integration for base notation syntax
+- **NEW**: Input-output base separation (BASE 3->10, BASE 2->[10,16,2])
+- **NEW**: Automatic input base conversion for bare numbers
+- **NEW**: Multiple simultaneous output base display
+- **NEW**: Variable and function support with input base conversion
 
 Planned features include:
-- Parser integration for base notation syntax (e.g., `101[2]`, `FF[16]`)
-- Base-aware arithmetic operations
+- Enhanced fraction base conversion (automatic conversion of fraction components)
 - Repeating decimal detection in arbitrary bases
-- Integration with calculator interfaces
+- Web calculator integration with input-output base controls
 - Extended Unicode support for international numeral systems
+- Base-specific decimal point handling
 
 ## Mathematical Background
 
@@ -290,3 +437,35 @@ Different bases can reveal different properties of the same number:
 - 1/10 in binary: 0.000110011... (repeating)
 
 The BaseSystem class preserves these mathematical relationships while providing exact conversions between different representations.
+
+## Input-Output Base Separation
+
+The calculator now supports independent input and output bases, allowing you to:
+
+### Enter numbers in one base, see results in another
+```
+BASE 2->16          # Enter binary, see hexadecimal
+101                 # Shows: 5 (5[16])
+```
+
+### Use multiple output bases simultaneously
+```
+BASE 2->[10,16,8]   # Enter binary, see decimal, hex, and octal
+1111                # Shows: 15 (f[16], 17[8])
+```
+
+### Combine with arithmetic operations
+```
+BASE 2->10          # Binary input, decimal output
+101 + 11            # 5 + 3 = 8
+```
+
+### Work with variables and functions
+```
+BASE 8->10          # Octal input, decimal output  
+x = 777             # x = 511 (decimal)
+F[n] = n * 10       # Function using octal 10 (= 8 decimal)
+F(x)                # 511 * 8 = 4088
+```
+
+This feature maintains exact arithmetic precision while providing flexible base interpretation for enhanced usability in educational, programming, and mathematical contexts.

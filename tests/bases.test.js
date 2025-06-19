@@ -830,4 +830,257 @@ describe("BaseSystem", () => {
       });
     });
   });
+
+  describe("Parser Integration", () => {
+    describe("Basic Base Notation", () => {
+      it("should parse binary numbers with base notation", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("101[2]").toString()).toBe("5");
+        expect(Parser.parse("1010[2]").toString()).toBe("10");
+        expect(Parser.parse("11111111[2]").toString()).toBe("255");
+      });
+
+      it("should parse hexadecimal numbers with base notation", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("FF[16]").toString()).toBe("255");
+        expect(Parser.parse("A0[16]").toString()).toBe("160");
+        expect(Parser.parse("DEAD[16]").toString()).toBe("57005");
+      });
+
+      it("should parse octal numbers with base notation", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("777[8]").toString()).toBe("511");
+        expect(Parser.parse("123[8]").toString()).toBe("83");
+        expect(Parser.parse("17[8]").toString()).toBe("15");
+      });
+
+      it("should parse numbers in various bases", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("132[5]").toString()).toBe("42");
+        expect(Parser.parse("36[12]").toString()).toBe("42");
+        expect(Parser.parse("16[36]").toString()).toBe("42");
+      });
+
+      it("should handle negative numbers", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("-101[2]").toString()).toBe("-5");
+        expect(Parser.parse("-FF[16]").toString()).toBe("-255");
+        expect(Parser.parse("-123[8]").toString()).toBe("-83");
+      });
+    });
+
+    describe("Base Notation with Decimals", () => {
+      it("should parse binary decimals", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("10.1[2]").toString()).toBe("5/2");
+        expect(Parser.parse("11.01[2]").toString()).toBe("13/4");
+        expect(Parser.parse("1.11[2]").toString()).toBe("7/4");
+      });
+
+      it("should parse hexadecimal decimals", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("A.8[16]").toString()).toBe("21/2");
+        expect(Parser.parse("F.F[16]").toString()).toBe("255/16");
+        expect(Parser.parse("1.C[16]").toString()).toBe("7/4");
+      });
+
+      it("should parse octal decimals", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("7.4[8]").toString()).toBe("15/2");
+        expect(Parser.parse("12.34[8]").toString()).toBe("167/16");
+      });
+
+      it("should handle negative decimal numbers", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("-10.1[2]").toString()).toBe("-5/2");
+        expect(Parser.parse("-A.8[16]").toString()).toBe("-21/2");
+      });
+    });
+
+    describe("Base Notation with Fractions", () => {
+      it("should parse binary fractions", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("1/10[2]").toString()).toBe("1/2");
+        expect(Parser.parse("11/100[2]").toString()).toBe("3/4");
+        expect(Parser.parse("101/110[2]").toString()).toBe("5/6");
+      });
+
+      it("should parse hexadecimal fractions", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("F/10[16]").toString()).toBe("15/16");
+        expect(Parser.parse("A/C[16]").toString()).toBe("5/6");
+        expect(Parser.parse("8/10[16]").toString()).toBe("1/2");
+      });
+
+      it("should handle negative fractions", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("-1/10[2]").toString()).toBe("-1/2");
+        expect(Parser.parse("-F/10[16]").toString()).toBe("-15/16");
+      });
+    });
+
+    describe("Base Notation with Mixed Numbers", () => {
+      it("should parse binary mixed numbers", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("1..1/10[2]").toString()).toBe("3/2");
+        expect(Parser.parse("10..1/10[2]").toString()).toBe("5/2");
+        expect(Parser.parse("11..11/100[2]").toString()).toBe("15/4");
+      });
+
+      it("should parse hexadecimal mixed numbers", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("A..8/10[16]").toString()).toBe("21/2");
+        expect(Parser.parse("1..F/10[16]").toString()).toBe("31/16");
+      });
+
+      it("should handle negative mixed numbers", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("-1..1/10[2]").toString()).toBe("-3/2");
+        expect(Parser.parse("-A..8/10[16]").toString()).toBe("-21/2");
+      });
+    });
+
+    describe("Base Notation with Intervals", () => {
+      it("should parse binary intervals", () => {
+        const { Parser } = require("../src/parser.js");
+
+        const result = Parser.parse("101:111[2]");
+        expect(result.toString()).toBe("5:7");
+      });
+
+      it("should parse hexadecimal intervals", () => {
+        const { Parser } = require("../src/parser.js");
+
+        const result = Parser.parse("A:F[16]");
+        expect(result.toString()).toBe("10:15");
+      });
+
+      it("should parse mixed intervals", () => {
+        const { Parser } = require("../src/parser.js");
+
+        const result = Parser.parse("A.8:F.F[16]");
+        expect(result.toString()).toBe("21/2:255/16");
+      });
+    });
+
+    describe("Base Notation in Expressions", () => {
+      it("should handle base notation in arithmetic expressions", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("101[2] + 11[2]").toString()).toBe("8");
+        expect(Parser.parse("FF[16] - A[16]").toString()).toBe("245");
+        expect(Parser.parse("777[8] * 2").toString()).toBe("1022");
+        expect(Parser.parse("100[2] / 10[2]").toString()).toBe("2");
+      });
+
+      it("should handle mixed bases in expressions", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("FF[16] + 101[2]").toString()).toBe("260");
+        expect(Parser.parse("777[8] - 11111111[2]").toString()).toBe("256");
+      });
+
+      it("should handle parentheses with base notation", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(Parser.parse("(101[2] + 11[2]) * 10[2]").toString()).toBe("16");
+        expect(Parser.parse("FF[16] / (A[16] + 1)").toString()).toBe("255/11");
+      });
+    });
+
+    describe("Error Handling", () => {
+      it("should throw error for invalid base", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(() => Parser.parse("101[1]")).toThrow("Base 1 is not supported");
+        expect(() => Parser.parse("101[100]")).toThrow(
+          "Base 100 is not supported",
+        );
+      });
+
+      it("should throw error for invalid digits", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(() => Parser.parse("123[2]")).toThrow(
+          "contains characters not valid",
+        );
+        expect(() => Parser.parse("XYZ[16]")).toThrow(
+          "contains characters not valid",
+        );
+        expect(() => Parser.parse("888[8]")).toThrow(
+          "contains characters not valid",
+        );
+      });
+
+      it("should throw error for malformed notation", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(() => Parser.parse("101[")).toThrow();
+        expect(() => Parser.parse("101]")).toThrow();
+        expect(() => Parser.parse("101[]")).toThrow();
+      });
+
+      it("should throw error for invalid mixed numbers", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(() => Parser.parse("1..2[2]")).toThrow("contain");
+        expect(() => Parser.parse("1../2[2]")).toThrow("empty string");
+      });
+
+      it("should throw error for division by zero", () => {
+        const { Parser } = require("../src/parser.js");
+
+        expect(() => Parser.parse("1/0[2]")).toThrow(
+          "Denominator cannot be zero",
+        );
+        expect(() => Parser.parse("A/0[16]")).toThrow(
+          "Denominator cannot be zero",
+        );
+      });
+    });
+
+    describe("Type Promotion", () => {
+      it("should return Integer for whole numbers in type-aware mode", () => {
+        const { Parser } = require("../src/parser.js");
+        const { Integer } = require("../src/integer.js");
+
+        const result = Parser.parse("101[2]", { typeAware: true });
+        expect(result).toBeInstanceOf(Integer);
+        expect(result.toString()).toBe("5");
+      });
+
+      it("should return Rational for fractions", () => {
+        const { Parser } = require("../src/parser.js");
+        const { Rational } = require("../src/rational.js");
+
+        const result = Parser.parse("1/10[2]", { typeAware: true });
+        expect(result).toBeInstanceOf(Rational);
+        expect(result.toString()).toBe("1/2");
+      });
+
+      it("should return RationalInterval for intervals", () => {
+        const { Parser } = require("../src/parser.js");
+        const { RationalInterval } = require("../src/rational-interval.js");
+
+        const result = Parser.parse("101:111[2]", { typeAware: true });
+        expect(result).toBeInstanceOf(RationalInterval);
+        expect(result.toString()).toBe("5:7");
+      });
+    });
+  });
 });

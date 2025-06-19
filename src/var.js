@@ -6,11 +6,94 @@
  */
 
 import { Parser, Rational, RationalInterval, Integer } from "../index.js";
+import { BaseSystem } from "./base-system.js";
 
 export class VariableManager {
   constructor() {
     this.variables = new Map(); // Store single-character variables
     this.functions = new Map(); // Store function definitions
+    this.inputBase = null; // Base system for interpreting numbers without explicit base notation
+  }
+
+  /**
+   * Set the input base system for number interpretation
+   * @param {BaseSystem} baseSystem - The base system to use for input
+   */
+  setInputBase(baseSystem) {
+    this.inputBase = baseSystem;
+  }
+
+  /**
+   * Preprocess expression to convert numbers from input base to decimal
+   * Only converts bare numbers, preserves explicit base notation like 101[2]
+   * @param {string} expression - The expression to preprocess
+   * @returns {string} - The preprocessed expression with numbers converted to decimal
+   */
+  preprocessExpression(expression) {
+    if (!this.inputBase || this.inputBase.base === 10) {
+      return expression; // No conversion needed for decimal base
+    }
+
+    // Create a character class pattern for valid characters in this base
+    // For bases > 10, include both uppercase and lowercase letters
+    let validChars = this.inputBase.characters
+      .map((c) =>
+        // Escape special regex characters
+        c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+      )
+      .join("");
+
+    // Add uppercase versions of letters for bases > 10
+    if (this.inputBase.base > 10) {
+      const uppercaseChars = this.inputBase.characters
+        .filter((c) => /[a-z]/.test(c))
+        .map((c) => c.toUpperCase())
+        .map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("");
+      validChars += uppercaseChars;
+    }
+
+    // Regular expression to match bare numbers (not followed by [base])
+    // Uses the valid characters for this specific base
+    const numberPattern = new RegExp(
+      `\\b(-?[${validChars}]+(?:\\.[${validChars}]+)?(?:\\.\\.[${validChars}]+(?:\\/[${validChars}]+)?)?(?:\\/[${validChars}]+)?)\\b(?!\\s*\\[)`,
+      "g",
+    );
+
+    return expression.replace(numberPattern, (match) => {
+      try {
+        // Skip if this looks like it contains decimal points in a non-decimal base
+        // For now, only convert simple integers in non-decimal bases
+        if (this.inputBase.base !== 10 && match.includes(".")) {
+          return match; // Don't convert decimals in non-decimal bases for now
+        }
+
+        // Check if it's a simple integer that can be converted
+        if (new RegExp(`^-?[${validChars}]+$`).test(match)) {
+          // Validate that all characters are valid in the input base
+          const absMatch = match.startsWith("-") ? match.substring(1) : match;
+          // For bases that use letters, try both original case and lowercase
+          let normalizedMatch = match;
+          if (this.inputBase.base > 10) {
+            normalizedMatch = match.toLowerCase();
+          }
+          const normalizedAbs = normalizedMatch.startsWith("-")
+            ? normalizedMatch.substring(1)
+            : normalizedMatch;
+
+          if (this.inputBase.isValidString(normalizedAbs)) {
+            const decimalValue = this.inputBase.toDecimal(normalizedMatch);
+            return decimalValue.toString();
+          }
+        }
+
+        // If we can't convert it, return as-is
+        return match;
+      } catch (error) {
+        // If conversion fails, return original
+        return match;
+      }
+    });
   }
 
   /**
@@ -360,8 +443,11 @@ export class VariableManager {
         );
       }
 
+      // Preprocess for input base conversion
+      const preprocessed = this.preprocessExpression(substituted);
+
       // Parse and evaluate
-      const result = Parser.parse(substituted, { typeAware: true });
+      const result = Parser.parse(preprocessed, { typeAware: true });
       return {
         type: "expression",
         result: result,

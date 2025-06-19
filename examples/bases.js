@@ -348,4 +348,162 @@ const power30 = binary.fromDecimal(fileSize);
 console.log(`Binary representation shows it's 2^30: ${power30}`);
 console.log();
 
+// ============================================================================
+// Parser Integration Examples - Base Notation Syntax
+// ============================================================================
+
+console.log("=== Parser Integration - Base Notation Syntax ===\n");
+
+// Import the Parser class to demonstrate base notation parsing
+import { Parser } from "../src/parser.js";
+
+// Basic base notation examples
+console.log("Basic base notation parsing:");
+console.log(`101[2] = ${Parser.parse("101[2]")}`); // Binary 101 = 5
+console.log(`777[8] = ${Parser.parse("777[8]")}`); // Octal 777 = 511
+console.log(`FF[16] = ${Parser.parse("FF[16]")}`); // Hex FF = 255
+console.log(`132[5] = ${Parser.parse("132[5]")}`); // Base 5: 132 = 42
+console.log(`36[12] = ${Parser.parse("36[12]")}`); // Base 12: 36 = 42
+console.log();
+
+// Negative numbers
+console.log("Negative numbers in different bases:");
+console.log(`-101[2] = ${Parser.parse("-101[2]")}`); // -5
+console.log(`-FF[16] = ${Parser.parse("-FF[16]")}`); // -255
+console.log(`-123[8] = ${Parser.parse("-123[8]")}`); // -83
+console.log();
+
+// Decimal notation in different bases
+console.log("Decimal notation in different bases:");
+console.log(`10.1[2] = ${Parser.parse("10.1[2]")}`); // Binary 10.1 = 2.5
+console.log(`A.8[16] = ${Parser.parse("A.8[16]")}`); // Hex A.8 = 10.5
+console.log(`7.4[8] = ${Parser.parse("7.4[8]")}`); // Octal 7.4 = 7.5
+console.log(`1.11[2] = ${Parser.parse("1.11[2]")}`); // Binary 1.11 = 1.75
+console.log();
+
+// Fraction notation in different bases
+console.log("Fraction notation in different bases:");
+console.log(`1/10[2] = ${Parser.parse("1/10[2]")}`); // 1/2 in binary = 0.5
+console.log(`F/10[16] = ${Parser.parse("F/10[16]")}`); // 15/16 in hex
+console.log(`11/100[2] = ${Parser.parse("11/100[2]")}`); // 3/4 in binary
+console.log(`A/C[16] = ${Parser.parse("A/C[16]")}`); // 10/12 = 5/6 in hex
+console.log();
+
+// Mixed number notation in different bases
+console.log("Mixed number notation in different bases:");
+console.log(`1..1/10[2] = ${Parser.parse("1..1/10[2]")}`); // 1 and 1/2 in binary = 1.5
+console.log(`A..8/10[16] = ${Parser.parse("A..8/10[16]")}`); // 10 and 8/16 in hex = 10.5
+console.log(`10..11/100[2] = ${Parser.parse("10..11/100[2]")}`); // 2 and 3/4 in binary = 2.75
+console.log();
+
+// Interval notation in different bases
+console.log("Interval notation in different bases:");
+console.log(`101:111[2] = ${Parser.parse("101:111[2]")}`); // Binary interval 5:7
+console.log(`A:F[16] = ${Parser.parse("A:F[16]")}`); // Hex interval 10:15
+console.log(`10:17[8] = ${Parser.parse("10:17[8]")}`); // Octal interval 8:15
+console.log(`A.8:F.F[16] = ${Parser.parse("A.8:F.F[16]")}`); // Hex decimal interval
+console.log();
+
+// Arithmetic expressions with base notation
+console.log("Arithmetic expressions with base notation:");
+console.log(`101[2] + 11[2] = ${Parser.parse("101[2] + 11[2]")}`); // 5 + 3 = 8
+console.log(`FF[16] - A[16] = ${Parser.parse("FF[16] - A[16]")}`); // 255 - 10 = 245
+console.log(`777[8] * 2 = ${Parser.parse("777[8] * 2")}`); // 511 * 2 = 1022
+console.log(`100[2] / 10[2] = ${Parser.parse("100[2] / 10[2]")}`); // 4 / 2 = 2
+console.log();
+
+// Mixed bases in expressions
+console.log("Mixed bases in expressions:");
+console.log(`FF[16] + 101[2] = ${Parser.parse("FF[16] + 101[2]")}`); // 255 + 5 = 260
+console.log(`777[8] - 11111111[2] = ${Parser.parse("777[8] - 11111111[2]")}`); // 511 - 255 = 256
+console.log(`A[16] * 101[2] = ${Parser.parse("A[16] * 101[2]")}`); // 10 * 5 = 50
+console.log();
+
+// Complex expressions with parentheses
+console.log("Complex expressions with base notation:");
+console.log(
+  `(101[2] + 11[2]) * 10[2] = ${Parser.parse("(101[2] + 11[2]) * 10[2]")}`,
+); // (5+3)*2 = 16
+console.log(`FF[16] / (A[16] + 1) = ${Parser.parse("FF[16] / (A[16] + 1)")}`); // 255/(10+1) = 255/11
+console.log(`(A.8[16] - 5.0) * 2 = ${Parser.parse("(A.8[16] - 5.0) * 2")}`); // (10.5-5)*2 = 11
+console.log();
+
+// Demonstrating exact arithmetic preservation
+console.log("Exact arithmetic preservation:");
+const binaryFraction = Parser.parse("1/11[2]"); // 1/3 in binary
+console.log(`1/11[2] (exact) = ${binaryFraction}`); // Shows exact fraction 1/3
+console.log(`Decimal approximation ≈ ${binaryFraction.toDecimal(10)}`); // Shows decimal approximation
+console.log();
+
+const hexMixedNumber = Parser.parse("F..F/10[16]"); // 15 and 15/16
+console.log(`F..F/10[16] (exact) = ${hexMixedNumber}`); // Shows exact mixed number
+console.log(`Decimal value = ${hexMixedNumber.toDecimal(4)}`); // Shows decimal value
+console.log();
+
+// Error handling examples
+console.log("Error handling examples:");
+const errorCases = [
+  { expr: "123[2]", desc: "Invalid digit '2' or '3' in binary" },
+  { expr: "XYZ[16]", desc: "Invalid characters in hexadecimal" },
+  { expr: "101[100]", desc: "Base too large" },
+  { expr: "101[1]", desc: "Base too small" },
+  { expr: "1/0[2]", desc: "Division by zero" },
+];
+
+errorCases.forEach(({ expr, desc }) => {
+  try {
+    const result = Parser.parse(expr);
+    console.log(`${expr}: ${result} (unexpected success)`);
+  } catch (error) {
+    console.log(`${expr}: Error - ${desc}`);
+  }
+});
+console.log();
+
+// Practical applications
+console.log("Practical applications:");
+
+// Binary arithmetic for computer science
+console.log("Binary arithmetic (useful for computer science):");
+console.log(
+  `11111111[2] = ${Parser.parse("11111111[2]")} (max value for 8-bit unsigned)`,
+);
+console.log(
+  `10000000[2] = ${Parser.parse("10000000[2]")} (2^7, MSB for 8-bit signed)`,
+);
+console.log(
+  `11111111[2] + 1 = ${Parser.parse("11111111[2] + 1")} (overflow demo)`,
+);
+console.log();
+
+// Hexadecimal for memory addresses and colors
+console.log("Hexadecimal applications:");
+console.log(
+  `DEADBEEF[16] = ${Parser.parse("DEADBEEF[16]")} (common test hex value)`,
+);
+console.log(`FF0000[16] = ${Parser.parse("FF0000[16]")} (red color value)`);
+console.log(`00FF00[16] = ${Parser.parse("00FF00[16]")} (green color value)`);
+console.log(`0000FF[16] = ${Parser.parse("0000FF[16]")} (blue color value)`);
+console.log();
+
+// Base conversion chains using parser
+console.log("Base conversion using parser expressions:");
+const originalHex = "1F4[16]"; // 500 in hex
+console.log(`Original: ${originalHex} = ${Parser.parse(originalHex)}`);
+
+// We can show what this would be in other bases by using BaseSystem directly
+const value = Parser.parse(originalHex);
+const binarySystem = BaseSystem.BINARY;
+const octalSystem = BaseSystem.OCTAL;
+
+console.log(
+  `Same value in binary: ${binarySystem.fromDecimal(BigInt(value.toString()))}`,
+);
+console.log(
+  `Same value in octal: ${octalSystem.fromDecimal(BigInt(value.toString()))}`,
+);
+console.log(`Verification: 111110100[2] = ${Parser.parse("111110100[2]")}`);
+console.log(`Verification: 764[8] = ${Parser.parse("764[8]")}`);
+console.log();
+
 console.log("=== End of BaseSystem Examples ===");

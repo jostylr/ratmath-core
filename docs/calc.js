@@ -617,7 +617,7 @@ class Rational {
     }
     return info.length > 0 ? ` {${info.join(", ")}}` : "";
   }
-  toScientificNotation(useRepeatNotation = true, precision = 10, showPeriodInfo = false) {
+  toScientificNotation(useRepeatNotation = true, precision = 11, showPeriodInfo = false) {
     if (this.#numerator === 0n) {
       return "0";
     }
@@ -977,9 +977,9 @@ class RationalInterval {
     }
     return new RationalInterval(parts[0], parts[1]);
   }
-  toRepeatingDecimal() {
-    const lowDecimal = this.#low.toRepeatingDecimal();
-    const highDecimal = this.#high.toRepeatingDecimal();
+  toRepeatingDecimal(useRepeatNotation = true) {
+    const lowDecimal = this.#low.toRepeatingDecimalWithPeriod(useRepeatNotation).decimal;
+    const highDecimal = this.#high.toRepeatingDecimalWithPeriod(useRepeatNotation).decimal;
     return `${lowDecimal}:${highDecimal}`;
   }
   compactedDecimalInterval() {
@@ -1429,6 +1429,301 @@ class Integer {
   }
 }
 
+// src/base-system.js
+class BaseSystem {
+  #base;
+  #characters;
+  #charMap;
+  #name;
+  static RESERVED_SYMBOLS = new Set([
+    "+",
+    "-",
+    "*",
+    "/",
+    "^",
+    "!",
+    "(",
+    ")",
+    "[",
+    "]",
+    ":",
+    ".",
+    "#",
+    "~"
+  ]);
+  constructor(characterSequence, name) {
+    this.#characters = this.#parseCharacterSequence(characterSequence);
+    this.#base = this.#characters.length;
+    this.#charMap = this.#createCharacterMap();
+    this.#name = name || `Base ${this.#base}`;
+    this.#validateBase();
+    this.#checkForConflicts();
+  }
+  get base() {
+    return this.#base;
+  }
+  get characters() {
+    return [...this.#characters];
+  }
+  get charMap() {
+    return new Map(this.#charMap);
+  }
+  get name() {
+    return this.#name;
+  }
+  #parseCharacterSequence(sequence) {
+    if (typeof sequence !== "string" || sequence.length === 0) {
+      throw new Error("Character sequence must be a non-empty string");
+    }
+    const characters = [];
+    let i = 0;
+    while (i < sequence.length) {
+      if (i + 2 < sequence.length && sequence[i + 1] === "-") {
+        const startChar = sequence[i];
+        const endChar = sequence[i + 2];
+        const startCode = startChar.charCodeAt(0);
+        const endCode = endChar.charCodeAt(0);
+        if (startCode > endCode) {
+          throw new Error(`Invalid range: '${startChar}-${endChar}'. Start character must come before end character.`);
+        }
+        for (let code = startCode;code <= endCode; code++) {
+          characters.push(String.fromCharCode(code));
+        }
+        i += 3;
+      } else {
+        characters.push(sequence[i]);
+        i++;
+      }
+    }
+    const uniqueChars = new Set(characters);
+    if (uniqueChars.size !== characters.length) {
+      throw new Error("Character sequence contains duplicate characters");
+    }
+    if (characters.length < 2) {
+      throw new Error("Base system must have at least 2 characters");
+    }
+    return characters;
+  }
+  #createCharacterMap() {
+    const map = new Map;
+    for (let i = 0;i < this.#characters.length; i++) {
+      map.set(this.#characters[i], i);
+    }
+    return map;
+  }
+  #validateBase() {
+    if (this.#base < 2) {
+      throw new Error("Base must be at least 2");
+    }
+    if (this.#base !== this.#characters.length) {
+      throw new Error(`Base ${this.#base} does not match character set length ${this.#characters.length}`);
+    }
+    const uniqueChars = new Set(this.#characters);
+    if (uniqueChars.size !== this.#characters.length) {
+      throw new Error("Character set contains duplicate characters");
+    }
+    this.#validateCharacterOrdering();
+    if (this.#base > 1000) {
+      console.warn(`Very large base system (${this.#base}). This may impact performance.`);
+    }
+  }
+  #validateCharacterOrdering() {
+    const ranges = [
+      { start: "0", end: "9", name: "digits" },
+      { start: "a", end: "z", name: "lowercase letters" },
+      { start: "A", end: "Z", name: "uppercase letters" }
+    ];
+    for (const range of ranges) {
+      const startCode = range.start.charCodeAt(0);
+      const endCode = range.end.charCodeAt(0);
+      let rangeChars = [];
+      let lastCode = -1;
+      for (let i = 0;i < this.#characters.length; i++) {
+        const char = this.#characters[i];
+        const code = char.charCodeAt(0);
+        if (code >= startCode && code <= endCode) {
+          rangeChars.push(char);
+          if (lastCode !== -1 && code !== lastCode + 1) {
+            console.warn(`Non-contiguous ${range.name} range detected in base system`);
+            break;
+          }
+          lastCode = code;
+        }
+      }
+    }
+  }
+  #checkForConflicts() {
+    const conflicts = [];
+    for (const char of this.#characters) {
+      if (BaseSystem.RESERVED_SYMBOLS.has(char)) {
+        conflicts.push(char);
+      }
+    }
+    if (conflicts.length > 0) {
+      throw new Error(`Base system characters conflict with parser symbols: ${conflicts.join(", ")}. ` + `Reserved symbols are: ${Array.from(BaseSystem.RESERVED_SYMBOLS).join(", ")}`);
+    }
+  }
+  toDecimal(str) {
+    if (typeof str !== "string" || str.length === 0) {
+      throw new Error("Input must be a non-empty string");
+    }
+    let negative = false;
+    if (str.startsWith("-")) {
+      negative = true;
+      str = str.slice(1);
+    }
+    let result = 0n;
+    const baseBigInt = BigInt(this.#base);
+    for (let i = 0;i < str.length; i++) {
+      const char = str[i];
+      if (!this.#charMap.has(char)) {
+        throw new Error(`Invalid character '${char}' for ${this.#name} (base ${this.#base})`);
+      }
+      const digitValue = BigInt(this.#charMap.get(char));
+      result = result * baseBigInt + digitValue;
+    }
+    return negative ? -result : result;
+  }
+  fromDecimal(value) {
+    if (typeof value !== "bigint") {
+      throw new Error("Value must be a BigInt");
+    }
+    if (value === 0n) {
+      return this.#characters[0];
+    }
+    let negative = false;
+    if (value < 0n) {
+      negative = true;
+      value = -value;
+    }
+    const baseBigInt = BigInt(this.#base);
+    const digits = [];
+    while (value > 0n) {
+      const remainder = Number(value % baseBigInt);
+      digits.unshift(this.#characters[remainder]);
+      value = value / baseBigInt;
+    }
+    const result = digits.join("");
+    return negative ? "-" + result : result;
+  }
+  isValidString(str) {
+    if (typeof str !== "string") {
+      return false;
+    }
+    if (str.startsWith("-")) {
+      str = str.slice(1);
+    }
+    if (str.length === 0) {
+      return false;
+    }
+    for (const char of str) {
+      if (!this.#charMap.has(char)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  getMaxDigit() {
+    return this.#characters[this.#characters.length - 1];
+  }
+  getMinDigit() {
+    return this.#characters[0];
+  }
+  toString() {
+    const charPreview = this.#characters.length <= 20 ? this.#characters.join("") : this.#characters.slice(0, 10).join("") + "..." + this.#characters.slice(-10).join("");
+    return `${this.#name} (${charPreview})`;
+  }
+  equals(other) {
+    if (!(other instanceof BaseSystem)) {
+      return false;
+    }
+    if (this.#base !== other.#base) {
+      return false;
+    }
+    for (let i = 0;i < this.#characters.length; i++) {
+      if (this.#characters[i] !== other.#characters[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+  static fromBase(base, name) {
+    if (!Number.isInteger(base) || base < 2) {
+      throw new Error("Base must be an integer >= 2");
+    }
+    let sequence;
+    if (base <= 10) {
+      sequence = `0-${base - 1}`;
+    } else if (base <= 36) {
+      const lastLetter = String.fromCharCode(97 + base - 11);
+      sequence = `0-9a-${lastLetter}`;
+    } else if (base <= 62) {
+      const lastLetter = String.fromCharCode(65 + base - 37);
+      sequence = `0-9a-zA-${lastLetter}`;
+    } else {
+      throw new Error("BaseSystem.fromBase() only supports bases up to 62. Use constructor with custom character sequence for larger bases.");
+    }
+    return new BaseSystem(sequence, name || `Base ${base}`);
+  }
+  static createPattern(pattern, size, name) {
+    switch (pattern.toLowerCase()) {
+      case "alphanumeric":
+        if (size <= 36) {
+          return BaseSystem.fromBase(size, name);
+        } else if (size <= 62) {
+          return BaseSystem.fromBase(size, name);
+        } else {
+          throw new Error(`Alphanumeric pattern only supports up to base 62, got ${size}`);
+        }
+      case "digits-only":
+        if (size > 10) {
+          throw new Error(`Digits-only pattern only supports up to base 10, got ${size}`);
+        }
+        return new BaseSystem(`0-${size - 1}`, name || `Base ${size} (digits only)`);
+      case "letters-only":
+        if (size <= 26) {
+          const lastLetter2 = String.fromCharCode(97 + size - 1);
+          return new BaseSystem(`a-${lastLetter2}`, name || `Base ${size} (lowercase letters)`);
+        } else if (size <= 52) {
+          const lastLetter2 = String.fromCharCode(65 + size - 27);
+          return new BaseSystem(`a-zA-${lastLetter2}`, name || `Base ${size} (mixed case letters)`);
+        } else {
+          throw new Error(`Letters-only pattern only supports up to base 52, got ${size}`);
+        }
+      case "uppercase-only":
+        if (size > 26) {
+          throw new Error(`Uppercase-only pattern only supports up to base 26, got ${size}`);
+        }
+        const lastLetter = String.fromCharCode(65 + size - 1);
+        return new BaseSystem(`A-${lastLetter}`, name || `Base ${size} (uppercase letters)`);
+      default:
+        throw new Error(`Unknown pattern: ${pattern}. Supported patterns: alphanumeric, digits-only, letters-only, uppercase-only`);
+    }
+  }
+  withCaseSensitivity(caseSensitive) {
+    if (caseSensitive === true) {
+      return this;
+    }
+    if (caseSensitive === false) {
+      const lowerChars = this.#characters.map((char) => char.toLowerCase());
+      const uniqueLowerChars = [...new Set(lowerChars)];
+      if (uniqueLowerChars.length !== lowerChars.length) {
+        console.warn("Case-insensitive conversion resulted in duplicate characters");
+      }
+      return new BaseSystem(uniqueLowerChars.join(""), `${this.#name} (case-insensitive)`);
+    }
+    throw new Error("caseSensitive must be a boolean value");
+  }
+}
+BaseSystem.BINARY = new BaseSystem("0-1", "Binary");
+BaseSystem.OCTAL = new BaseSystem("0-7", "Octal");
+BaseSystem.DECIMAL = new BaseSystem("0-9", "Decimal");
+BaseSystem.HEXADECIMAL = new BaseSystem("0-9a-f", "Hexadecimal");
+BaseSystem.BASE36 = new BaseSystem("0-9a-z", "Base 36");
+BaseSystem.BASE62 = new BaseSystem("0-9a-zA-Z", "Base 62");
+BaseSystem.BASE60 = new BaseSystem("0-9a-zA-X", "Base 60 (Sexagesimal)");
+BaseSystem.ROMAN = new BaseSystem("IVXLCDM", "Roman Numerals");
+
 // src/parser.js
 function parseDecimalUncertainty(str, allowIntegerRangeNotation = true) {
   const uncertaintyMatch = str.match(/^(-?\d*\.?\d*)\[([^\]]+)\]$/);
@@ -1728,6 +2023,140 @@ function parseRepeatingDecimalInterval(str) {
   }
   return new RationalInterval(leftEndpoint, rightEndpoint);
 }
+function parseBaseNotation(numberStr, baseSystem, options = {}) {
+  let isNegative = false;
+  if (numberStr.startsWith("-")) {
+    isNegative = true;
+    numberStr = numberStr.substring(1);
+  }
+  if (baseSystem.base <= 36 && baseSystem.base > 10) {
+    numberStr = numberStr.toLowerCase();
+  }
+  if (numberStr.includes(":")) {
+    const parts = numberStr.split(":");
+    if (parts.length !== 2) {
+      throw new Error('Base notation intervals must have exactly two endpoints separated by ":"');
+    }
+    const leftStr = isNegative ? "-" + parts[0].trim() : parts[0].trim();
+    const leftValue = parseBaseNotation(leftStr, baseSystem, options);
+    const rightValue = parseBaseNotation(parts[1].trim(), baseSystem, options);
+    let leftRational, rightRational;
+    if (leftValue instanceof Integer) {
+      leftRational = leftValue.toRational();
+    } else if (leftValue instanceof Rational) {
+      leftRational = leftValue;
+    } else if (leftValue instanceof RationalInterval && leftValue.low.equals(leftValue.high)) {
+      leftRational = leftValue.low;
+    } else {
+      throw new Error("Interval endpoints must be single values, not intervals");
+    }
+    if (rightValue instanceof Integer) {
+      rightRational = rightValue.toRational();
+    } else if (rightValue instanceof Rational) {
+      rightRational = rightValue;
+    } else if (rightValue instanceof RationalInterval && rightValue.low.equals(rightValue.high)) {
+      rightRational = rightValue.low;
+    } else {
+      throw new Error("Interval endpoints must be single values, not intervals");
+    }
+    const interval = new RationalInterval(leftRational, rightRational);
+    interval._explicitInterval = true;
+    return interval;
+  }
+  if (numberStr.includes("..")) {
+    const parts = numberStr.split("..");
+    if (parts.length !== 2) {
+      throw new Error('Mixed number notation must have exactly one ".." separator');
+    }
+    const wholePart = parts[0].trim();
+    const fractionPart = parts[1].trim();
+    if (!fractionPart.includes("/")) {
+      throw new Error('Mixed number fractional part must contain "/"');
+    }
+    const wholeDecimal = baseSystem.toDecimal(wholePart);
+    let wholeRational = new Rational(wholeDecimal);
+    if (isNegative) {
+      wholeRational = wholeRational.negate();
+    }
+    const fractionResult = parseBaseNotation(fractionPart, baseSystem, options);
+    let fractionRational;
+    if (fractionResult instanceof Integer) {
+      fractionRational = fractionResult.toRational();
+    } else if (fractionResult instanceof Rational) {
+      fractionRational = fractionResult;
+    } else {
+      throw new Error("Mixed number fractional part must be a simple fraction");
+    }
+    if (wholeRational.numerator < 0n) {
+      const result = wholeRational.subtract(fractionRational.abs());
+      return options.typeAware && result.denominator === 1n ? new Integer(result.numerator) : result;
+    } else {
+      const result = wholeRational.add(fractionRational);
+      return options.typeAware && result.denominator === 1n ? new Integer(result.numerator) : result;
+    }
+  }
+  if (numberStr.includes("/")) {
+    const parts = numberStr.split("/");
+    if (parts.length !== 2) {
+      throw new Error('Fraction notation must have exactly one "/" separator');
+    }
+    const numeratorStr = parts[0].trim();
+    const denominatorStr = parts[1].trim();
+    const numeratorDecimal = baseSystem.toDecimal(numeratorStr);
+    const denominatorDecimal = baseSystem.toDecimal(denominatorStr);
+    if (denominatorDecimal === 0n) {
+      throw new Error("Denominator cannot be zero");
+    }
+    let result = new Rational(numeratorDecimal, denominatorDecimal);
+    if (isNegative) {
+      result = result.negate();
+    }
+    result._explicitFraction = true;
+    return result;
+  }
+  if (numberStr.includes(".")) {
+    const parts = numberStr.split(".");
+    if (parts.length !== 2) {
+      throw new Error('Decimal notation must have exactly one "." separator');
+    }
+    const integerPart = parts[0] || "0";
+    const fractionalPart = parts[1] || "";
+    if (fractionalPart === "") {
+      throw new Error("Decimal point must be followed by fractional digits");
+    }
+    const fullStr = integerPart + fractionalPart;
+    if (!baseSystem.isValidString(fullStr)) {
+      throw new Error(`String "${numberStr}" contains characters not valid for ${baseSystem.name}`);
+    }
+    const integerDecimal = baseSystem.toDecimal(integerPart);
+    let fractionalDecimal = 0n;
+    const baseBigInt = BigInt(baseSystem.base);
+    for (let i = 0;i < fractionalPart.length; i++) {
+      const digitChar = fractionalPart[i];
+      const digitValue = BigInt(baseSystem.charMap.get(digitChar));
+      fractionalDecimal = fractionalDecimal * baseBigInt + digitValue;
+    }
+    const denominator = baseBigInt ** BigInt(fractionalPart.length);
+    const totalNumerator = integerDecimal * denominator + fractionalDecimal;
+    let result = new Rational(totalNumerator, denominator);
+    if (isNegative) {
+      result = result.negate();
+    }
+    return options.typeAware && result.denominator === 1n ? new Integer(result.numerator) : result;
+  }
+  if (!baseSystem.isValidString(numberStr)) {
+    throw new Error(`String "${numberStr}" contains characters not valid for ${baseSystem.name}`);
+  }
+  let decimalValue = baseSystem.toDecimal(numberStr);
+  if (isNegative) {
+    decimalValue = -decimalValue;
+  }
+  if (options.typeAware) {
+    return new Integer(decimalValue);
+  } else {
+    return new Rational(decimalValue);
+  }
+}
 
 class Parser {
   static parse(expression, options = {}) {
@@ -1758,7 +2187,10 @@ class Parser {
         result.value = result.value.subtract(termResult.value);
       }
     }
-    return { value: Parser.#promoteType(result.value, options), remainingExpr: currentExpr };
+    return {
+      value: Parser.#promoteType(result.value, options),
+      remainingExpr: currentExpr
+    };
   }
   static #parseTerm(expr, options = {}) {
     let result = Parser.#parseFactor(expr, options);
@@ -1812,7 +2244,10 @@ class Parser {
         }
       }
     }
-    return { value: Parser.#promoteType(result.value, options), remainingExpr: currentExpr };
+    return {
+      value: Parser.#promoteType(result.value, options),
+      remainingExpr: currentExpr
+    };
   }
   static #parseFactor(expr, options = {}) {
     if (expr.length === 0) {
@@ -1998,6 +2433,24 @@ class Parser {
       return factorialResult2;
     }
     if (expr.includes("[") && expr.includes("]")) {
+      const baseMatch = expr.match(/^([^[\]]+(?::[^[\]]+)?)\[(\d+)\]/);
+      if (baseMatch) {
+        const [fullMatch, numberStr, baseStr] = baseMatch;
+        const baseNum = parseInt(baseStr, 10);
+        if (baseNum < 2 || baseNum > 62) {
+          throw new Error(`Base ${baseNum} is not supported. Base must be between 2 and 62.`);
+        }
+        try {
+          const baseSystem = BaseSystem.fromBase(baseNum);
+          const result = parseBaseNotation(numberStr, baseSystem, options);
+          return {
+            value: result,
+            remainingExpr: expr.substring(fullMatch.length)
+          };
+        } catch (error) {
+          throw new Error(`Invalid base notation ${fullMatch}: ${error.message}`);
+        }
+      }
       const uncertaintyMatch = expr.match(/^(-?\d*\.?\d*)\[([^\]]+)\]/);
       if (uncertaintyMatch) {
         const fullMatch = uncertaintyMatch[0];
@@ -2852,6 +3305,43 @@ class VariableManager {
   constructor() {
     this.variables = new Map;
     this.functions = new Map;
+    this.inputBase = null;
+  }
+  setInputBase(baseSystem) {
+    this.inputBase = baseSystem;
+  }
+  preprocessExpression(expression) {
+    if (!this.inputBase || this.inputBase.base === 10) {
+      return expression;
+    }
+    let validChars = this.inputBase.characters.map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("");
+    if (this.inputBase.base > 10) {
+      const uppercaseChars = this.inputBase.characters.filter((c) => /[a-z]/.test(c)).map((c) => c.toUpperCase()).map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("");
+      validChars += uppercaseChars;
+    }
+    const numberPattern = new RegExp(`\\b(-?[${validChars}]+(?:\\.[${validChars}]+)?(?:\\.\\.[${validChars}]+(?:\\/[${validChars}]+)?)?(?:\\/[${validChars}]+)?)\\b(?!\\s*\\[)`, "g");
+    return expression.replace(numberPattern, (match) => {
+      try {
+        if (this.inputBase.base !== 10 && match.includes(".")) {
+          return match;
+        }
+        if (new RegExp(`^-?[${validChars}]+$`).test(match)) {
+          const absMatch = match.startsWith("-") ? match.substring(1) : match;
+          let normalizedMatch = match;
+          if (this.inputBase.base > 10) {
+            normalizedMatch = match.toLowerCase();
+          }
+          const normalizedAbs = normalizedMatch.startsWith("-") ? normalizedMatch.substring(1) : normalizedMatch;
+          if (this.inputBase.isValidString(normalizedAbs)) {
+            const decimalValue = this.inputBase.toDecimal(normalizedMatch);
+            return decimalValue.toString();
+          }
+        }
+        return match;
+      } catch (error) {
+        return match;
+      }
+    });
   }
   processInput(input) {
     const trimmed = input.trim();
@@ -3076,7 +3566,8 @@ class VariableManager {
         const pattern = new RegExp(`\\b${varName}\\b`, "g");
         substituted = substituted.replace(pattern, `(${this.formatValue(value)})`);
       }
-      const result = Parser.parse(substituted, { typeAware: true });
+      const preprocessed = this.preprocessExpression(substituted);
+      const result = Parser.parse(preprocessed, { typeAware: true });
       return {
         type: "expression",
         result

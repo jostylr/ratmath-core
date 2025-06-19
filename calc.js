@@ -21,7 +21,8 @@ class Calculator {
     this.showPeriodInfo = false; // Whether to show period info in scientific notation
     this.variableManager = new VariableManager(); // Variable and function management
     this.shouldInterrupt = false; // Flag for computation interruption
-    this.currentBase = BaseSystem.DECIMAL; // Current base system for input/output
+    this.inputBase = BaseSystem.DECIMAL; // Base system for parsing input
+    this.outputBases = [BaseSystem.DECIMAL]; // Array of base systems for displaying output
     this.customBases = new Map(); // Custom base definitions [n] = character_sequence
     this.rl = createInterface({
       input: process.stdin,
@@ -183,25 +184,33 @@ class Calculator {
 
     // Handle BIN, HEX, OCT shortcuts
     if (upperInput === "BIN") {
-      this.currentBase = BaseSystem.BINARY;
+      this.inputBase = BaseSystem.BINARY;
+      this.outputBases = [BaseSystem.BINARY];
+      this.variableManager.setInputBase(BaseSystem.BINARY);
       console.log("Base set to binary (base 2)");
       return;
     }
 
     if (upperInput === "HEX") {
-      this.currentBase = BaseSystem.HEXADECIMAL;
+      this.inputBase = BaseSystem.HEXADECIMAL;
+      this.outputBases = [BaseSystem.HEXADECIMAL];
+      this.variableManager.setInputBase(BaseSystem.HEXADECIMAL);
       console.log("Base set to hexadecimal (base 16)");
       return;
     }
 
     if (upperInput === "OCT") {
-      this.currentBase = BaseSystem.OCTAL;
+      this.inputBase = BaseSystem.OCTAL;
+      this.outputBases = [BaseSystem.OCTAL];
+      this.variableManager.setInputBase(BaseSystem.OCTAL);
       console.log("Base set to octal (base 8)");
       return;
     }
 
     if (upperInput === "DEC") {
-      this.currentBase = BaseSystem.DECIMAL;
+      this.inputBase = BaseSystem.DECIMAL;
+      this.outputBases = [BaseSystem.DECIMAL];
+      this.variableManager.setInputBase(BaseSystem.DECIMAL);
       console.log("Base set to decimal (base 10)");
       return;
     }
@@ -300,59 +309,139 @@ class Calculator {
     }
   }
 
+  // Legacy support - currentBase getter/setter for backward compatibility
+  get currentBase() {
+    return this.inputBase;
+  }
+
+  set currentBase(base) {
+    this.inputBase = base;
+    this.outputBases = [base];
+    this.variableManager.setInputBase(base);
+  }
+
   handleBaseCommand(command) {
     const parts = command.split(/\s+/);
 
     if (parts.length === 1) {
-      // Just "BASE" - show current base
-      console.log(
-        `Current base: ${this.currentBase.name} (base ${this.currentBase.base})`,
-      );
+      // Just "BASE" - show current base configuration
+      if (
+        this.outputBases.length === 1 &&
+        this.inputBase.equals(this.outputBases[0])
+      ) {
+        console.log(
+          `Current base: ${this.inputBase.name} (base ${this.inputBase.base})`,
+        );
+      } else {
+        console.log(
+          `Input base: ${this.inputBase.name} (base ${this.inputBase.base})`,
+        );
+        console.log(
+          `Output base${this.outputBases.length > 1 ? "s" : ""}: ${this.outputBases.map((b) => `${b.name} (base ${b.base})`).join(", ")}`,
+        );
+      }
       return;
     }
 
     const baseSpec = parts.slice(1).join(" ");
 
+    // Check for input->output notation: BASE 3->10 or BASE 3->[10,5,3]
+    if (baseSpec.includes("->")) {
+      this.handleInputOutputBaseCommand(baseSpec);
+      return;
+    }
+
+    // Legacy behavior: set both input and output to same base
+    this.handleLegacyBaseCommand(baseSpec);
+  }
+
+  handleInputOutputBaseCommand(baseSpec) {
+    const [inputSpec, outputSpec] = baseSpec.split("->", 2);
+
+    if (!inputSpec.trim() || !outputSpec.trim()) {
+      console.log(
+        "Error: Invalid input->output format. Use BASE 3->10 or BASE 3->[10,5,3]",
+      );
+      return;
+    }
+
+    // Parse input base
+    try {
+      this.inputBase = this.parseBaseSpec(inputSpec.trim());
+      this.variableManager.setInputBase(this.inputBase);
+    } catch (error) {
+      console.log(`Error parsing input base: ${error.message}`);
+      return;
+    }
+
+    // Parse output base(s)
+    try {
+      const trimmedOutput = outputSpec.trim();
+      if (trimmedOutput.startsWith("[") && trimmedOutput.endsWith("]")) {
+        // Multiple output bases: [10,5,3]
+        const baseSpecs = trimmedOutput
+          .slice(1, -1)
+          .split(",")
+          .map((s) => s.trim());
+        if (baseSpecs.length === 0) {
+          throw new Error("Empty output base list");
+        }
+        this.outputBases = baseSpecs.map((spec) => this.parseBaseSpec(spec));
+      } else {
+        // Single output base: 10
+        this.outputBases = [this.parseBaseSpec(trimmedOutput)];
+      }
+    } catch (error) {
+      console.log(`Error parsing output base(s): ${error.message}`);
+      return;
+    }
+
+    // Success message
+    const outputBaseNames = this.outputBases
+      .map((b) => `${b.name} (base ${b.base})`)
+      .join(", ");
+    console.log(
+      `Input base: ${this.inputBase.name} (base ${this.inputBase.base})`,
+    );
+    console.log(
+      `Output base${this.outputBases.length > 1 ? "s" : ""}: ${outputBaseNames}`,
+    );
+  }
+
+  handleLegacyBaseCommand(baseSpec) {
+    try {
+      const base = this.parseBaseSpec(baseSpec);
+      this.inputBase = base;
+      this.outputBases = [base];
+      this.variableManager.setInputBase(base);
+      console.log(`Base set to ${base.name} (base ${base.base})`);
+    } catch (error) {
+      console.log(`Error: ${error.message}`);
+    }
+  }
+
+  parseBaseSpec(baseSpec) {
     // Check if it's a pure numeric base (no letters or dashes)
     const numericBase = parseInt(baseSpec);
     if (!isNaN(numericBase) && /^\d+$/.test(baseSpec.trim())) {
       if (numericBase < 2) {
-        console.log("Error: Base must be at least 2");
-        return;
+        throw new Error("Base must be at least 2");
       }
       if (numericBase > 62) {
-        console.log(
-          "Error: Numeric bases must be 62 or less. Use character sequence for larger bases.",
+        throw new Error(
+          "Numeric bases must be 62 or less. Use character sequence for larger bases.",
         );
-        return;
       }
-
-      try {
-        this.currentBase = BaseSystem.fromBase(numericBase);
-        console.log(
-          `Base set to ${this.currentBase.name} (base ${numericBase})`,
-        );
-      } catch (error) {
-        console.log(`Error: ${error.message}`);
-      }
-      return;
+      return BaseSystem.fromBase(numericBase);
     }
 
     // Check if it's a character sequence (contains dashes or letters)
     if (baseSpec.includes("-") || /[a-zA-Z]/.test(baseSpec)) {
-      try {
-        this.currentBase = new BaseSystem(baseSpec, `Custom Base ${baseSpec}`);
-        console.log(
-          `Base set to custom base: ${this.currentBase.name} (base ${this.currentBase.base})`,
-        );
-      } catch (error) {
-        console.log(`Error: ${error.message}`);
-      }
-      return;
+      return new BaseSystem(baseSpec, `Custom Base ${baseSpec}`);
     }
 
-    console.log(
-      "Error: Invalid base specification. Use a number (2-62) or character sequence with dashes (e.g., '0-9a-f')",
+    throw new Error(
+      "Invalid base specification. Use a number (2-62) or character sequence with dashes (e.g., '0-9a-f')",
     );
   }
 
@@ -443,6 +532,12 @@ class Calculator {
     console.log(
       "  BASE <sequence>     - Set custom base using character sequence",
     );
+    console.log(
+      "  BASE <in>-><out>    - Set input base <in> and output base <out>",
+    );
+    console.log(
+      "  BASE <in>->[<out1>,<out2>,...] - Set input base and multiple output bases",
+    );
     console.log("  BIN, HEX, OCT, DEC  - Quick base shortcuts");
     console.log("  BASES               - Show this help");
     console.log("\nBase format commands (after expressions):");
@@ -451,7 +546,10 @@ class Calculator {
     console.log("  <expr> HEX          - Show result in hexadecimal");
     console.log("  <expr> OCT          - Show result in octal");
     console.log(
-      `\nCurrent base: ${this.currentBase.name} (base ${this.currentBase.base})`,
+      `\nInput base: ${this.inputBase.name} (base ${this.inputBase.base})`,
+    );
+    console.log(
+      `Output base${this.outputBases.length > 1 ? "s" : ""}: ${this.outputBases.map((b) => `${b.name} (base ${b.base})`).join(", ")}`,
     );
   }
 
@@ -498,14 +596,25 @@ class Calculator {
           ? ` {period: ${period}}`
           : "";
 
-    // Show base representation if not in decimal base and is integer
+    // Show base representations if not all decimal and is integer
     let baseRepresentation = "";
-    if (this.currentBase.base !== 10 && rational.denominator === 1n) {
-      try {
-        const baseRepr = this.currentBase.fromDecimal(rational.numerator);
-        baseRepresentation = ` [${baseRepr}(${this.currentBase.base})]`;
-      } catch (error) {
-        // Ignore conversion errors
+    if (
+      rational.denominator === 1n &&
+      this.outputBases.some((base) => base.base !== 10)
+    ) {
+      const baseReprs = [];
+      for (const base of this.outputBases) {
+        if (base.base !== 10) {
+          try {
+            const baseRepr = base.fromDecimal(rational.numerator);
+            baseReprs.push(`${baseRepr}[${base.base}]`);
+          } catch (error) {
+            // Ignore conversion errors for individual bases
+          }
+        }
+      }
+      if (baseReprs.length > 0) {
+        baseRepresentation = ` (${baseReprs.join(", ")})`;
       }
     }
 

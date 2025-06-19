@@ -155,3 +155,63 @@ The fix ensures reliable scientific notation for all rational numbers while main
 - Added `#generatePeriodInfo()` helper method for consistent period information display
 - Enhanced `toRepeatingDecimalWithPeriod()` to compute 100 digits when compact notation is used
 - Eliminated all redundant workaround code from calc.js (170+ lines removed)
+
+## Enhanced BASE Command with Input-Output Separation
+
+**Model:** Claude Sonnet 3.5, **Date:** 2025-01-27
+
+Implemented major enhancements to the BASE command system, enabling separate input and output base configuration for improved flexibility and educational use.
+
+**Core Features:**
+- **Input-Output Base Separation**: Added `BASE <input>-><output>` syntax (e.g., `BASE 3->10`, `BASE 16->2`)
+- **Multiple Output Bases**: Support for `BASE <input>->[<out1>,<out2>,...]` syntax (e.g., `BASE 2->[10,16,8]`)
+- **Automatic Input Conversion**: Bare numbers are automatically interpreted in the input base while preserving explicit base notation
+- **Multi-Base Display**: Results shown simultaneously in multiple output bases when configured
+
+**Implementation Details:**
+- Enhanced Calculator class with separate `inputBase` and `outputBases` properties
+- Modified VariableManager with input base preprocessing for automatic number conversion
+- Updated display functions to show results in multiple bases for integers
+- Added regex-based number pattern matching with case-insensitive support for bases > 10
+- Maintained backward compatibility with existing BASE command syntax
+
+**Calculator Interface:**
+- `BASE` - Show current input/output base configuration
+- `BASE 3->10` - Input in base 3, output in base 10
+- `BASE 16->[10,2,8]` - Input in hex, output in decimal, binary, and octal
+- `BASE 2->16` - Input in binary, output in hexadecimal
+- Traditional commands (BIN, HEX, OCT, DEC) still work and set both input/output
+
+**Variable and Function Integration:**
+- Variable assignments respect input base: `x = 777` (interpreted as octal if input base is 8)
+- Function definitions use input base: `F[n] = n * 10` (where 10 is interpreted in input base)
+- Function calls convert arguments: `F(101)` (101 interpreted in input base)
+
+**Example Usage:**
+```
+> BASE 2->10
+Input base: Base 2 (base 2)
+Output base: Base 10 (base 10)
+
+> 101
+5
+
+> BASE 16->[10,2,8]  
+Input base: Base 16 (base 16)
+Output bases: Base 10 (base 10), Base 2 (base 2), Base 8 (base 8)
+
+> FF
+255 (11111111[2], 377[8])
+```
+
+**Testing and Documentation:**
+- Added comprehensive test suite with 31 passing tests covering input base conversion, mixed expressions, and edge cases
+- Created detailed examples file demonstrating all functionality
+- Updated documentation with new command syntax and usage patterns
+- Fixed decimal uncertainty test conflict with base notation parsing
+
+**Technical Achievements:**
+- Resolved parser conflicts between base notation and decimal uncertainty syntax
+- Implemented case-insensitive base character matching for improved usability
+- Added robust error handling for invalid base specifications and conversion failures
+- Maintained exact arithmetic precision throughout all base conversions

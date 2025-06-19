@@ -31,7 +31,7 @@ Add support for arbitrary number bases in RatMath using character sequence notat
 - [x] Support for non-contiguous character sets
 
 #### Conflict Detection
-- [x] Check against existing parser symbols: `+`, `-`, `*`, `/`, `^`, `!`, `(`, `)`, `[`, `]`, `:`, `.`, `#`, `~`, `E`
+- [x] Check against existing parser symbols: `+`, `-`, `*`, `/`, `^`, `!`, `(`, `)`, `[`, `]`, `:`, `.`, `#`, `~`
 - [x] Validate that base characters don't include parser operators
 - [x] Provide clear error messages for conflicts
 - [ ] Allow override for advanced users (with warnings)
@@ -59,24 +59,24 @@ Add support for arbitrary number bases in RatMath using character sequence notat
 ### 3. Parser Integration
 
 #### Base Notation Syntax
-- [ ] Bracket notation: `101[2]` for binary, `FF[16]` for hexadecimal
-- [ ] Support for fractions: `10.1[2]` for binary 2.5, `A.8[16]` for hex 10.5
-- [ ] Mixed number support: `1..1.1[2]` for binary mixed numbers
-- [ ] Interval notation: `A[16]:F[16]` for hexadecimal intervals
+- [x] Bracket notation: `101[2]` for binary, `FF[16]` for hexadecimal
+- [x] Support for fractions: `10.1[2]` for binary 2.5, `A.8[16]` for hex 10.5
+- [x] Mixed number support: `1..1.1[2]` for binary mixed numbers
+- [x] Interval notation: `A[16]:F[16]` for hexadecimal intervals
 
 #### Parser Extensions
-- [ ] Extend tokenizer to recognize base notation
-- [ ] Add base parsing to number recognition
-- [ ] Handle base-specific decimal points and separators
-- [ ] Validate digits against specified base character set
-- [ ] Error handling for invalid digits in base context
+- [x] Extend tokenizer to recognize base notation
+- [x] Add base parsing to number recognition
+- [x] Handle base-specific decimal points and separators
+- [x] Validate digits against specified base character set
+- [x] Error handling for invalid digits in base context
 - [ ] In calc.js, [n] = range defines a base to be used. So [3] = 012 would be the standard trinary. But it could overwrite the default and do [3] = d-f to mean d e and f.  The number of characters should equal n.
 - [ ] For [n] where n is between 2 and 62, unless defined elsewhere, it would take the first n characters of 0-9a-zA-Z
 
 #### Base Conversion in Expressions
-- [ ] Allow mixed bases in single expressions: `FF[16] + 101[2]`
-- [ ] Automatic conversion to common base for arithmetic
-- [ ] Preserve base information through calculations when possible
+- [x] Allow mixed bases in single expressions: `FF[16] + 101[2]`
+- [x] Automatic conversion to common base for arithmetic
+- [x] Preserve base information through calculations when possible
 - [ ] Support base conversion functions: `toBase(number, targetBase)`
 
 ### 4. Number Class Extensions
@@ -212,10 +212,15 @@ Add support for arbitrary number bases in RatMath using character sequence notat
 ### 10. Calculator Integration
 
 #### Terminal Calculator
-- [ ] Add base conversion commands: `BIN`, `HEX`, `OCT`, `BASE <n>`
-- [ ] Display options for showing results in multiple bases
-- [ ] Input parsing for base notation: `FF[16]`, `101[2]`
-- [ ] Base-specific help and examples
+- [x] Add base conversion commands: `BIN`, `HEX`, `OCT`, `BASE <n>`
+- [x] Display options for showing results in multiple bases
+- [x] Input parsing for base notation: `FF[16]`, `101[2]`
+- [x] Base-specific help and examples
+- [x] **NEW**: Enhanced BASE command with input-output separation
+  - [x] `BASE <input>-><output>` syntax (e.g., `BASE 3->10`)
+  - [x] Multiple output bases: `BASE 2->[10,16,8]`
+  - [x] Automatic input base conversion for bare numbers
+  - [x] Variable and function support with input base conversion
 
 #### Web Calculator
 - [ ] Base selector interface (dropdown or buttons)
@@ -265,9 +270,17 @@ Add support for arbitrary number bases in RatMath using character sequence notat
 - Performance warnings for very large or complex base systems
 
 ## Priority Levels
-1. **High**: BaseSystem class, common presets, basic parser integration
-2. **Medium**: Number class extensions, conversion utilities, calculator integration
+1. **High**: BaseSystem class, common presets, basic parser integration ✅ **COMPLETED**
+2. **Medium**: Number class extensions, conversion utilities, calculator integration ✅ **COMPLETED**
 3. **Low**: Advanced features, Unicode support, performance optimization
+
+## Recent Additions (Completed)
+- ✅ Enhanced BASE command with input-output base separation
+- ✅ Multiple simultaneous output base display  
+- ✅ Automatic input base conversion for expressions
+- ✅ Variable and function integration with base conversion
+- ✅ Comprehensive test suite for input-output functionality
+- ✅ Examples and documentation for new features
 
 ## Integration with Existing Features
 - Base notation should work with intervals: `A[16]:F[16]`
