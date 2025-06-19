@@ -482,10 +482,10 @@ export class RationalInterval {
    * @returns {RationalInterval|null} The union interval, or null if they are disjoint
    */
   union(other) {
-    // Check if intervals are disjoint and not adjacent
-    const oneLow = new Rational(1);
-    const adjacentRight = this.#high.add(oneLow).equals(other.low);
-    const adjacentLeft = other.high.add(oneLow).equals(this.#low);
+    // Check if intervals are disjoint and not adjacent (touching)
+    // Adjacent means they share an endpoint exactly
+    const adjacentRight = this.#high.equals(other.low);
+    const adjacentLeft = other.high.equals(this.#low);
 
     if (!this.overlaps(other) && !adjacentRight && !adjacentLeft) {
       return null;

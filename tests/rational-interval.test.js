@@ -311,6 +311,23 @@ describe("RationalInterval", () => {
 
       expect(a.union(c)).toBeNull();
     });
+
+    it("unites intervals that share an endpoint", () => {
+      const a = new RationalInterval("0", "1");
+      const b = new RationalInterval("1", "2");
+
+      const union = a.union(b);
+      expect(union).not.toBeNull();
+      expect(union.low.equals(new Rational(0))).toBe(true);
+      expect(union.high.equals(new Rational(2))).toBe(true);
+    });
+
+    it("returns null for intervals separated by a gap", () => {
+      const a = new RationalInterval("0", "1");
+      const b = new RationalInterval("2", "3");
+
+      expect(a.union(b)).toBeNull();
+    });
   });
 
   describe("conversion", () => {
