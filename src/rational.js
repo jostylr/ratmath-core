@@ -1160,7 +1160,7 @@ export class Rational {
    */
   toScientificNotation(
     useRepeatNotation = true,
-    precision = 10,
+    precision = 11,
     showPeriodInfo = false,
   ) {
     // Handle special cases
