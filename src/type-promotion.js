@@ -58,6 +58,10 @@ export class TypePromotion {
    */
   static promoteToLevel(value, targetLevel) {
     const currentLevel = TypePromotion.getTypeLevel(value);
+
+    if (!Number.isInteger(targetLevel) || targetLevel < 0 || targetLevel > 2) {
+      throw new Error(`Invalid target level: ${targetLevel}`);
+    }
     
     if (currentLevel === targetLevel) {
       return value;
