@@ -2,6 +2,20 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## BaseSystem Implementation and Calculator Integration
+
+**Model:** Claude Sonnet 3.5, **Date:** 2025-01-27
+
+Implemented the first two major items from bases-todo.md: created the BaseSystem class with character sequence parsing and common base presets. The BaseSystem class supports arbitrary number bases using character sequence notation (e.g., "0-1" for binary, "0-9a-f" for hexadecimal) with exact BigInt arithmetic. Includes comprehensive tests, examples, and documentation. Standard presets provided for Binary, Octal, Decimal, Hexadecimal, Base36, and Base62. Features conflict detection with parser symbols, Unicode support, and efficient conversion algorithms.
+
+Added BASE command functionality to calc.js terminal calculator including:
+- BASE command to show/set current base system (e.g., BASE 16, BASE 0-7)
+- Quick shortcuts: BIN, HEX, OCT, DEC for common bases
+- Format commands after expressions (e.g., "255 HEX", "42 BIN")
+- BASES command to show available base systems and help
+- Automatic base representation display for integers when not in decimal
+- Support for custom character sequences with dash notation (e.g., "0-7", "a-z")
+
 ## Variable Management Mini-Language Implementation
 
 **Model:** Claude Sonnet 4, **Date:** 2025-06-17

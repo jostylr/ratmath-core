@@ -8,6 +8,7 @@
  */
 
 import { Parser, Rational, RationalInterval, Integer } from "./index.js";
+import { BaseSystem } from "./src/base-system.js";
 import { VariableManager } from "./src/var.js";
 import { createInterface } from "readline";
 
@@ -20,6 +21,8 @@ class Calculator {
     this.showPeriodInfo = false; // Whether to show period info in scientific notation
     this.variableManager = new VariableManager(); // Variable and function management
     this.shouldInterrupt = false; // Flag for computation interruption
+    this.currentBase = BaseSystem.DECIMAL; // Current base system for input/output
+    this.customBases = new Map(); // Custom base definitions [n] = character_sequence
     this.rl = createInterface({
       input: process.stdin,
       output: process.stdout,
@@ -172,8 +175,44 @@ class Calculator {
       return;
     }
 
+    // Handle BASE commands (but not BASES)
+    if (upperInput.startsWith("BASE") && upperInput !== "BASES") {
+      this.handleBaseCommand(upperInput);
+      return;
+    }
+
+    // Handle BIN, HEX, OCT shortcuts
+    if (upperInput === "BIN") {
+      this.currentBase = BaseSystem.BINARY;
+      console.log("Base set to binary (base 2)");
+      return;
+    }
+
+    if (upperInput === "HEX") {
+      this.currentBase = BaseSystem.HEXADECIMAL;
+      console.log("Base set to hexadecimal (base 16)");
+      return;
+    }
+
+    if (upperInput === "OCT") {
+      this.currentBase = BaseSystem.OCTAL;
+      console.log("Base set to octal (base 8)");
+      return;
+    }
+
+    if (upperInput === "DEC") {
+      this.currentBase = BaseSystem.DECIMAL;
+      console.log("Base set to decimal (base 10)");
+      return;
+    }
+
     if (upperInput === "VARS") {
       this.showVariables();
+      return;
+    }
+
+    if (upperInput === "BASES") {
+      this.showBases();
       return;
     }
 
@@ -183,6 +222,38 @@ class Calculator {
       upperInput === "BYE"
     ) {
       this.rl.close();
+      return;
+    }
+
+    // Check for format commands after expressions (exclude standalone BASES command)
+    const formatMatch = input.match(
+      /^(.*?)\s+(BASE\s+\d+|BASE\s+[a-zA-Z0-9\-]+|BIN|HEX|OCT|DEC|DECI|RAT|BOTH|SCI|MIX)$/i,
+    );
+
+    if (formatMatch && formatMatch[2].toUpperCase() !== "BASES") {
+      const [, expression, formatCmd] = formatMatch;
+
+      // Process the expression first
+      const varResult = this.variableManager.processInput(expression);
+
+      // Clear any progress line
+      process.stdout.write("\r" + " ".repeat(80) + "\r");
+
+      if (varResult.type === "error") {
+        console.log(varResult.message);
+        return;
+      }
+
+      // Display result in requested format
+      if (varResult.type === "assignment" || varResult.type === "function") {
+        console.log(varResult.message);
+      } else {
+        try {
+          this.displayResultInFormat(varResult.result, formatCmd.trim());
+        } catch (error) {
+          this.handleError(error);
+        }
+      }
       return;
     }
 
@@ -204,25 +275,184 @@ class Calculator {
       try {
         this.displayResult(varResult.result);
       } catch (error) {
-        if (
-          error.message.includes("Division by zero") ||
-          error.message.includes("Denominator cannot be zero")
-        ) {
-          console.log("Error: Division by zero is undefined");
-        } else if (
-          error.message.includes("Factorial") &&
-          error.message.includes("negative")
-        ) {
-          console.log("Error: Factorial is not defined for negative numbers");
-        } else if (
-          error.message.includes("Zero cannot be raised to the power of zero")
-        ) {
-          console.log("Error: 0^0 is undefined");
-        } else {
-          console.log(`Error: ${error.message}`);
-        }
+        this.handleError(error);
       }
     }
+  }
+
+  handleError(error) {
+    if (
+      error.message.includes("Division by zero") ||
+      error.message.includes("Denominator cannot be zero")
+    ) {
+      console.log("Error: Division by zero is undefined");
+    } else if (
+      error.message.includes("Factorial") &&
+      error.message.includes("negative")
+    ) {
+      console.log("Error: Factorial is not defined for negative numbers");
+    } else if (
+      error.message.includes("Zero cannot be raised to the power of zero")
+    ) {
+      console.log("Error: 0^0 is undefined");
+    } else {
+      console.log(`Error: ${error.message}`);
+    }
+  }
+
+  handleBaseCommand(command) {
+    const parts = command.split(/\s+/);
+
+    if (parts.length === 1) {
+      // Just "BASE" - show current base
+      console.log(
+        `Current base: ${this.currentBase.name} (base ${this.currentBase.base})`,
+      );
+      return;
+    }
+
+    const baseSpec = parts.slice(1).join(" ");
+
+    // Check if it's a pure numeric base (no letters or dashes)
+    const numericBase = parseInt(baseSpec);
+    if (!isNaN(numericBase) && /^\d+$/.test(baseSpec.trim())) {
+      if (numericBase < 2) {
+        console.log("Error: Base must be at least 2");
+        return;
+      }
+      if (numericBase > 62) {
+        console.log(
+          "Error: Numeric bases must be 62 or less. Use character sequence for larger bases.",
+        );
+        return;
+      }
+
+      try {
+        this.currentBase = BaseSystem.fromBase(numericBase);
+        console.log(
+          `Base set to ${this.currentBase.name} (base ${numericBase})`,
+        );
+      } catch (error) {
+        console.log(`Error: ${error.message}`);
+      }
+      return;
+    }
+
+    // Check if it's a character sequence (contains dashes or letters)
+    if (baseSpec.includes("-") || /[a-zA-Z]/.test(baseSpec)) {
+      try {
+        this.currentBase = new BaseSystem(baseSpec, `Custom Base ${baseSpec}`);
+        console.log(
+          `Base set to custom base: ${this.currentBase.name} (base ${this.currentBase.base})`,
+        );
+      } catch (error) {
+        console.log(`Error: ${error.message}`);
+      }
+      return;
+    }
+
+    console.log(
+      "Error: Invalid base specification. Use a number (2-62) or character sequence with dashes (e.g., '0-9a-f')",
+    );
+  }
+
+  displayResultInFormat(result, formatCmd) {
+    const upperFormat = formatCmd.toUpperCase();
+
+    if (upperFormat === "MIX") {
+      const oldMixed = this.mixedDisplay;
+      this.mixedDisplay = !this.mixedDisplay;
+      this.displayResult(result);
+      this.mixedDisplay = oldMixed;
+    } else if (upperFormat === "DECI") {
+      const oldMode = this.outputMode;
+      this.outputMode = "DECI";
+      this.displayResult(result);
+      this.outputMode = oldMode;
+    } else if (upperFormat === "RAT") {
+      const oldMode = this.outputMode;
+      this.outputMode = "RAT";
+      this.displayResult(result);
+      this.outputMode = oldMode;
+    } else if (upperFormat === "BOTH") {
+      const oldMode = this.outputMode;
+      this.outputMode = "BOTH";
+      this.displayResult(result);
+      this.outputMode = oldMode;
+    } else if (upperFormat === "SCI") {
+      const oldMode = this.outputMode;
+      this.outputMode = "SCI";
+      this.displayResult(result);
+      this.outputMode = oldMode;
+    } else if (upperFormat.startsWith("BASE")) {
+      // Handle base format commands
+      const baseSpec = upperFormat.substring(4).trim();
+      const numericBase = parseInt(baseSpec);
+
+      let targetBase;
+      if (!isNaN(numericBase) && numericBase >= 2 && numericBase <= 62) {
+        targetBase = BaseSystem.fromBase(numericBase);
+      } else if (baseSpec.includes("-")) {
+        targetBase = new BaseSystem(baseSpec);
+      } else {
+        console.log("Error: Invalid base specification for format");
+        return;
+      }
+
+      this.displayResultInBase(result, targetBase);
+    } else if (upperFormat === "BIN") {
+      this.displayResultInBase(result, BaseSystem.BINARY);
+    } else if (upperFormat === "HEX") {
+      this.displayResultInBase(result, BaseSystem.HEXADECIMAL);
+    } else if (upperFormat === "OCT") {
+      this.displayResultInBase(result, BaseSystem.OCTAL);
+    } else if (upperFormat === "DEC") {
+      this.displayResultInBase(result, BaseSystem.DECIMAL);
+    }
+  }
+
+  displayResultInBase(result, baseSystem) {
+    if (result instanceof Integer) {
+      const baseRepr = baseSystem.fromDecimal(result.value);
+      console.log(`${baseRepr}[${baseSystem.base}]`);
+    } else if (result instanceof Rational) {
+      // For rationals, show the integer part in the specified base if possible
+      if (result.denominator === 1n) {
+        const baseRepr = baseSystem.fromDecimal(result.numerator);
+        console.log(`${baseRepr}[${baseSystem.base}]`);
+      } else {
+        console.log("Base conversion for fractions not yet implemented");
+      }
+    } else {
+      console.log("Base conversion not supported for this result type");
+    }
+  }
+
+  showBases() {
+    console.log("\nAvailable base systems:");
+    console.log("Standard bases:");
+    console.log("  Binary (BIN):       base 2");
+    console.log("  Octal (OCT):        base 8");
+    console.log("  Decimal (DEC):      base 10");
+    console.log("  Hexadecimal (HEX):  base 16");
+    console.log("  Base 36:            base 36");
+    console.log("  Base 62:            base 62");
+    console.log("\nBase commands:");
+    console.log("  BASE                - Show current base");
+    console.log("  BASE <n>            - Set base to n (2-62)");
+    console.log(
+      "  BASE <sequence>     - Set custom base using character sequence",
+    );
+    console.log("  BIN, HEX, OCT, DEC  - Quick base shortcuts");
+    console.log("  BASES               - Show this help");
+    console.log("\nBase format commands (after expressions):");
+    console.log("  <expr> BASE <n>     - Show result in base n");
+    console.log("  <expr> BIN          - Show result in binary");
+    console.log("  <expr> HEX          - Show result in hexadecimal");
+    console.log("  <expr> OCT          - Show result in octal");
+    console.log(
+      `\nCurrent base: ${this.currentBase.name} (base ${this.currentBase.base})`,
+    );
   }
 
   displayResult(result) {
@@ -268,18 +498,31 @@ class Calculator {
           ? ` {period: ${period}}`
           : "";
 
+    // Show base representation if not in decimal base and is integer
+    let baseRepresentation = "";
+    if (this.currentBase.base !== 10 && rational.denominator === 1n) {
+      try {
+        const baseRepr = this.currentBase.fromDecimal(rational.numerator);
+        baseRepresentation = ` [${baseRepr}(${this.currentBase.base})]`;
+      } catch (error) {
+        // Ignore conversion errors
+      }
+    }
+
     switch (this.outputMode) {
       case "DECI":
-        console.log(`${displayDecimal}${periodInfo}`);
+        console.log(`${displayDecimal}${periodInfo}${baseRepresentation}`);
         break;
       case "RAT":
-        console.log(fraction);
+        console.log(`${fraction}${baseRepresentation}`);
         break;
       case "BOTH":
         if (fraction.includes("/") || fraction.includes("..")) {
-          console.log(`${displayDecimal}${periodInfo} (${fraction})`);
+          console.log(
+            `${displayDecimal}${periodInfo} (${fraction})${baseRepresentation}`,
+          );
         } else {
-          console.log(decimal);
+          console.log(`${decimal}${baseRepresentation}`);
         }
         break;
       case "SCI":
@@ -288,7 +531,7 @@ class Calculator {
           this.sciPrecision,
           this.showPeriodInfo,
         );
-        console.log(`${scientificNotation} (${fraction})`);
+        console.log(`${scientificNotation} (${fraction})${baseRepresentation}`);
         break;
     }
   }
@@ -471,6 +714,7 @@ VARIABLES & FUNCTIONS:
 COMMANDS:
   HELP              Show this help
   VARS              Show defined variables and functions
+  BASES             Show available base systems
   DECI              Show results as decimals only
   RAT               Show results as fractions only
   BOTH              Show both decimal and fraction (default)
@@ -481,6 +725,22 @@ COMMANDS:
   SCIPERIOD         Toggle period info display in scientific notation
   LIMIT             Show current decimal display limit
   EXIT, QUIT, BYE   Exit calculator
+
+BASE COMMANDS:
+  BASE              Show current base system
+  BASE <n>          Set base to n (2-62, e.g. BASE 16 for hex)
+  BASE <sequence>   Set custom base (e.g. BASE 0-9a-f)
+  BIN, HEX, OCT     Quick shortcuts for binary, hex, octal
+  DEC               Return to decimal (base 10)
+
+FORMAT AFTER EXPRESSIONS:
+  <expr> BASE <n>   Show result in specified base
+  <expr> BIN        Show result in binary
+  <expr> HEX        Show result in hexadecimal
+  <expr> OCT        Show result in octal
+  <expr> DECI       Show result in decimal format
+  <expr> RAT        Show result in rational format
+  <expr> MIX        Show result with mixed numbers toggled
 
 DECIMAL DISPLAY:
   Uses repeating notation (0.#3 for 1/3) when possible

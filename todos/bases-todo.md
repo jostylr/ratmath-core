@@ -8,53 +8,53 @@ Add support for arbitrary number bases in RatMath using character sequence notat
 ### 1. Base System Design
 
 #### BaseSystem Class
-- [ ] Create `BaseSystem` class to manage character sets and base operations
-- [ ] Constructor accepting character sequence with range notation
+- [x] Create `BaseSystem` class to manage character sets and base operations
+- [x] Constructor accepting character sequence with range notation
   - `new BaseSystem("0-1")` for binary
-  - `new BaseSystem("0-9a-f")` for hexadecimal  
+  - `new BaseSystem("0-9a-f")` for hexadecimal
   - `new BaseSystem("0-9a-zA-Z")` for base 62
   - `new BaseSystem("01234567")` for explicit character list
-- [ ] Properties:
-  - [ ] `base` - numeric base value (2, 16, etc.)
-  - [ ] `characters` - array of valid characters in order
-  - [ ] `charMap` - character to value mapping
-  - [ ] `name` - human-readable name (optional)
+- [x] Properties:
+  - [x] `base` - numeric base value (2, 16, etc.)
+  - [x] `characters` - array of valid characters in order
+  - [x] `charMap` - character to value mapping
+  - [x] `name` - human-readable name (optional)
 
 #### Character Sequence Parsing
-- [ ] Parse range notation (e.g., "0-9", "a-z", "A-Z")
-- [ ] Support Unicode ranges for international character sets
-- [ ] Handle mixed ranges: "0-9a-fA-F" → "0123456789abcdefABCDEF"
-- [ ] Validate character sequences:
+- [x] Parse range notation (e.g., "0-9", "a-z", "A-Z")
+- [x] Support Unicode ranges for international character sets
+- [x] Handle mixed ranges: "0-9a-fA-F" → "0123456789abcdefABCDEF"
+- [x] Validate character sequences:
   - No duplicate characters
   - Consistent ordering within ranges
   - No conflicts with parser symbols (throw descriptive errors)
-- [ ] Support for non-contiguous character sets
+- [x] Support for non-contiguous character sets
 
 #### Conflict Detection
-- [ ] Check against existing parser symbols: `+`, `-`, `*`, `/`, `^`, `!`, `(`, `)`, `[`, `]`, `:`, `.`, `#`, `~`, `E`
-- [ ] Validate that base characters don't include parser operators
-- [ ] Provide clear error messages for conflicts
+- [x] Check against existing parser symbols: `+`, `-`, `*`, `/`, `^`, `!`, `(`, `)`, `[`, `]`, `:`, `.`, `#`, `~`, `E`
+- [x] Validate that base characters don't include parser operators
+- [x] Provide clear error messages for conflicts
 - [ ] Allow override for advanced users (with warnings)
 
 ### 2. Common Base Presets
 
 #### Standard Bases
-- [ ] Binary (base 2): `BaseSystem.BINARY` → "0-1"
-- [ ] Octal (base 8): `BaseSystem.OCTAL` → "0-7"  
-- [ ] Decimal (base 10): `BaseSystem.DECIMAL` → "0-9" (default)
-- [ ] Hexadecimal (base 16): `BaseSystem.HEXADECIMAL` → "0-9a-f"
-- [ ] Base 36: `BaseSystem.BASE36` → "0-9a-z"
-- [ ] Base 62: `BaseSystem.BASE62` → "0-9a-zA-Z"
+- [x] Binary (base 2): `BaseSystem.BINARY` → "0-1"
+- [x] Octal (base 8): `BaseSystem.OCTAL` → "0-7"
+- [x] Decimal (base 10): `BaseSystem.DECIMAL` → "0-9" (default)
+- [x] Hexadecimal (base 16): `BaseSystem.HEXADECIMAL` → "0-9a-f"
+- [x] Base 36: `BaseSystem.BASE36` → "0-9a-z"
+- [x] Base 62: `BaseSystem.BASE62` → "0-9a-zA-Z"
 
 #### Extended Bases
-- [ ] Base 60 (sexagesimal): `BaseSystem.BASE60` → "0-9a-zA-X"
-- [ ] Roman numerals support: `BaseSystem.ROMAN` → "IVXLCDM" (special handling)
-- [ ] Custom factory methods for common patterns
+- [x] Base 60 (sexagesimal): `BaseSystem.BASE60` → "0-9a-zA-X"
+- [x] Roman numerals support: `BaseSystem.ROMAN` → "IVXLCDM" (special handling)
+- [x] Custom factory methods for common patterns
 
 #### Base Validation
-- [ ] Ensure base ≥ 2 and ≤ character set length
-- [ ] Validate character uniqueness and ordering
-- [ ] Handle case sensitivity options (default: case-sensitive)
+- [x] Ensure base ≥ 2 and ≤ character set length
+- [x] Validate character uniqueness and ordering
+- [x] Handle case sensitivity options (default: case-sensitive)
 
 ### 3. Parser Integration
 
@@ -70,6 +70,8 @@ Add support for arbitrary number bases in RatMath using character sequence notat
 - [ ] Handle base-specific decimal points and separators
 - [ ] Validate digits against specified base character set
 - [ ] Error handling for invalid digits in base context
+- [ ] In calc.js, [n] = range defines a base to be used. So [3] = 012 would be the standard trinary. But it could overwrite the default and do [3] = d-f to mean d e and f.  The number of characters should equal n.
+- [ ] For [n] where n is between 2 and 62, unless defined elsewhere, it would take the first n characters of 0-9a-zA-Z
 
 #### Base Conversion in Expressions
 - [ ] Allow mixed bases in single expressions: `FF[16] + 101[2]`
