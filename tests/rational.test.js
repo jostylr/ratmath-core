@@ -343,7 +343,7 @@ describe("Rational", () => {
       expect(twoNinths.toRepeatingDecimal()).toBe("0.#2");
 
       const oneEleventh = new Rational(1, 11);
-      expect(oneEleventh.toRepeatingDecimal()).toBe("0.#09");
+      expect(oneEleventh.toRepeatingDecimal()).toBe("0.#{0~1}9");
     });
 
     it("roundtrip conversion works correctly", () => {

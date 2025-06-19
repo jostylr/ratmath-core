@@ -21,10 +21,10 @@ export class Rational {
   #factorsOf2;
   #factorsOf5;
   #leadingZerosInPeriod;
-  // New fields for better decimal part breakdown
   #initialSegmentLeadingZeros;
   #initialSegmentRest;
   #periodDigitsRest;
+  #maxPeriodDigitsComputed;
 
   // Class variables for decimal computation
   static DEFAULT_PERIOD_DIGITS = 20;
@@ -95,7 +95,7 @@ export class Rational {
         if (numerator.includes(".")) {
           // First, expand any repeat notation
           const expandedNumerator = Rational.#parseRepeatedDigits(numerator);
-          
+
           const decimalParts = expandedNumerator.trim().split(".");
           if (decimalParts.length === 2) {
             const integerPart = decimalParts[0] || "0";
@@ -583,7 +583,7 @@ export class Rational {
    * @param {boolean} useRepeatNotation - Whether to use {0~15} notation for leading zeros (default: false)
    * @returns {object} Object with decimal string and period info: {decimal: string, period: number}
    */
-  toRepeatingDecimalWithPeriod(useRepeatNotation = false) {
+  toRepeatingDecimalWithPeriod(useRepeatNotation = true) {
     // Handle special cases
     if (this.#numerator === 0n) {
       return { decimal: "0", period: 0 };
@@ -591,14 +591,16 @@ export class Rational {
 
     // Ensure whole part and decimal metadata are computed
     this.#computeWholePart();
-    this.#computeDecimalMetadata();
+    // When using compact notation, compute more digits to find significant digits
+    const maxDigits = useRepeatNotation ? 100 : Rational.DEFAULT_PERIOD_DIGITS;
+    this.#computeDecimalMetadata(maxDigits);
 
     let result = (this.#isNegative ? "-" : "") + this.#wholePart.toString();
 
     if (this.#isTerminating) {
       // Terminating decimal
       if (this.#initialSegment) {
-        const formattedInitial = useRepeatNotation 
+        const formattedInitial = useRepeatNotation
           ? Rational.#formatRepeatedDigits(this.#initialSegment, 4) // Lower threshold for initial segment
           : this.#initialSegment;
         result += "." + formattedInitial + "#0";
@@ -624,16 +626,38 @@ export class Rational {
       }
 
       const formattedInitial = useRepeatNotation
-        ? Rational.#formatRepeatedDigits(this.#initialSegment, 4) // Lower threshold for initial segment  
+        ? Rational.#formatRepeatedDigits(this.#initialSegment, 4) // Lower threshold for initial segment
         : this.#initialSegment;
-      const formattedPeriod = useRepeatNotation
-        ? Rational.#formatRepeatedDigits(periodDigits, 6) // Keep higher threshold for period
-        : periodDigits;
+
+      // For repeating decimals, show significant digits even if period is long
+      let displayPeriod = periodDigits;
+      if (useRepeatNotation && this.#leadingZerosInPeriod < 1000) {
+        // Show compact zeros plus first significant digits from period
+        const significantDigits = this.#periodDigitsRest;
+        if (significantDigits && significantDigits.length > 0) {
+          const leadingZerosFormatted =
+            this.#leadingZerosInPeriod > 0
+              ? `{0~${this.#leadingZerosInPeriod}}`
+              : "";
+          const maxSignificantDigits = Math.min(significantDigits.length, 20);
+          displayPeriod =
+            leadingZerosFormatted +
+            significantDigits.substring(0, maxSignificantDigits);
+        } else {
+          displayPeriod = useRepeatNotation
+            ? Rational.#formatRepeatedDigits(periodDigits, 6)
+            : periodDigits;
+        }
+      } else {
+        displayPeriod = useRepeatNotation
+          ? Rational.#formatRepeatedDigits(periodDigits, 6)
+          : periodDigits;
+      }
 
       if (this.#initialSegment) {
-        result += "." + formattedInitial + "#" + formattedPeriod;
+        result += "." + formattedInitial + "#" + displayPeriod;
       } else {
-        result += ".#" + formattedPeriod;
+        result += ".#" + displayPeriod;
       }
 
       return {
@@ -733,8 +757,13 @@ export class Rational {
    * @private
    */
   #computeDecimalMetadata(maxPeriodDigits = Rational.DEFAULT_PERIOD_DIGITS) {
-    // Return cached values if already computed
-    if (this.#periodLength !== undefined) return;
+    // Return cached values if already computed with sufficient digits
+    if (
+      this.#periodLength !== undefined &&
+      this.#maxPeriodDigitsComputed !== undefined &&
+      this.#maxPeriodDigitsComputed >= maxPeriodDigits
+    )
+      return;
 
     // Ensure whole part and remainder are computed
     this.#computeWholePart();
@@ -751,6 +780,7 @@ export class Rational {
       this.#initialSegmentLeadingZeros = 0;
       this.#initialSegmentRest = "";
       this.#periodDigitsRest = "";
+      this.#maxPeriodDigitsComputed = maxPeriodDigits;
       return;
     }
 
@@ -790,9 +820,10 @@ export class Rational {
       this.#periodLength = 0;
       this.#isTerminating = true;
       this.#leadingZerosInPeriod = 0;
-      
+
       // Compute breakdown of initial segment
       this.#computeDecimalPartBreakdown();
+      this.#maxPeriodDigitsComputed = maxPeriodDigits;
       return;
     }
 
@@ -847,9 +878,10 @@ export class Rational {
 
     this.#initialSegment = initialDigits.join("");
     this.#periodDigits = periodDigits.join("");
-    
+
     // Compute breakdown of initial segment and period digits
     this.#computeDecimalPartBreakdown();
+    this.#maxPeriodDigitsComputed = maxPeriodDigits;
   }
 
   /**
@@ -860,30 +892,30 @@ export class Rational {
     // Break down initial segment
     let leadingZeros = 0;
     const initialSegment = this.#initialSegment || "";
-    
+
     for (let i = 0; i < initialSegment.length; i++) {
-      if (initialSegment[i] === '0') {
+      if (initialSegment[i] === "0") {
         leadingZeros++;
       } else {
         break;
       }
     }
-    
+
     this.#initialSegmentLeadingZeros = leadingZeros;
     this.#initialSegmentRest = initialSegment.substring(leadingZeros);
-    
+
     // Break down period digits - compute leading zeros directly from the period digits
     const periodDigits = this.#periodDigits || "";
     let periodLeadingZeros = 0;
-    
+
     for (let i = 0; i < periodDigits.length; i++) {
-      if (periodDigits[i] === '0') {
+      if (periodDigits[i] === "0") {
         periodLeadingZeros++;
       } else {
         break;
       }
     }
-    
+
     // Override the computed leading zeros with the actual count from period digits
     this.#leadingZerosInPeriod = periodLeadingZeros;
     this.#periodDigitsRest = periodDigits.substring(periodLeadingZeros);
@@ -928,29 +960,29 @@ export class Rational {
    */
   static #formatRepeatedDigits(digits, threshold = 6) {
     if (!digits || digits.length === 0) return digits;
-    
+
     let result = "";
     let i = 0;
-    
+
     while (i < digits.length) {
       let currentChar = digits[i];
       let count = 1;
-      
+
       // Count consecutive identical digits
       while (i + count < digits.length && digits[i + count] === currentChar) {
         count++;
       }
-      
+
       // Use repeat notation if count meets threshold
       if (count >= threshold) {
         result += `{${currentChar}~${count}}`;
       } else {
         result += currentChar.repeat(count);
       }
-      
+
       i += count;
     }
-    
+
     return result;
   }
 
@@ -961,13 +993,16 @@ export class Rational {
    * @private
    */
   static #parseRepeatedDigits(formattedDigits) {
-    if (!formattedDigits || !formattedDigits.includes('{')) {
+    if (!formattedDigits || !formattedDigits.includes("{")) {
       return formattedDigits;
     }
-    
-    return formattedDigits.replace(/\{(.+?)~(\d+)\}/g, (match, digits, count) => {
-      return digits.repeat(parseInt(count));
-    });
+
+    return formattedDigits.replace(
+      /\{(.+?)~(\d+)\}/g,
+      (match, digits, count) => {
+        return digits.repeat(parseInt(count));
+      },
+    );
   }
 
   /**
@@ -1084,11 +1119,50 @@ export class Rational {
   }
 
   /**
-   * Converts this rational to scientific notation using decimal metadata for efficiency
-   * @param {boolean} useRepeatNotation - Whether to use {0~15} notation in mantissa (default: false)
-   * @returns {string} Scientific notation string (e.g., "6.57130E-6")
+   * Generates period info string for scientific notation
+   * @param {boolean} showPeriodInfo - Whether to show period info
+   * @returns {string} Period info string or empty string
+   * @private
    */
-  toScientificNotation(useRepeatNotation = false) {
+  #generatePeriodInfo(showPeriodInfo) {
+    if (!showPeriodInfo || this.#isTerminating) {
+      return "";
+    }
+
+    const info = [];
+
+    // Add initial segment info if it has leading zeros
+    if (this.#initialSegmentLeadingZeros > 0) {
+      info.push(`initial: ${this.#initialSegmentLeadingZeros} zeros`);
+    }
+
+    // Add period leading zeros info
+    if (this.#leadingZerosInPeriod > 0) {
+      info.push(`period starts: +${this.#leadingZerosInPeriod} zeros`);
+    }
+
+    // Add period length info
+    if (this.#periodLength === -1) {
+      info.push("period: >10^7");
+    } else if (this.#periodLength > 0) {
+      info.push(`period: ${this.#periodLength}`);
+    }
+
+    return info.length > 0 ? ` {${info.join(", ")}}` : "";
+  }
+
+  /**
+   * Converts this rational to scientific notation using decimal metadata for efficiency
+   * @param {boolean} useRepeatNotation - Whether to use {0~15} notation in mantissa (default: true)
+   * @param {number} precision - Number of significant digits in mantissa (default: 10)
+   * @param {boolean} showPeriodInfo - Whether to append period info for repeating decimals (default: false)
+   * @returns {string} Scientific notation string (e.g., "6.57130E-6" or "6.57130E-6 {period: 42}")
+   */
+  toScientificNotation(
+    useRepeatNotation = true,
+    precision = 10,
+    showPeriodInfo = false,
+  ) {
     // Handle special cases
     if (this.#numerator === 0n) {
       return "0";
@@ -1106,16 +1180,16 @@ export class Rational {
       const wholeStr = this.#wholePart.toString();
       const firstDigit = wholeStr[0];
       const exponent = wholeStr.length - 1;
-      
+
       let mantissa = firstDigit;
       if (wholeStr.length > 1 || this.#remainder > 0n) {
         mantissa += ".";
-        
+
         // Add remaining whole digits
         if (wholeStr.length > 1) {
           mantissa += wholeStr.substring(1);
         }
-        
+
         // Add fractional part if it exists
         if (this.#remainder > 0n) {
           if (this.#isTerminating) {
@@ -1128,21 +1202,33 @@ export class Rational {
               ? Rational.#formatRepeatedDigits(this.#initialSegment, 4)
               : this.#initialSegment;
             mantissa += formattedInitial + "#";
-            
+
             // For repeating decimals, add some period digits
             let periodDigits = this.#periodDigits;
-            if (this.#periodLength > 0 && this.#periodLength <= Rational.MAX_PERIOD_DIGITS && periodDigits.length < this.#periodLength) {
-              periodDigits = this.extractPeriodSegment(this.#initialSegment, this.#periodLength, Math.min(10, this.#periodLength));
+            if (
+              this.#periodLength > 0 &&
+              this.#periodLength <= Rational.MAX_PERIOD_DIGITS &&
+              periodDigits.length < this.#periodLength
+            ) {
+              periodDigits = this.extractPeriodSegment(
+                this.#initialSegment,
+                this.#periodLength,
+                Math.min(10, this.#periodLength),
+              );
             }
             const formattedPeriod = useRepeatNotation
               ? Rational.#formatRepeatedDigits(periodDigits, 6)
-              : periodDigits.substring(0, 10); // Limit mantissa length
+              : periodDigits.substring(
+                  0,
+                  Math.max(1, precision - mantissa.length + 1),
+                ); // Limit mantissa length based on precision
             mantissa += formattedPeriod;
           }
         }
       }
-      
-      return `${prefix}${mantissa}E+${exponent}`;
+
+      const result = `${prefix}${mantissa}E+${exponent}`;
+      return result + this.#generatePeriodInfo(showPeriodInfo);
     }
 
     // Case 2: Number < 1 (fractional only)
@@ -1150,63 +1236,77 @@ export class Rational {
       // Find first non-zero digit in initial segment
       const leadingZeros = this.#initialSegmentLeadingZeros;
       const rest = this.#initialSegmentRest;
-      
+
       if (rest === "") {
         return prefix + "0";
       }
-      
+
       const firstDigit = rest[0];
       const exponent = -(leadingZeros + 1);
-      
+
       let mantissa = firstDigit;
       if (rest.length > 1) {
-        mantissa += "." + rest.substring(1);
+        const remainingDigits = Math.max(0, precision - 1);
+        mantissa += "." + rest.substring(1, remainingDigits + 1);
       }
-      
+
       return `${prefix}${mantissa}E${exponent}`;
     } else {
       // Repeating decimal < 1
       const firstNonZeroInPeriod = this.#periodDigitsRest;
-      
+
       if (this.#initialSegmentRest !== "") {
         // First non-zero is in initial segment
         const firstDigit = this.#initialSegmentRest[0];
         const exponent = -(this.#initialSegmentLeadingZeros + 1);
-        
+
         let mantissa = firstDigit;
         if (this.#initialSegmentRest.length > 1 || this.#periodDigits !== "") {
           mantissa += ".";
           if (this.#initialSegmentRest.length > 1) {
             mantissa += this.#initialSegmentRest.substring(1);
           }
-          
+
           // Add period notation
           mantissa += "#";
-          if (this.#leadingZerosInPeriod > 0 && useRepeatNotation && this.#leadingZerosInPeriod >= 6) {
+          if (
+            this.#leadingZerosInPeriod > 0 &&
+            useRepeatNotation &&
+            this.#leadingZerosInPeriod >= 6
+          ) {
             mantissa += `{0~${this.#leadingZerosInPeriod}}`;
           } else if (this.#leadingZerosInPeriod > 0) {
             mantissa += "0".repeat(Math.min(this.#leadingZerosInPeriod, 10));
           }
-          
+
           if (firstNonZeroInPeriod !== "") {
-            mantissa += firstNonZeroInPeriod.substring(0, 10); // Limit length
+            const remainingLength = Math.max(
+              1,
+              precision - mantissa.length + 1,
+            );
+            mantissa += firstNonZeroInPeriod.substring(0, remainingLength);
           }
         }
-        
-        return `${prefix}${mantissa}E${exponent}`;
+
+        const result = `${prefix}${mantissa}E${exponent}`;
+        return result + this.#generatePeriodInfo(showPeriodInfo);
       } else if (firstNonZeroInPeriod !== "") {
         // First non-zero is in repeating part
         const firstDigit = firstNonZeroInPeriod[0];
         // Total leading zeros = initial segment leading zeros + period leading zeros
-        const totalLeadingZeros = this.#initialSegmentLeadingZeros + this.#leadingZerosInPeriod;
+        const totalLeadingZeros =
+          this.#initialSegmentLeadingZeros + this.#leadingZerosInPeriod;
         const exponent = -(totalLeadingZeros + 1);
-        
+
         let mantissa = firstDigit;
         if (firstNonZeroInPeriod.length > 1) {
-          mantissa += "." + firstNonZeroInPeriod.substring(1, 11); // Limit mantissa length
+          const remainingDigits = Math.max(0, precision - 1);
+          mantissa +=
+            "." + firstNonZeroInPeriod.substring(1, remainingDigits + 1);
         }
-        
-        return `${prefix}${mantissa}E${exponent}`;
+
+        const result = `${prefix}${mantissa}E${exponent}`;
+        return result + this.#generatePeriodInfo(showPeriodInfo);
       } else {
         return prefix + "0";
       }

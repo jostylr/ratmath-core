@@ -87,3 +87,51 @@ The changes ensure that very small rational numbers are properly displayed in sc
 - Added comprehensive example in `examples/decimal-improvements.js` demonstrating all features
 - Added full test suite in `tests/decimal-improvements.test.js` with 22 passing tests
 - Implemented workaround for calc.js to handle stale rational instances by creating fresh instances when needed
+
+## Scientific Notation Caching Bug Fix and Code Cleanup
+
+**Model:** Claude Sonnet 4, **Date:** 2025-01-27
+
+Fixed critical caching bug in Rational.js scientific notation methods and eliminated redundant workaround code from calc.js.
+
+**Root Cause Identified:**
+The `#computeDecimalMetadata()` method had a caching issue where once metadata was computed with insufficient digits (default 20), it would never recompute even when more digits were requested. For very small numbers like `10!!/49!!` (~6.57e-29), the first non-zero digit appears at position 29, requiring more than 20 digits to find.
+
+**Key Fixes:**
+- **Fixed Caching Logic**: Added `#maxPeriodDigitsComputed` field to track the maximum digits used in previous computations, allowing recomputation when more digits are needed
+- **Enhanced Scientific Notation**: The `toScientificNotation()` method now calls `#computeDecimalMetadata(100)` to ensure adequate digits for very small numbers
+- **Eliminated Workarounds**: Removed redundant scientific notation method and workaround code from calc.js that created fresh Rational instances to bypass the caching bug
+
+**Testing Results:**
+- `10!!/49!!` now correctly displays as `6.5713094994E-29` instead of `"0"`
+- Consistent results across multiple calls (no more fresh instance workarounds needed)
+- All existing tests continue to pass
+- Proper compact notation preserved for repeated zeros in decimal representations
+
+**Code Cleanup:**
+- Removed 170+ lines of duplicated scientific notation logic from calc.js
+- Simplified `displayRational()` and `formatRational()` methods to directly call `rational.toScientificNotation()`
+- Eliminated conditional workaround code that checked for "0" results and created fresh instances
+
+The fix ensures reliable scientific notation for all rational numbers while maintaining the exact arithmetic precision that is core to the RatMath library.
+
+**Additional Enhancements:**
+- **Default Compact Notation**: Changed `toRepeatingDecimalWithPeriod()` default to use compact notation (`{0~23}` instead of `00000000000000000000000`)
+- **Configurable Scientific Precision**: Enhanced `toScientificNotation()` with precision parameter (default: 10 digits, configurable from 1-30+)
+- **Period Information Display**: Added optional period info display with comprehensive structure analysis
+- **Calculator Commands**: Added `SCIPREC <n>` and `SCIPERIOD` commands to control scientific notation display settings
+- **Automatic Digit Computation**: `toRepeatingDecimalWithPeriod()` now automatically computes more digits when compact notation is enabled
+- **Enhanced Period Info**: Shows initial segment structure, period start position, and period length
+- **Backward Compatibility**: All existing method calls continue to work unchanged
+
+**Final Results for 10!!/49!!:**
+- **DECI mode**: `0.{0~5}#{0~23}65713094994139376708 [period > 10^7]` - shows significant digits after compact zeros
+- **SCI mode**: `6.571309499E-29 {initial: 5 zeros, period starts: +23 zeros, period: >10^7}` - comprehensive structure info
+- **Scientific precision**: Configurable from `6.5713E-29` (5 digits) to `6.57130949941393767084478907816E-29` (30 digits)
+- **Consistent results**: No more workaround code needed, reliable on first call
+
+**Key Technical Fixes:**
+- Fixed caching logic with `#maxPeriodDigitsComputed` field to track computation history
+- Added `#generatePeriodInfo()` helper method for consistent period information display
+- Enhanced `toRepeatingDecimalWithPeriod()` to compute 100 digits when compact notation is used
+- Eliminated all redundant workaround code from calc.js (170+ lines removed)

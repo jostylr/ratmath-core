@@ -16,6 +16,8 @@ class Calculator {
     this.outputMode = "BOTH"; // 'DECI', 'RAT', 'BOTH', 'SCI'
     this.decimalLimit = 20; // Maximum decimal places before showing ...
     this.mixedDisplay = true; // Whether to show fractions as mixed numbers by default
+    this.sciPrecision = 10; // Scientific notation precision (significant digits)
+    this.showPeriodInfo = false; // Whether to show period info in scientific notation
     this.variableManager = new VariableManager(); // Variable and function management
     this.shouldInterrupt = false; // Flag for computation interruption
     this.rl = createInterface({
@@ -142,6 +144,34 @@ class Calculator {
       return;
     }
 
+    if (upperInput.startsWith("SCIPREC")) {
+      const precStr = upperInput.substring(7).trim();
+      if (precStr === "") {
+        console.log(
+          `Current scientific notation precision: ${this.sciPrecision} digits`,
+        );
+      } else {
+        const precision = parseInt(precStr);
+        if (isNaN(precision) || precision < 1) {
+          console.log("Error: SCIPREC must be a positive integer");
+        } else {
+          this.sciPrecision = precision;
+          console.log(
+            `Scientific notation precision set to ${precision} digits`,
+          );
+        }
+      }
+      return;
+    }
+
+    if (upperInput === "SCIPERIOD") {
+      this.showPeriodInfo = !this.showPeriodInfo;
+      console.log(
+        `Period info display ${this.showPeriodInfo ? "enabled" : "disabled"}`,
+      );
+      return;
+    }
+
     if (upperInput === "VARS") {
       this.showVariables();
       return;
@@ -253,23 +283,11 @@ class Calculator {
         }
         break;
       case "SCI":
-        // Workaround: Create fresh rational to ensure we get the latest implementation
-        let scientificNotation;
-        if (typeof rational.toScientificNotation === "function") {
-          const result = rational.toScientificNotation();
-          if (result === "0" && rational.numerator !== 0n) {
-            // If we get 0 but numerator is not 0, create fresh instance
-            const freshRational = new Rational(
-              rational.numerator,
-              rational.denominator,
-            );
-            scientificNotation = freshRational.toScientificNotation();
-          } else {
-            scientificNotation = result;
-          }
-        } else {
-          scientificNotation = this.toScientificNotation(rational);
-        }
+        const scientificNotation = rational.toScientificNotation(
+          true,
+          this.sciPrecision,
+          this.showPeriodInfo,
+        );
         console.log(`${scientificNotation} (${fraction})`);
         break;
     }
@@ -459,6 +477,8 @@ COMMANDS:
   SCI               Show results in scientific notation
   MIX               Toggle mixed number display (default: on)
   LIMIT <n>         Set decimal display limit to n digits (default: 20)
+  SCIPREC <n>       Set scientific notation precision to n digits (default: 10)
+  SCIPERIOD         Toggle period info display in scientific notation
   LIMIT             Show current decimal display limit
   EXIT, QUIT, BYE   Exit calculator
 
@@ -495,183 +515,6 @@ Press Ctrl+C to exit
     }
   }
 
-  /**
-   * Converts a rational to scientific notation (fallback method)
-   * @param {Rational} rational - The rational number to convert
-   * @returns {string} Scientific notation string
-   */
-  toScientificNotation(rational) {
-    // Check if it's zero
-    if (rational.toString() === "0") {
-      return "0";
-    }
-
-    // For very small numbers, we need more period digits to find the first non-zero
-    const repeatingInfo = rational.toRepeatingDecimalWithPeriod();
-    let decimal = repeatingInfo.decimal;
-    const isNegative = decimal.startsWith("-");
-    const prefix = isNegative ? "-" : "";
-
-    if (isNegative) {
-      decimal = decimal.substring(1); // Remove the negative sign
-    }
-
-    // Find the first non-zero digit and decimal point
-    let firstNonZeroIndex = -1;
-    let decimalPointIndex = decimal.indexOf(".");
-    let hashIndex = decimal.indexOf("#");
-
-    for (let i = 0; i < decimal.length; i++) {
-      const char = decimal[i];
-      if (char === "." || char === "#") {
-        continue;
-      }
-      if (char >= "1" && char <= "9") {
-        firstNonZeroIndex = i;
-        break;
-      }
-    }
-
-    // If no non-zero found in default representation, try to get decimal metadata
-    if (firstNonZeroIndex === -1) {
-      // Try using the decimal metadata to find first non-zero digit
-      if (rational.computeDecimalMetadata) {
-        const metadata = rational.computeDecimalMetadata(100); // Get more digits
-
-        // Check if there's a non-zero in the initial segment rest
-        if (
-          metadata.initialSegmentRest &&
-          metadata.initialSegmentRest.length > 0
-        ) {
-          const firstDigit = metadata.initialSegmentRest[0];
-          const exponent = -(metadata.initialSegmentLeadingZeros + 1);
-          return `${prefix}${firstDigit}E${exponent}`;
-        }
-
-        // Check if there's a non-zero in the period rest
-        if (metadata.periodDigitsRest && metadata.periodDigitsRest.length > 0) {
-          const firstDigit = metadata.periodDigitsRest[0];
-          const totalLeadingZeros =
-            metadata.initialSegmentLeadingZeros + metadata.leadingZerosInPeriod;
-          const exponent = -(totalLeadingZeros + 1);
-          return `${prefix}${firstDigit}E${exponent}`;
-        }
-      }
-
-      return prefix + "0";
-    }
-
-    // Calculate the exponent: how many places to move decimal to get first digit
-    let exponent;
-    if (decimalPointIndex === -1 || firstNonZeroIndex < decimalPointIndex) {
-      // Number >= 1: count digits after the first non-zero digit
-      let digitsAfterFirst = 0;
-      const endPos =
-        decimalPointIndex === -1 ? decimal.length : decimalPointIndex;
-      for (let i = firstNonZeroIndex + 1; i < endPos; i++) {
-        if (decimal[i] >= "0" && decimal[i] <= "9") {
-          digitsAfterFirst++;
-        }
-      }
-      exponent = digitsAfterFirst;
-    } else {
-      // Number < 1: count positions after decimal point to first non-zero digit
-      let positionsAfterDecimal = 0;
-      for (let i = decimalPointIndex + 1; i < firstNonZeroIndex; i++) {
-        if (decimal[i] >= "0" && decimal[i] <= "9") {
-          positionsAfterDecimal++;
-        }
-      }
-      exponent = -(positionsAfterDecimal + 1);
-    }
-
-    // Build the mantissa
-    let mantissa = "";
-    let afterFirstDigit = false;
-    let needDecimalPoint = true;
-
-    for (let i = firstNonZeroIndex; i < decimal.length; i++) {
-      const char = decimal[i];
-
-      if (char === ".") {
-        continue;
-      }
-
-      if (char === "#") {
-        if (!afterFirstDigit) {
-          // # is the first character (shouldn't happen, but handle it)
-          mantissa += "#";
-        } else if (needDecimalPoint) {
-          // Add decimal point before #
-          mantissa += ".#";
-          needDecimalPoint = false;
-        } else {
-          mantissa += "#";
-        }
-        continue;
-      }
-
-      if (char >= "0" && char <= "9") {
-        if (!afterFirstDigit) {
-          // First significant digit
-          mantissa += char;
-          afterFirstDigit = true;
-        } else if (needDecimalPoint) {
-          // Second digit - add decimal point first
-          mantissa += "." + char;
-          needDecimalPoint = false;
-        } else {
-          // Subsequent digits
-          mantissa += char;
-        }
-      }
-    }
-
-    // Handle case where we need to adjust repeating pattern due to decimal shift
-    if (hashIndex !== -1 && repeatingInfo.period > 0) {
-      const nonRepeatingLength = hashIndex - decimalPointIndex - 1;
-
-      // Check if the first non-zero digit is in the repeating part
-      if (firstNonZeroIndex > hashIndex) {
-        // First digit is in the repeating part, need to adjust the cycle
-        const positionInCycle =
-          (firstNonZeroIndex - hashIndex - 1) % repeatingInfo.period;
-
-        // Get the full repeating cycle
-        let fullRepeatingCycle = "";
-        for (let i = hashIndex + 1; i < decimal.length; i++) {
-          const char = decimal[i];
-          if (char >= "0" && char <= "9") {
-            fullRepeatingCycle += char;
-          }
-        }
-
-        // Create the shifted repeating pattern starting from the next position
-        let shiftedRepeating = "";
-        if (fullRepeatingCycle.length > 0) {
-          const periodLength = Math.min(
-            repeatingInfo.period,
-            fullRepeatingCycle.length,
-          );
-          const startPos = (positionInCycle + 1) % periodLength;
-
-          // Rebuild the repeating cycle starting from the shifted position
-          for (let i = 0; i < Math.min(periodLength, 10); i++) {
-            const cycleIndex = (startPos + i) % periodLength;
-            shiftedRepeating += fullRepeatingCycle[cycleIndex];
-          }
-        }
-
-        const firstDigit = decimal[firstNonZeroIndex];
-        mantissa = firstDigit + ".#" + shiftedRepeating;
-      }
-    }
-
-    // Add exponent (always show E even for E0 to maintain exactness)
-    const expStr = `E${exponent >= 0 ? "+" : ""}${exponent}`;
-    return `${prefix}${mantissa}${expStr}`;
-  }
-
   formatResult(result) {
     if (result && result.type === "sequence") {
       return this.variableManager.formatValue(result);
@@ -706,22 +549,11 @@ Press Ctrl+C to exit
           return this.formatDecimal(rational);
         }
       case "SCI":
-        // Workaround: Create fresh rational to ensure we get the latest implementation
-        if (typeof rational.toScientificNotation === "function") {
-          const result = rational.toScientificNotation();
-          if (result === "0" && rational.numerator !== 0n) {
-            // If we get 0 but numerator is not 0, create fresh instance
-            const freshRational = new Rational(
-              rational.numerator,
-              rational.denominator,
-            );
-            return freshRational.toScientificNotation();
-          } else {
-            return result;
-          }
-        } else {
-          return this.toScientificNotation(rational);
-        }
+        return rational.toScientificNotation(
+          true,
+          this.sciPrecision,
+          this.showPeriodInfo,
+        );
       default:
         return fraction;
     }
