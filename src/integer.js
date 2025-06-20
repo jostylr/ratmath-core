@@ -3,7 +3,7 @@
  *
  * A class for exact integer arithmetic using BigInt.
  * Represents integers with arbitrary precision.
- * Division returns a Rational if the result is not a whole number.
+ * Division returns a Rational or RationalInterval if the result is not a whole number.
  */
 
 import { Rational } from "./rational.js";
