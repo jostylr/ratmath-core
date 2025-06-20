@@ -1,4 +1,4 @@
-This library should support E notation. Not all number setups fit with E. One can always use parentheses to handle it. Only the capitale E is recognized; lowercase e is not considered to be E notation. Outside of the particular Number setups, E should be a binary operator that takes in a number on the left and multiplies it by 10^right. This can be done by having parentheses or by having a space. So 1.3:2.4 E2 will produce 130:240 while 1.3:2.4E2 becomes 1.3:240
+This library should support E notation. Not all number setups fit with E. One can always use parentheses to handle it. Only the capital E is recognized; lowercase e is not considered to be E notation. Outside of the particular Number setups, E should be a binary operator that takes in a number on the left and multiplies it by 10^right. This can be done by having parentheses or by having a space. So 1.3:2.4 E2 will produce 130:240 while 1.3:2.4E2 becomes 1.3:240
 
 Rules
 	1.	Standard Decimals:
