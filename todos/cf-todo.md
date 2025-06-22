@@ -1,65 +1,56 @@
 # Continued Fractions Implementation TODO
 
 ## Overview
-Add continued fraction support to RatMath library using the syntax `3.~7~15~1~292` for representing rational numbers as continued fractions with repeating patterns using `#`.
+Add continued fraction support to RatMath library using the syntax `3.~7~15~1~292` for representing rational numbers as continued fractions. While support for repeaing patterns using `#`, this leads to irrational numbers and will not be implemented in this library.
 
 ## Core Implementation
 
 ### 1. Parser Extension
 - [ ] Extend parser to recognize `.~` pattern in expressions
 - [ ] Add tokenization for `~` separator in continued fraction context
-- [ ] Support repeating patterns with `#` (e.g., `1.~#6` for [1; 6, 6, 6, ...])
-- [ ] Support pure fractions without integer part (e.g., `.~2~3~4`)
 - [ ] Add validation for continued fraction format
-- [ ] Handle edge cases (single integers, simple fractions)
+- [ ] The stand-alone parsing should generate an array of the coefficients with the first entry being the integer part, which can be 0.
+- [ ] Intgerating into calc.js, the parsing of this pattern should then tatke the array and feed it into the Rational class method of .fromContinuedFraction that returns a ratioal
 
 ### 2. ContinuedFraction Class
-- [ ] Create new `ContinuedFraction` class to represent continued fractions
-- [ ] Constructor accepting array of coefficients and optional repeating pattern
-- [ ] Properties:
-  - [ ] `integerPart` - the integer part (a₀)
-  - [ ] `coefficients` - array of continued fraction coefficients
-  - [ ] `repeatingStart` - index where repetition begins (null if non-repeating)
-- [ ] Input validation (coefficients must be positive integers except a₀)
+  There is no ContinuedFraction Class. For this library, continued fraction is just an input or output format and does not represent a different underlying object.
+- [ ] Augment instances with a cf property which is the array without the integer part. The integer part is instead put in the already existing wholePart if not already defined and isNegative is also handled if processing a cf conversion.
+- [ ] Also support having an array of convergents on the instance, called convergents.
 
 ### 3. Conversion Methods
 
 #### From Continued Fraction to Rational
-- [ ] `toRational()` method on ContinuedFraction class
+- [ ] The Rational class should have the method `fromContinuedFraction` which takes in an array whose first entry can be any integer and all successive entries are positive integers.
 - [ ] Algorithm to compute convergents using recurrence relation:
   - p₋₁ = 1, p₀ = a₀, pₙ = aₙ * pₙ₋₁ + pₙ₋₂
   - q₋₁ = 0, q₀ = 1, qₙ = aₙ * qₙ₋₁ + qₙ₋₂
-- [ ] Handle repeating patterns (expand to sufficient precision)
-- [ ] Handle infinite/periodic continued fractions appropriately
 
 #### From Rational to Continued Fraction
 - [ ] `toContinuedFraction()` method on Rational class
 - [ ] Euclidean algorithm implementation for extracting coefficients
-- [ ] Optional parameters:
-  - [ ] `maxTerms` - limit number of terms for display
-  - [ ] `detectRepeating` - attempt to detect repeating patterns
-- [ ] Return ContinuedFraction object
+- [ ] Optional parameter of `maxTerms` - limit number of terms for display
+- [ ] Set a default limit on the number of terms to generate on the Rational class. Say 1000.
+- [ ] This should return an array with the leading entry as the whole part. Also, it should save it on the instance; the first entry is the whole part.
+- [ ] The last term should not be 1 (unless representing the integer 1 and the last term is the first term).
 
 ### 4. String Representation
 - [ ] `toString()` method on ContinuedFraction class using `3.~7~15~1~292` format
 - [ ] `fromString()` static method to parse continued fraction strings
-- [ ] Handle repeating patterns in string output (`#` notation)
-- [ ] Proper formatting for edge cases (integers, simple fractions)
+- [ ] If the leading integer is 0, do include it.
+- [ ] If it is an integer, say 3, then write the verbose form of `3.~0`. Ensure the parser can parse that correctly, recognizing that the last 0 should not be added to the array.
 
 ## Advanced Features
 
 ### 5. Convergents Support
-- [ ] `convergents()` static method on ContinuedFraction class
-- [ ] Accept continued fraction string and number of convergents desired
+- [ ] `convergents()` instance method on Rational.js to give an array of convergents; if the first argument is an integer, return up to that number of convergents. Otherwise return up to the limit on the Class.
+- [ ] Also have a static method on Ration.js that accepts continued fraction string or an array of continued fraction coefficeints and optional number of convergents desired (default is up to max on Rational class)
 - [ ] Return array of Rational objects representing successive approximations
 - [ ] Efficient computation using recurrence relations
-- [ ] Optional: include convergent information (numerator/denominator sequences)
 
 ### 6. Utility Methods
 - [ ] `getConvergent(n)` - get nth convergent as Rational
 - [ ] `approximationError(target)` - compute error of convergents vs target value
 - [ ] `bestApproximation(maxDenominator)` - find best rational approximation within denominator limit
-- [ ] `isPeriodicQuadratic()` - detect if represents quadratic irrationals (for validation)
 
 ### 7. Farey Sequence and Mediant Inverse Operations
 - [ ] `fareyParents()` method on Rational class
@@ -84,7 +75,7 @@ Add continued fraction support to RatMath library using the syntax `3.~7~15~1~29
 ### 8. Stern-Brocot Tree Support in Fraction Class
 - [ ] Extend Fraction class to allow infinite fractions for tree boundaries
   - Allow `new Fraction(1, 0)` to represent positive infinity (right boundary)
-  - Allow `new Fraction(-1, 0)` to represent negative infinity (left boundary) 
+  - Allow `new Fraction(-1, 0)` to represent negative infinity (left boundary)
   - These are essential for Stern-Brocot tree root: mediants of 0/1 and 1/0
   - Update validation to permit zero denominators only for ±1/0 cases
   - Ensure arithmetic operations handle infinite fractions appropriately
@@ -108,9 +99,9 @@ Add continued fraction support to RatMath library using the syntax `3.~7~15~1~29
 
 ### 10. Documentation Updates
 - [ ] Add continued fraction section to README.md
-- [ ] Document syntax: `3.~7~15~1~292` and repeating patterns
+- [ ] Document syntax: `3.~7~15~1~292`; mention repeating patterns as an extension and that it is not implemented in the library
 - [ ] Add API documentation for new classes and methods
-- [ ] Include mathematical background on continued fractions
+- [ ] Include minimal mathematical background on continued fractions
 - [ ] Document convergents and their properties
 - [ ] Add Farey sequence and mediant inverse documentation
 - [ ] Include mathematical background on Stern-Brocot tree
@@ -121,15 +112,10 @@ Add continued fraction support to RatMath library using the syntax `3.~7~15~1~29
 ### 11. Examples and Tests
 - [ ] Create comprehensive test suite for continued fraction parsing
 - [ ] Test roundtrip conversion: Rational → CF → Rational
-- [ ] Test convergents computation with known examples (π, e, φ)
+- [ ] Test convergents computation
 - [ ] Add examples to examples/ directory:
-  - [ ] `continued-fractions-basic.js`
-  - [ ] `convergents-demo.js`
-  - [ ] `cf-approximations.js`
-  - [ ] `farey-sequences.js`
-  - [ ] `mediant-inverse.js`
-  - [ ] `stern-brocot-tree.js`
-- [ ] Test repeating patterns and edge cases
+  - [ ] `continued-fractions-basic.js` that demonstrates the core use of conitnued fractions, the parsing, the outputs, the aritmetic with them.
+  - [ ] `continued-fractions-advanced.js` demonstrates mediants, cf approximations, Farey sequences, stern-brocot tree.
 - [ ] Performance tests for large continued fractions
 - [ ] Test Farey parent finding with known examples
 - [ ] Test fareyPartner() with various endpoint combinations
@@ -186,7 +172,6 @@ Add continued fraction support to RatMath library using the syntax `3.~7~15~1~29
 ### Performance Considerations
 - Use BigInt arithmetic for large coefficients
 - Implement efficient convergent computation
-- Consider caching for frequently computed convergents
 - Handle very long continued fractions gracefully
 
 ### Error Handling

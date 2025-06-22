@@ -14,7 +14,6 @@ export class Rational {
   #wholePart;
   #remainder;
   #initialSegment;
-  #leadingZeros;
   #periodDigits;
   #periodLength;
   #isTerminating;
