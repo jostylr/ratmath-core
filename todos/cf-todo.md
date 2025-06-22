@@ -10,7 +10,7 @@ Add continued fraction support to RatMath library using the syntax `3.~7~15~1~29
 - [ ] Add tokenization for `~` separator in continued fraction context
 - [ ] Add validation for continued fraction format
 - [ ] The stand-alone parsing should generate an array of the coefficients with the first entry being the integer part, which can be 0.
-- [ ] Intgerating into calc.js, the parsing of this pattern should then tatke the array and feed it into the Rational class method of .fromContinuedFraction that returns a ratioal
+- [ ] Intgerating into calc.js, the parsing of this pattern should then tatke the array and feed it into the Rational class method of .fromContinuedFraction that returns a rational
 
 ### 2. ContinuedFraction Class
   There is no ContinuedFraction Class. For this library, continued fraction is just an input or output format and does not represent a different underlying object.
@@ -53,24 +53,25 @@ Add continued fraction support to RatMath library using the syntax `3.~7~15~1~29
 - [ ] `bestApproximation(maxDenominator)` - find best rational approximation within denominator limit
 
 ### 7. Farey Sequence and Mediant Inverse Operations
-- [ ] `fareyParents()` method on Rational class
-  - Find unique Farey neighbors [a/b, c/d] where rational is their mediant
+- [ ] `fareyParents()` method on Fraction class
+  - Find unique Farey neighbors [a/b, c/d] where the given Fraction is their mediant; extend the Farey notion to also be in other intervals than [0,1]. For integers, this will involve one of the infinite fractions.
   - Use Stern-Brocot tree structure and Extended Euclidean algorithm
-  - Return `{left: Rational, right: Rational}` representing parent interval
+  - Return `{left: Fraction, right: Fraction}` representing parent interval
   - Validate that |ad - bc| = 1 (Farey adjacency condition)
-- [ ] `fareyPartner(endpoint, mediant)` static method on Rational class
+- [ ] `mediantPartner(endpoint, mediant)` static method on Fraction class
   - Given one endpoint and the mediant, compute the other endpoint
   - Solve mediant equation: mediant = (a+c)/(b+d)
-  - Validate Farey neighbor relationship
-  - Return the missing endpoint as Rational
-- [ ] `isFareyTriple(left, mediant, right)` static method on Rational class
+  - Return the missing endpoint as Fraction
+- [ ] `isMediantTriple(left, mediant, right)` static method on Fraction class
   - Verify that mediant is actually the mediant of left and right
-  - Check that left and right are true Farey neighbors (|ad - bc| = 1)
   - Return boolean validation result
+- [ ] `isFareyTriple(left, mediant, right)` static method on Fraction class that does the same as mediant triple but also verifies that the left and right are neighbors in the Farey sequence (|ad - bc|=1)
 - [ ] Integration with existing mediant operations
   - Connect to existing `mediant()` method in Fraction class
   - Ensure consistency with FractionInterval mediant operations
   - Add validation to existing mediant calculations
+
+
 
 ### 8. Stern-Brocot Tree Support in Fraction Class
 - [ ] Extend Fraction class to allow infinite fractions for tree boundaries
