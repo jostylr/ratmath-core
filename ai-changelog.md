@@ -2,6 +2,12 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## Continued Fractions Implementation - Parser Extension
+
+**Model:** Claude Sonnet 4, **Date:** 2025-01-22
+
+Implemented the first major item from cf-todo.md: extended the Parser class to recognize continued fraction notation using the syntax `3.~7~15~1~292`. Added comprehensive parsing support with validation for the `.~` pattern, tokenization of `~` separators, and stand-alone parsing to generate coefficient arrays. Enhanced the Rational class with `fromContinuedFraction()`, `toContinuedFraction()`, convergents computation, and string representation methods. Created comprehensive documentation in documents/cf-docs.md and working examples in examples/continued-fractions-basic.js. The implementation includes proper error handling, BigInt precision, canonical form enforcement, and full integration with the existing parser infrastructure. All core continued fraction functionality is now operational with robust test coverage.
+
 ## BaseSystem Implementation and Calculator Integration
 
 **Model:** Claude Sonnet 3.5, **Date:** 2025-01-27

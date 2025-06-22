@@ -6,51 +6,51 @@ Add continued fraction support to RatMath library using the syntax `3.~7~15~1~29
 ## Core Implementation
 
 ### 1. Parser Extension
-- [ ] Extend parser to recognize `.~` pattern in expressions
-- [ ] Add tokenization for `~` separator in continued fraction context
-- [ ] Add validation for continued fraction format
-- [ ] The stand-alone parsing should generate an array of the coefficients with the first entry being the integer part, which can be 0.
-- [ ] Intgerating into calc.js, the parsing of this pattern should then tatke the array and feed it into the Rational class method of .fromContinuedFraction that returns a rational
+- [x] Extend parser to recognize `.~` pattern in expressions
+- [x] Add tokenization for `~` separator in continued fraction context
+- [x] Add validation for continued fraction format
+- [x] The stand-alone parsing should generate an array of the coefficients with the first entry being the integer part, which can be 0.
+- [x] Intgerating into calc.js, the parsing of this pattern should then tatke the array and feed it into the Rational class method of .fromContinuedFraction that returns a rational
 
 ### 2. ContinuedFraction Class
   There is no ContinuedFraction Class. For this library, continued fraction is just an input or output format and does not represent a different underlying object.
-- [ ] Augment instances with a cf property which is the array without the integer part. The integer part is instead put in the already existing wholePart if not already defined and isNegative is also handled if processing a cf conversion.
-- [ ] Also support having an array of convergents on the instance, called convergents.
+- [x] Augment instances with a cf property which is the array without the integer part. The integer part is instead put in the already existing wholePart if not already defined and isNegative is also handled if processing a cf conversion.
+- [x] Also support having an array of convergents on the instance, called convergents.
 
 ### 3. Conversion Methods
 
 #### From Continued Fraction to Rational
-- [ ] The Rational class should have the method `fromContinuedFraction` which takes in an array whose first entry can be any integer and all successive entries are positive integers.
-- [ ] Algorithm to compute convergents using recurrence relation:
+- [x] The Rational class should have the method `fromContinuedFraction` which takes in an array whose first entry can be any integer and all successive entries are positive integers.
+- [x] Algorithm to compute convergents using recurrence relation:
   - p₋₁ = 1, p₀ = a₀, pₙ = aₙ * pₙ₋₁ + pₙ₋₂
   - q₋₁ = 0, q₀ = 1, qₙ = aₙ * qₙ₋₁ + qₙ₋₂
 
 #### From Rational to Continued Fraction
-- [ ] `toContinuedFraction()` method on Rational class
-- [ ] Euclidean algorithm implementation for extracting coefficients
-- [ ] Optional parameter of `maxTerms` - limit number of terms for display
-- [ ] Set a default limit on the number of terms to generate on the Rational class. Say 1000.
-- [ ] This should return an array with the leading entry as the whole part. Also, it should save it on the instance; the first entry is the whole part.
-- [ ] The last term should not be 1 (unless representing the integer 1 and the last term is the first term).
+- [x] `toContinuedFraction()` method on Rational class
+- [x] Euclidean algorithm implementation for extracting coefficients
+- [x] Optional parameter of `maxTerms` - limit number of terms for display
+- [x] Set a default limit on the number of terms to generate on the Rational class. Say 1000.
+- [x] This should return an array with the leading entry as the whole part. Also, it should save it on the instance; the first entry is the whole part.
+- [x] The last term should not be 1 (unless representing the integer 1 and the last term is the first term).
 
 ### 4. String Representation
-- [ ] `toString()` method on ContinuedFraction class using `3.~7~15~1~292` format
-- [ ] `fromString()` static method to parse continued fraction strings
-- [ ] If the leading integer is 0, do include it.
-- [ ] If it is an integer, say 3, then write the verbose form of `3.~0`. Ensure the parser can parse that correctly, recognizing that the last 0 should not be added to the array.
+- [x] `toString()` method on ContinuedFraction class using `3.~7~15~1~292` format
+- [x] `fromString()` static method to parse continued fraction strings
+- [x] If the leading integer is 0, do include it.
+- [x] If it is an integer, say 3, then write the verbose form of `3.~0`. Ensure the parser can parse that correctly, recognizing that the last 0 should not be added to the array.
 
 ## Advanced Features
 
 ### 5. Convergents Support
-- [ ] `convergents()` instance method on Rational.js to give an array of convergents; if the first argument is an integer, return up to that number of convergents. Otherwise return up to the limit on the Class.
-- [ ] Also have a static method on Ration.js that accepts continued fraction string or an array of continued fraction coefficeints and optional number of convergents desired (default is up to max on Rational class)
-- [ ] Return array of Rational objects representing successive approximations
-- [ ] Efficient computation using recurrence relations
+- [x] `convergents()` instance method on Rational.js to give an array of convergents; if the first argument is an integer, return up to that number of convergents. Otherwise return up to the limit on the Class.
+- [x] Also have a static method on Ration.js that accepts continued fraction string or an array of continued fraction coefficeints and optional number of convergents desired (default is up to max on Rational class)
+- [x] Return array of Rational objects representing successive approximations
+- [x] Efficient computation using recurrence relations
 
 ### 6. Utility Methods
-- [ ] `getConvergent(n)` - get nth convergent as Rational
-- [ ] `approximationError(target)` - compute error of convergents vs target value
-- [ ] `bestApproximation(maxDenominator)` - find best rational approximation within denominator limit
+- [x] `getConvergent(n)` - get nth convergent as Rational
+- [x] `approximationError(target)` - compute error of convergents vs target value
+- [x] `bestApproximation(maxDenominator)` - find best rational approximation within denominator limit
 
 ### 7. Farey Sequence and Mediant Inverse Operations
 - [ ] `fareyParents()` method on Fraction class

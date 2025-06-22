@@ -2016,6 +2016,16 @@ export class Parser {
       }
     }
 
+    // Check if this is continued fraction notation (contains .~)
+    if (expr.includes('.~')) {
+      try {
+        const cfResult = Parser.#parseContinuedFraction(expr, options);
+        return cfResult;
+      } catch (error) {
+        // Fall through to other parsing methods if CF parsing fails
+      }
+    }
+
     // Check if this is a simple decimal (no # and no :)
     if (
       expr.includes(".") &&
@@ -2806,5 +2816,103 @@ export class Parser {
       value: rational,
       remainingExpr: expr.substring(i),
     };
+  }
+
+  /**
+   * Parses continued fraction notation like 3.~7~15~1~292
+   * @private
+   */
+  static #parseContinuedFraction(expr, options = {}) {
+    // Match continued fraction pattern: integer.~term1~term2~...
+    const cfMatch = expr.match(/^(-?\d+)\.~((?:\d+~?)*\d*)(.*)$/);
+    if (!cfMatch) {
+      throw new Error("Invalid continued fraction format");
+    }
+
+    const [fullMatch, integerPart, cfTermsStr, remaining] = cfMatch;
+    
+    // Validate format
+    if (cfTermsStr === '') {
+      throw new Error("Continued fraction must have at least one term after .~");
+    }
+
+    // Handle trailing tilde validation
+    if (cfTermsStr.endsWith('~')) {
+      throw new Error("Continued fraction cannot end with ~");
+    }
+
+    // Handle double tildes
+    if (cfTermsStr.includes('~~')) {
+      throw new Error("Invalid continued fraction format: double tilde");
+    }
+
+    // Parse the coefficient array
+    const cfArray = Parser.parseContinuedFraction(fullMatch.substring(0, fullMatch.length - remaining.length));
+    
+    // Convert to Rational using the forthcoming fromContinuedFraction method
+    // For now, we'll create a placeholder - this will be implemented when we add the Rational class method
+    if (typeof Rational.fromContinuedFraction === 'function') {
+      const rational = Rational.fromContinuedFraction(cfArray);
+      return {
+        value: rational,
+        remainingExpr: remaining
+      };
+    } else {
+      throw new Error("Continued fraction support not yet implemented in Rational class");
+    }
+  }
+
+  /**
+   * Parses a continued fraction string into coefficient array
+   * This is the stand-alone parsing that generates array of coefficients
+   * @param {string} cfString - String like "3.~7~15~1~292"
+   * @returns {Array<bigint>} Array [integer_part, ...continued_fraction_terms]
+   */
+  static parseContinuedFraction(cfString) {
+    // Match the pattern
+    const cfMatch = cfString.match(/^(-?\d+)\.~(.*)$/);
+    if (!cfMatch) {
+      throw new Error("Invalid continued fraction format");
+    }
+
+    const [, integerPart, cfTermsStr] = cfMatch;
+    
+    // Parse integer part
+    const intPart = BigInt(integerPart);
+    
+    // Handle special case of integer representation like "5.~0"
+    if (cfTermsStr === '0') {
+      return [intPart];
+    }
+
+    // Validate terms string
+    if (cfTermsStr === '') {
+      throw new Error("Continued fraction must have at least one term after .~");
+    }
+
+    if (cfTermsStr.endsWith('~')) {
+      throw new Error("Continued fraction cannot end with ~");
+    }
+
+    if (cfTermsStr.includes('~~')) {
+      throw new Error("Invalid continued fraction format: double tilde");
+    }
+
+    // Split terms and validate they are all positive integers (except the integer part)
+    const terms = cfTermsStr.split('~');
+    const cfTerms = [];
+    
+    for (const term of terms) {
+      if (!/^\d+$/.test(term)) {
+        throw new Error(`Invalid continued fraction term: ${term}`);
+      }
+      const termValue = BigInt(term);
+      if (termValue <= 0n) {
+        throw new Error(`Continued fraction terms must be positive integers: ${term}`);
+      }
+      cfTerms.push(termValue);
+    }
+
+    return [intPart, ...cfTerms];
   }
 }

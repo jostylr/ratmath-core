@@ -1323,4 +1323,316 @@ export class Rational {
     }
     return new Rational(value);
   }
+
+  // Class constant for continued fraction limits
+  static DEFAULT_CF_LIMIT = 1000;
+
+  /**
+   * Creates a Rational from a continued fraction coefficient array
+   * @param {Array<bigint|number>} cfArray - Array [integer_part, ...continued_fraction_terms]
+   * @returns {Rational} The rational number represented by the continued fraction
+   */
+  static fromContinuedFraction(cfArray) {
+    if (!Array.isArray(cfArray) || cfArray.length === 0) {
+      throw new Error("Continued fraction array cannot be empty");
+    }
+
+    // Convert to BigInt array
+    const cf = cfArray.map(term => {
+      if (typeof term === 'number') {
+        return BigInt(term);
+      } else if (typeof term === 'bigint') {
+        return term;
+      } else {
+        throw new Error(`Invalid continued fraction term: ${term}`);
+      }
+    });
+
+    // Validate: first term can be any integer, subsequent terms must be positive
+    for (let i = 1; i < cf.length; i++) {
+      if (cf[i] <= 0n) {
+        throw new Error(`Continued fraction terms must be positive: ${cf[i]}`);
+      }
+    }
+
+    // Handle simple case of just integer part
+    if (cf.length === 1) {
+      return new Rational(cf[0], 1n);
+    }
+
+    // Compute convergents using recurrence relation:
+    // p₋₁ = 1, p₀ = a₀, pₙ = aₙ * pₙ₋₁ + pₙ₋₂
+    // q₋₁ = 0, q₀ = 1, qₙ = aₙ * qₙ₋₁ + qₙ₋₂
+
+    let p_prev = 1n;  // p₋₁
+    let p_curr = cf[0];  // p₀
+
+    let q_prev = 0n;  // q₋₁
+    let q_curr = 1n;  // q₀
+
+    const convergents = [new Rational(p_curr, q_curr)];
+
+    for (let i = 1; i < cf.length; i++) {
+      const a = cf[i];
+      
+      // Compute next convergent
+      const p_next = a * p_curr + p_prev;
+      const q_next = a * q_curr + q_prev;
+
+      convergents.push(new Rational(p_next, q_next));
+
+      // Update for next iteration
+      p_prev = p_curr;
+      p_curr = p_next;
+      q_prev = q_curr;
+      q_curr = q_next;
+    }
+
+    // The final convergent is our result
+    const result = convergents[convergents.length - 1];
+
+    // Store CF data on the instance
+    result.cf = cf.slice(1); // CF coefficients without integer part
+    result._convergents = convergents;
+    result.wholePart = cf[0];
+
+    return result;
+  }
+
+  /**
+   * Convert this Rational to continued fraction coefficients
+   * @param {number} maxTerms - Maximum number of terms to compute (default: class limit)
+   * @returns {Array<bigint>} Array [integer_part, ...continued_fraction_terms]
+   */
+  toContinuedFraction(maxTerms = Rational.DEFAULT_CF_LIMIT) {
+    if (this.#denominator === 0n) {
+      throw new Error("Cannot convert infinite value to continued fraction");
+    }
+
+    if (this.#denominator === 1n) {
+      // This is an integer
+      return [this.#numerator];
+    }
+
+    // Use Euclidean algorithm
+    const cf = [];
+    let num = this.#numerator;
+    let den = this.#denominator;
+
+    // Handle negative numbers by making the first term negative
+    const isNeg = num < 0n;
+    if (isNeg) {
+      num = -num;
+    }
+
+    // Extract integer part
+    let intPart = num / den;
+    if (isNeg) {
+      intPart = -intPart;
+      // For negative numbers, we need floor division
+      if (num % den !== 0n) {
+        intPart = intPart - 1n;
+        num = den - (num % den);
+      } else {
+        num = num % den;
+      }
+    } else {
+      num = num % den;
+    }
+
+    cf.push(intPart);
+
+    // Continue with Euclidean algorithm
+    let termCount = 1;
+    while (num !== 0n && termCount < maxTerms) {
+      // Swap and divide: den/num = quotient + remainder/num
+      const quotient = den / num;
+      cf.push(quotient);
+      
+      const remainder = den % num;
+      den = num;
+      num = remainder;
+      
+      termCount++;
+    }
+
+    // Ensure canonical form: don't end with 1 unless it's the only term
+    if (cf.length > 1 && cf[cf.length - 1] === 1n) {
+      // Replace last two terms [a, 1] with [a+1]
+      const secondLast = cf[cf.length - 2];
+      cf[cf.length - 2] = secondLast + 1n;
+      cf.pop();
+    }
+
+    // Store on instance
+    this.cf = cf.slice(1);
+    if (!this.wholePart) {
+      this.wholePart = cf[0];
+    }
+    
+    // We don't store convergents here since they're computed lazily
+
+    return cf;
+  }
+
+  /**
+   * Convert to continued fraction string representation
+   * @returns {string} String in format "3.~7~15~1~292"
+   */
+  toContinuedFractionString() {
+    const cf = this.toContinuedFraction();
+    
+    if (cf.length === 1) {
+      // Integer case
+      return `${cf[0]}.~0`;
+    }
+
+    const intPart = cf[0];
+    const cfTerms = cf.slice(1);
+    
+    return `${intPart}.~${cfTerms.join('~')}`;
+  }
+
+  /**
+   * Parse a continued fraction string and create a Rational
+   * @param {string} cfString - String like "3.~7~15~1~292"
+   * @returns {Rational} The resulting Rational number
+   */
+  static fromContinuedFractionString(cfString) {
+    // Parse the string directly to avoid circular imports
+    const cfMatch = cfString.match(/^(-?\d+)\.~(.*)$/);
+    if (!cfMatch) {
+      throw new Error("Invalid continued fraction format");
+    }
+
+    const [, integerPart, cfTermsStr] = cfMatch;
+    
+    // Parse integer part
+    const intPart = BigInt(integerPart);
+    
+    // Handle special case of integer representation like "5.~0"
+    if (cfTermsStr === '0') {
+      return new Rational(intPart, 1n);
+    }
+
+    // Validate terms string
+    if (cfTermsStr === '') {
+      throw new Error("Continued fraction must have at least one term after .~");
+    }
+
+    if (cfTermsStr.endsWith('~')) {
+      throw new Error("Continued fraction cannot end with ~");
+    }
+
+    if (cfTermsStr.includes('~~')) {
+      throw new Error("Invalid continued fraction format: double tilde");
+    }
+
+    // Split terms and validate they are all positive integers
+    const terms = cfTermsStr.split('~');
+    const cfTerms = [];
+    
+    for (const term of terms) {
+      if (!/^\d+$/.test(term)) {
+        throw new Error(`Invalid continued fraction term: ${term}`);
+      }
+      const termValue = BigInt(term);
+      if (termValue <= 0n) {
+        throw new Error(`Continued fraction terms must be positive integers: ${term}`);
+      }
+      cfTerms.push(termValue);
+    }
+
+    const cfArray = [intPart, ...cfTerms];
+    return Rational.fromContinuedFraction(cfArray);
+  }
+
+  /**
+   * Get the convergents of this rational's continued fraction
+   * @param {number} maxCount - Maximum number of convergents to return
+   * @returns {Array<Rational>} Array of convergent Rational numbers
+   */
+  convergents(maxCount = Rational.DEFAULT_CF_LIMIT) {
+    if (!this._convergents) {
+      // Compute continued fraction to populate convergents
+      this.toContinuedFraction(maxCount);
+    }
+    
+    if (maxCount && this._convergents && this._convergents.length > maxCount) {
+      return this._convergents.slice(0, maxCount);
+    }
+    
+    return this._convergents || [];
+  }
+
+  /**
+   * Get the nth convergent of this rational's continued fraction
+   * @param {number} n - Index of the convergent (0-based)
+   * @returns {Rational} The nth convergent
+   */
+  getConvergent(n) {
+    const convergents = this.convergents();
+    if (n < 0 || n >= convergents.length) {
+      throw new Error(`Convergent index ${n} out of range [0, ${convergents.length - 1}]`);
+    }
+    return convergents[n];
+  }
+
+  /**
+   * Compute convergents from a continued fraction array
+   * @param {Array<bigint>|string} cfInput - CF array or CF string
+   * @param {number} maxCount - Maximum number of convergents
+   * @returns {Array<Rational>} Array of convergents
+   */
+  static convergentsFromCF(cfInput, maxCount = Rational.DEFAULT_CF_LIMIT) {
+    let cfArray;
+    if (typeof cfInput === 'string') {
+      // Parse CF string directly
+      const rational = Rational.fromContinuedFractionString(cfInput);
+      return rational.convergents(maxCount);
+    } else {
+      cfArray = cfInput;
+    }
+
+    // Create a temporary rational to get convergents
+    const rational = Rational.fromContinuedFraction(cfArray);
+    return rational.convergents(maxCount);
+  }
+
+  /**
+   * Compute approximation error between this rational and a target
+   * @param {Rational} target - The target rational to compare against
+   * @returns {Rational} The absolute difference
+   */
+  approximationError(target) {
+    if (!(target instanceof Rational)) {
+      throw new Error("Target must be a Rational");
+    }
+    
+    const diff = this.subtract(target);
+    return diff.isNegative ? diff.negate() : diff;
+  }
+
+  /**
+   * Find the best rational approximation within a denominator limit
+   * @param {bigint} maxDenominator - Maximum allowed denominator
+   * @returns {Rational} Best approximation within the limit
+   */
+  bestApproximation(maxDenominator) {
+    const cf = this.toContinuedFraction();
+    
+    // Try each convergent until we exceed the denominator limit
+    let bestApprox = new Rational(cf[0], 1n);
+    
+    const convergents = this.convergents();
+    for (const convergent of convergents) {
+      if (convergent.denominator <= maxDenominator) {
+        bestApprox = convergent;
+      } else {
+        break;
+      }
+    }
+    
+    return bestApprox;
+  }
 }

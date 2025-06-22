@@ -10,35 +10,30 @@ import { Parser } from "../src/parser.js";
 describe("Continued Fractions - Parser Extension", () => {
   test("should parse basic continued fraction notation", () => {
     // Parser should handle 3.~7~15~1~292 syntax
-    const parser = new Parser();
 
     // Basic CF notation
-    expect(() => parser.parse("3.~7~15~1~292")).not.toThrow();
+    expect(() => Parser.parse("3.~7~15~1~292")).not.toThrow();
 
     // Zero integer part
-    expect(() => parser.parse("0.~2~3~4")).not.toThrow();
+    expect(() => Parser.parse("0.~2~3~4")).not.toThrow();
 
     // Integer representation
-    expect(() => parser.parse("5.~0")).not.toThrow();
+    expect(() => Parser.parse("5.~0")).not.toThrow();
   });
 
   test("should tokenize tilde separators correctly", () => {
-    const parser = new Parser();
-
     // Should properly handle multiple tildes
-    expect(() => parser.parse("1.~2~3~4~5~6")).not.toThrow();
+    expect(() => Parser.parse("1.~2~3~4~5~6")).not.toThrow();
 
     // Should handle negative integer part
-    expect(() => parser.parse("-2.~1~4~1~5")).not.toThrow();
+    expect(() => Parser.parse("-2.~1~4~1~5")).not.toThrow();
   });
 
   test("should validate continued fraction format", () => {
-    const parser = new Parser();
-
     // Invalid formats should throw
-    expect(() => parser.parse("3.~~7")).toThrow(); // Double tilde
-    expect(() => parser.parse("3.~")).toThrow(); // Trailing tilde
-    expect(() => parser.parse(".~5")).toThrow(); // Missing integer part
+    expect(() => Parser.parse("3.~~7")).toThrow(); // Double tilde
+    expect(() => Parser.parse("3.~")).toThrow(); // Trailing tilde
+    expect(() => Parser.parse(".~5")).toThrow(); // Missing integer part
   });
 
   test("should parse CF to coefficient array", () => {
@@ -46,17 +41,16 @@ describe("Continued Fractions - Parser Extension", () => {
     // [integer_part, ...continued_fraction_terms]
 
     // 3.~7~15~1~292 should parse to [3, 7, 15, 1, 292]
-    const parser = new Parser();
-    const result = parser.parseContinuedFraction("3.~7~15~1~292");
-    expect(result).toEqual([3, 7, 15, 1, 292]);
+    const result = Parser.parseContinuedFraction("3.~7~15~1~292");
+    expect(result).toEqual([3n, 7n, 15n, 1n, 292n]);
 
     // 0.~2~3~4 should parse to [0, 2, 3, 4]
-    const result2 = parser.parseContinuedFraction("0.~2~3~4");
-    expect(result2).toEqual([0, 2, 3, 4]);
+    const result2 = Parser.parseContinuedFraction("0.~2~3~4");
+    expect(result2).toEqual([0n, 2n, 3n, 4n]);
 
     // 5.~0 should parse to [5] (0 term should be omitted)
-    const result3 = parser.parseContinuedFraction("5.~0");
-    expect(result3).toEqual([5]);
+    const result3 = Parser.parseContinuedFraction("5.~0");
+    expect(result3).toEqual([5n]);
   });
 });
 
