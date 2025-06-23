@@ -534,4 +534,31 @@ describe("RationalInterval", () => {
       });
     });
   });
+
+  describe("Continued Fraction Integration", () => {
+    it("should work with continued fraction notation in intervals", () => {
+      // Use Parser to create CF rationals, then create intervals
+      const { Parser } = require("../src/parser.js");
+      const cf1 = Parser.parse("3.~7");
+      const cf2 = Parser.parse("0.~3");
+      
+      const interval1 = new RationalInterval(cf1, new Rational(333, 106));
+      expect(interval1.low.equals(new Rational(333, 106))).toBe(true);  // 333/106 is smaller
+      expect(interval1.high.equals(new Rational(22, 7))).toBe(true);    // 22/7 is larger
+
+      const interval2 = new RationalInterval(new Rational(1, 3), cf2);
+      // Since 1/3 = 0.~3, this creates equal endpoints
+      // Just verify the continued fraction was parsed correctly
+      expect(cf2.equals(new Rational(1, 3))).toBe(true);
+    });
+
+    it("should parse continued fraction intervals correctly", () => {
+      // Test with Parser
+      const { Parser } = require("../src/parser.js");
+      const parsed = Parser.parse("3.~7:3.~15");
+      expect(parsed.constructor.name).toBe("RationalInterval");
+      expect(parsed.low.equals(new Rational(46, 15))).toBe(true);
+      expect(parsed.high.equals(new Rational(22, 7))).toBe(true);
+    });
+  });
 });

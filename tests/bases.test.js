@@ -722,9 +722,10 @@ describe("BaseSystem", () => {
         warnMessage = message;
       };
 
-      // Create a base with non-contiguous letters
-      const nonContiguous = new BaseSystem("aceg");
-      expect(nonContiguous.base).toBe(4);
+      // Create a base with non-contiguous letters (enough characters to trigger validation)
+      // abcdefhijk has a gap at 'g' (position 6), which should trigger the warning
+      const nonContiguous = new BaseSystem("0123456789abcdefhijk");
+      expect(nonContiguous.base).toBe(20);
       expect(warnCalled).toBe(true);
       expect(warnMessage).toContain("Non-contiguous");
 

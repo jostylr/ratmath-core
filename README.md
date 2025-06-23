@@ -13,6 +13,8 @@ A JavaScript library for exact rational arithmetic and interval arithmetic. The 
 - **Interval Arithmetic**: Supports operations on closed intervals with exact rational endpoints.
 - **Fraction Intervals**: Implements intervals with Fraction endpoints for exact representation without automatic reduction.
 - **Mediant Partitioning**: Create interval subdivisions using mediants (useful in continued fractions and number theory).
+- **Continued Fraction Support**: Parse continued fractions using `3.~7~15~1~292` syntax and convert between continued fraction and rational representations.
+- **Farey Sequences and Stern-Brocot Tree**: Advanced number theory operations including Farey parent finding, mediant operations, and Stern-Brocot tree navigation with support for infinite fractions (±1/0).
 - **Repeating Decimal Support**: Parse repeating decimals like "0.12#45" and convert them to exact rational representations.
 - **Decimal Uncertainty Parsing**: Parse decimal numbers with uncertainty notation like "1.23[56,67]" (range), "1.23[+5,-6]" (relative), or "1.3[+-1]" (symmetric).
 - **Expression Parser**: Parse and evaluate string expressions involving rational intervals and arithmetic operations, including factorial operators.
@@ -277,6 +279,67 @@ const reciprocal = a.pow(-1);    // 2/1
 console.log(sum.toString());     // "5/4"
 console.log(sum.toNumber());     // 1.25 (approximate)
 console.log(d.toMixedString());  // "5..2/3"
+```
+
+### Continued Fractions
+
+RatMath provides comprehensive support for continued fractions using the syntax `3.~7~15~1~292`:
+
+```javascript
+import { Rational, Fraction, Parser, R, F } from 'ratmath';
+
+// Parse continued fractions
+const pi_approx = Parser.parse('3.~7~15~1~292');  // Good π approximation
+console.log(pi_approx.toString());               // "355/113"
+
+// Template function support
+const cf1 = R`3.~7`;                             // 22/7 (classic π approximation)
+const cf2 = F`1.~2~3`;                           // As Fraction: 8/5
+
+// Convert rational to continued fraction
+const rational = new Rational(355, 113);
+const cfArray = rational.toContinuedFraction();  // [3n, 7n, 15n, 1n, 292n]
+const cfString = rational.toContinuedFractionString(); // "3.~7~15~1~292"
+
+// Work with convergents (successive approximations)
+const convergents = rational.convergents();      // Array of Rational convergents
+const firstConvergent = rational.getConvergent(0); // 3/1
+const secondConvergent = rational.getConvergent(1); // 22/7
+
+// Continued fractions in intervals
+const interval1 = R`3.~7:333/106`;              // Interval from CF to rational
+const interval2 = R`1/3:0.~3`;                  // Point interval (both equal 1/3)
+```
+
+### Advanced Number Theory Operations
+
+The Fraction class provides sophisticated number theory operations:
+
+```javascript
+import { Fraction } from 'ratmath';
+
+// Farey sequence operations
+const frac = new Fraction(3, 5);
+const parents = frac.fareyParents();             // Find Farey neighbors
+console.log(parents.left.toString());           // "1/2"
+console.log(parents.right.toString());          // "2/3"
+
+// Verify mediant relationship
+const mediant = parents.left.mediant(parents.right); // Mediant operation
+console.log(mediant.equals(frac));              // true (3/5 = mediant of 1/2 and 2/3)
+
+// Stern-Brocot tree navigation
+const path = frac.sternBrocotPath();             // ["L", "R", "L"]
+const parent = frac.sternBrocotParent();         // Parent in tree
+const children = frac.sternBrocotChildren();     // Left and right children
+const ancestors = frac.sternBrocotAncestors();   // All ancestors up to root 1/1
+
+// Infinite fractions for tree boundaries
+const posInf = new Fraction(1, 0, { allowInfinite: true });  // +∞
+const negInf = new Fraction(-1, 0, { allowInfinite: true }); // -∞
+
+// Reconstruct from tree path
+const reconstructed = Fraction.fromSternBrocotPath(["L", "R", "L"]); // 3/5
 ```
 
 ### Integer Arithmetic

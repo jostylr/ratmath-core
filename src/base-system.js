@@ -189,6 +189,11 @@ export class BaseSystem {
    * @throws {Error} If ordering is inconsistent
    */
   #validateCharacterOrdering() {
+    // Skip validation for special base systems that intentionally use non-contiguous characters
+    if (this.#name === "Roman Numerals" || this.#characters.length < 10) {
+      return;
+    }
+    
     // Check for consistent ordering in common ranges
     const ranges = [
       { start: "0", end: "9", name: "digits" },
@@ -201,24 +206,31 @@ export class BaseSystem {
       const endCode = range.end.charCodeAt(0);
 
       let rangeChars = [];
-      let lastCode = -1;
 
+      // Collect all characters in this range
       for (let i = 0; i < this.#characters.length; i++) {
         const char = this.#characters[i];
         const code = char.charCodeAt(0);
 
         if (code >= startCode && code <= endCode) {
           rangeChars.push(char);
+        }
+      }
 
-          // Check if this character is consecutive to the last one
-          if (lastCode !== -1 && code !== lastCode + 1) {
-            // Found a gap in the sequence
+      // Only validate if we have enough characters and they form a substantial part of the range
+      // This prevents warnings for intentionally short, truncated, or sparse ranges
+      if (rangeChars.length >= 5 && rangeChars.length > (endCode - startCode) / 3) {
+        // Check for gaps in the sequence
+        for (let i = 1; i < rangeChars.length; i++) {
+          const prevCode = rangeChars[i - 1].charCodeAt(0);
+          const currCode = rangeChars[i].charCodeAt(0);
+          
+          if (currCode !== prevCode + 1) {
             console.warn(
-              `Non-contiguous ${range.name} range detected in base system`,
+              `Non-contiguous ${range.name} range detected in base system`
             );
             break;
           }
-          lastCode = code;
         }
       }
     }

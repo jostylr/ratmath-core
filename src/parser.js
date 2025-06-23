@@ -2018,6 +2018,64 @@ export class Parser {
 
     // Check if this is continued fraction notation (contains .~)
     if (expr.includes('.~')) {
+      // Check if this is a continued fraction interval (like 3.~7:22/7 or 1/3:0.~3)
+      if (expr.includes(':')) {
+        const colonIndex = expr.indexOf(':');
+        const leftPart = expr.substring(0, colonIndex);
+        const rightPart = expr.substring(colonIndex + 1);
+        
+        // Try CF interval parsing if either part contains .~
+        if (leftPart.includes('.~') || rightPart.includes('.~')) {
+          try {
+            // Parse left side (could be CF or regular)
+            let leftResult;
+            if (leftPart.includes('.~')) {
+              leftResult = Parser.#parseContinuedFraction(leftPart, options);
+            } else {
+              leftResult = Parser.#parseInterval(leftPart, options);
+            }
+            
+            // Parse right side (could be CF or regular)
+            let rightResult;
+            if (rightPart.includes('.~')) {
+              rightResult = Parser.#parseContinuedFraction(rightPart, options);
+            } else {
+              rightResult = Parser.#parseInterval(rightPart, options);
+            }
+            
+            // Convert both to rationals for interval creation
+            let leftRational, rightRational;
+            if (leftResult.value instanceof Integer) {
+              leftRational = leftResult.value.toRational();
+            } else if (leftResult.value instanceof Rational) {
+              leftRational = leftResult.value;
+            } else {
+              throw new Error("Left side must evaluate to a rational");
+            }
+            
+            if (rightResult.value instanceof Integer) {
+              rightRational = rightResult.value.toRational();
+            } else if (rightResult.value instanceof Rational) {
+              rightRational = rightResult.value;
+            } else if (rightResult.value instanceof RationalInterval && rightResult.value.isPoint()) {
+              rightRational = rightResult.value.low;
+            } else {
+              throw new Error("Right side must evaluate to a rational");
+            }
+            
+            // Create the interval
+            const interval = new RationalInterval(leftRational, rightRational);
+            return {
+              value: interval,
+              remainingExpr: rightResult.remainingExpr,
+            };
+          } catch (error) {
+            // Fall through to other parsing methods if CF interval parsing fails
+          }
+        }
+      }
+      
+      // Try regular continued fraction parsing
       try {
         const cfResult = Parser.#parseContinuedFraction(expr, options);
         return cfResult;

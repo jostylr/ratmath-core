@@ -92,24 +92,24 @@ Add continued fraction support to RatMath library using the syntax `3.~7~15~1~29
   - ✅ **Fixed: Ancestors now properly ordered ending with root 1/1**
 
 ### 9. Integration with Existing Classes
-- [ ] Update Parser to handle continued fraction expressions in arithmetic
-- [ ] Add continued fraction support to template functions (R, F)
-- [ ] Ensure continued fractions work in interval arithmetic contexts
-- [ ] Add continued fraction examples to existing test suites
+- [x] Update Parser to handle continued fraction expressions in arithmetic
+- [x] Add continued fraction support to template functions (R, F)
+- [x] Ensure continued fractions work in interval arithmetic contexts
+- [x] Add continued fraction examples to existing test suites
 
 ## Documentation and Examples
 
 ### 10. Documentation Updates
-- [ ] Add continued fraction section to README.md
-- [ ] Document syntax: `3.~7~15~1~292`; mention repeating patterns as an extension and that it is not implemented in the library
-- [ ] Add API documentation for new classes and methods
-- [ ] Include minimal mathematical background on continued fractions
-- [ ] Document convergents and their properties
-- [ ] Add Farey sequence and mediant inverse documentation
-- [ ] Include mathematical background on Stern-Brocot tree
-- [ ] Document fareyParents(), fareyPartner(), and isFareyTriple() methods
-- [ ] Document Stern-Brocot tree infinite fractions (±1/0) and navigation methods
-- [ ] Add mathematical background on tree structure and properties
+- [x] Add continued fraction section to README.md
+- [x] Document syntax: `3.~7~15~1~292`; mention repeating patterns as an extension and that it is not implemented in the library
+- [x] Add API documentation for new classes and methods
+- [x] Include minimal mathematical background on continued fractions
+- [x] Document convergents and their properties
+- [x] Add Farey sequence and mediant inverse documentation
+- [x] Include mathematical background on Stern-Brocot tree
+- [x] Document fareyParents(), fareyPartner(), and isFareyTriple() methods
+- [x] Document Stern-Brocot tree infinite fractions (±1/0) and navigation methods
+- [x] Add mathematical background on tree structure and properties
 
 ### 11. Examples and Tests
 - [x] Create comprehensive test suite for continued fraction parsing
