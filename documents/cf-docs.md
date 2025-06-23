@@ -292,10 +292,91 @@ As documented in the implementation plan, this library focuses on exact rational
 
 These limitations are by design to maintain the library's focus on exact rational arithmetic.
 
+## Advanced Features
+
+### Farey Sequence Operations
+
+The Fraction class includes methods for working with Farey sequences and mediant operations:
+
+#### `fraction.fareyParents()`
+Finds the Farey parent fractions whose mediant equals this fraction.
+
+**Returns:**
+- `{left: Fraction, right: Fraction}`: The parent fractions
+
+**Example:**
+```javascript
+const frac = new Fraction(3, 5);
+const parents = frac.fareyParents();
+console.log(`Parents: ${parents.left.toString()}, ${parents.right.toString()}`);
+```
+
+#### `Fraction.mediantPartner(endpoint, mediant)`
+Given one endpoint and a mediant, computes the other endpoint.
+
+**Parameters:**
+- `endpoint` (Fraction): Known endpoint
+- `mediant` (Fraction): The mediant fraction
+
+**Returns:**
+- `Fraction`: The other endpoint
+
+#### `fraction.mediant(other)`
+Computes the mediant of two fractions: (a+c)/(b+d).
+
+**Parameters:**
+- `other` (Fraction): The other fraction
+
+**Returns:**
+- `Fraction`: The mediant fraction
+
+### Stern-Brocot Tree Operations
+
+The Fraction class supports navigation of the Stern-Brocot tree:
+
+#### `fraction.sternBrocotPath()`
+Generates the path from root (1/1) to this fraction.
+
+**Returns:**
+- `Array<string>`: Array of 'L'/'R' directions
+
+#### `Fraction.fromSternBrocotPath(path)`
+Constructs a fraction from a Stern-Brocot tree path.
+
+**Parameters:**
+- `path` (Array<string>): Array of 'L'/'R' directions
+
+**Returns:**
+- `Fraction`: The fraction at the end of the path
+
+#### `fraction.sternBrocotParent()`
+Finds the parent of this fraction in the tree.
+
+**Returns:**
+- `Fraction|null`: The parent fraction
+
+#### `fraction.sternBrocotChildren()`
+Finds the left and right children in the tree.
+
+**Returns:**
+- `{left: Fraction, right: Fraction}`: The child fractions
+
+### Infinite Fractions
+
+The Fraction class supports infinite fractions for Stern-Brocot tree boundaries:
+
+```javascript
+// Positive infinity boundary
+const posInf = new Fraction(1, 0, { allowInfinite: true });
+
+// Negative infinity boundary  
+const negInf = new Fraction(-1, 0, { allowInfinite: true });
+
+console.log(posInf.isInfinite); // true
+```
+
 ## Examples
 
-See `examples/continued-fractions-basic.js` for practical usage examples including:
-- Basic CF creation and manipulation
-- Convergent computation
-- Approximation finding
-- Integration with arithmetic operations
+See the examples directory for practical usage:
+- `examples/continued-fractions-basic.js`: Basic CF creation and manipulation, convergent computation, approximation finding
+- `examples/continued-fractions-advanced.js`: Farey sequences, Stern-Brocot tree navigation, mediant operations

@@ -1554,8 +1554,38 @@ export class Rational {
    */
   convergents(maxCount = Rational.DEFAULT_CF_LIMIT) {
     if (!this._convergents) {
-      // Compute continued fraction to populate convergents
-      this.toContinuedFraction(maxCount);
+      // Compute continued fraction and convergents
+      const cf = this.toContinuedFraction(maxCount);
+      
+      // Compute convergents using same algorithm as fromContinuedFraction
+      if (cf.length === 1) {
+        this._convergents = [new Rational(cf[0], 1n)];
+      } else {
+        let p_prev = 1n;  // p₋₁
+        let p_curr = cf[0];  // p₀
+        let q_prev = 0n;  // q₋₁
+        let q_curr = 1n;  // q₀
+
+        const convergents = [new Rational(p_curr, q_curr)];
+
+        for (let i = 1; i < cf.length; i++) {
+          const a = cf[i];
+          
+          // Compute next convergent
+          const p_next = a * p_curr + p_prev;
+          const q_next = a * q_curr + q_prev;
+
+          convergents.push(new Rational(p_next, q_next));
+
+          // Update for next iteration
+          p_prev = p_curr;
+          p_curr = p_next;
+          q_prev = q_curr;
+          q_curr = q_next;
+        }
+        
+        this._convergents = convergents;
+      }
     }
     
     if (maxCount && this._convergents && this._convergents.length > maxCount) {

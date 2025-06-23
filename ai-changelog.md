@@ -28,6 +28,14 @@ Added BASE command functionality to calc.js terminal calculator including:
 
 Fixed two failing tests in the test suite. The first issue was in repeating decimal roundtrip conversion where `toRepeatingDecimal()` used repeat notation by default (e.g., "0.#{0~1}9"), but `parseRepeatingDecimal()` couldn't parse this special notation. Fixed by adding a `useRepeatNotation` parameter to `RationalInterval.toRepeatingDecimal()` and modifying the roundtrip test to disable repeat notation for parsing compatibility. The second issue was in scientific notation precision where the default precision of 10 generated only 9 digits after the decimal point. Fixed by increasing the default precision parameter from 10 to 11 in `toScientificNotation()`.
 
+## Advanced Continued Fractions Features - Farey Sequences and Stern-Brocot Tree
+
+**Model:** Claude Sonnet 4, **Date:** 2025-06-22
+
+Implemented advanced continued fraction features from cf-todo.md: extended the Fraction class with Farey sequence operations and Stern-Brocot tree navigation methods. Added support for infinite fractions (±1/0) as tree boundaries with proper constructor options. Implemented methods including `fareyParents()`, `mediantPartner()`, `isMediantTriple()`, `isFareyTriple()`, `sternBrocotPath()`, `fromSternBrocotPath()`, `sternBrocotParent()`, `sternBrocotChildren()`, and tree validation utilities. Enhanced the mediant method to handle infinite fractions appropriately. Created comprehensive examples in continued-fractions-advanced.js demonstrating all advanced features. Fixed multiple test issues including property access (.num/.den to .numerator/.denominator), template function imports, convergents computation, and type mismatches.
+
+**Algorithmic Debugging and Final Implementation:** Created detailed debug analysis revealing two core mathematical issues: (1) Farey parents algorithm used Extended Euclidean approach producing incorrect determinants, needed Stern-Brocot tree navigation instead, and (2) Stern-Brocot ancestors returned in wrong order, needed reversal to end with root 1/1. Implemented corrected algorithms using proper mathematical approaches - Farey parents now finds actual tree boundaries producing determinant ±1, and ancestors properly ordered from immediate parent to root. **All 47 tests now pass (100% success rate)** with fully functional advanced continued fraction features including exact BigInt arithmetic precision throughout.
+
 ## Variable Management Mini-Language Implementation
 
 **Model:** Claude Sonnet 4, **Date:** 2025-06-17
@@ -49,7 +57,7 @@ Integrated the variable manager into both calculators:
 
 The implementation allows for polynomial and rational function definitions, finite sums and products, and maintains exact arithmetic precision through the existing ratmath framework.
 
-## SEQ Display and Interrupt Capability Improvements  
+## SEQ Display and Interrupt Capability Improvements
 
 **Model:** Claude Sonnet 4, **Date:** 2025-06-17
 
@@ -88,13 +96,13 @@ The interrupt system allows graceful cancellation of long computations while pre
 
 ## Algorithm Optimization for SUM/PROD Performance
 
-**Model:** Claude Sonnet 4, **Date:** 2025-06-17  
+**Model:** Claude Sonnet 4, **Date:** 2025-06-17
 
 Fixed critical performance issue in SUM/PROD computations by replacing inefficient array-then-reduce approach with direct accumulation.
 
 **Previous algorithm problems:**
 - Stored all intermediate values in memory before computing result
-- Used reduce() which created additional intermediate objects  
+- Used reduce() which created additional intermediate objects
 - Failed at SUM[i](1/i^2, 1, 19) due to memory exhaustion
 
 **New optimized algorithm:**
@@ -104,7 +112,7 @@ Fixed critical performance issue in SUM/PROD computations by replacing inefficie
 - Interrupt checking on every iteration instead of every 50
 
 **Performance improvements:**
-- SUM of 1/i^2 now works up to ~18 terms instead of failing at ~10 
+- SUM of 1/i^2 now works up to ~18 terms instead of failing at ~10
 - Large integer sums like SUM[i](i, 1, 100) = 5050 work efficiently with real-time progress
 - Memory usage dramatically reduced for iterative computations
 
@@ -125,7 +133,7 @@ Implemented major improvements to decimal representation and scientific notation
 
 **Technical improvements:**
 - New `computeDecimalMetadata()` method returns: `wholePart`, `initialSegmentLeadingZeros`, `initialSegmentRest`, `leadingZerosInPeriod`, `periodDigitsRest`
-- Enhanced `toRepeatingDecimalWithPeriod()` with optional repeat notation parameter  
+- Enhanced `toRepeatingDecimalWithPeriod()` with optional repeat notation parameter
 - New `toScientificNotation()` method with efficient handling of very small numbers and optional repeat notation in mantissa
 - Updated calculator SCI mode to use improved scientific notation method
 
@@ -225,7 +233,7 @@ Output base: Base 10 (base 10)
 > 101
 5
 
-> BASE 16->[10,2,8]  
+> BASE 16->[10,2,8]
 Input base: Base 16 (base 16)
 Output bases: Base 10 (base 10), Base 2 (base 2), Base 8 (base 8)
 
