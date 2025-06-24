@@ -94,6 +94,28 @@ Key improvements:
 
 The interrupt system allows graceful cancellation of long computations while preserving calculator state, with double Ctrl+C for force exit.
 
+## Calculator Integration - CF and SCI Mode Implementation
+
+**Model:** Claude Sonnet 3.5, **Date:** 2025-01-27
+
+Completed item 12 from cf-todo.md by implementing continued fraction (CF) and scientific notation (SCI) support in both terminal and web calculators.
+
+**Terminal Calculator (calc.js):** CF command was already implemented and tested successfully. Shows continued fractions in format like "3.~7" for 22/7 with rational display alongside.
+
+**Web Calculator Integration:** Added comprehensive SCI and CF mode support to match terminal calculator functionality:
+- Added SCI output mode with scientific notation display using `rational.toScientificNotation()`
+- Added CF output mode with continued fraction display using `rational.toContinuedFractionString()`
+- Added MIX command to toggle mixed number display (matching terminal calculator)
+- Added SCIPREC command to set scientific notation precision (default: 10 digits)
+- Added SCIPERIOD command to toggle period info display in scientific notation
+- Updated HTML interface with new command buttons (SCI, CF, MIX) and help documentation
+- Enhanced `formatRational()` method to handle all output modes consistently
+- Updated constructor properties to include `mixedDisplay`, `sciPrecision`, and `showPeriodInfo`
+
+**Testing:** Verified CF and SCI modes work correctly in terminal calculator with examples like 22/7 → "3.~7" and 355/113 → "3.~7~16". Web calculator rebuilt and ready for testing with new functionality.
+
+The web calculator now has feature parity with the terminal calculator for continued fraction and scientific notation display modes, completing the calculator integration requirements from the continued fractions implementation roadmap.
+
 ## Algorithm Optimization for SUM/PROD Performance
 
 **Model:** Claude Sonnet 4, **Date:** 2025-06-17

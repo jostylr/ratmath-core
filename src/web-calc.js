@@ -10,8 +10,11 @@ import { VariableManager } from "./var.js";
 
 class WebCalculator {
   constructor() {
-    this.outputMode = "BOTH"; // 'DECI', 'RAT', 'BOTH'
+    this.outputMode = "BOTH"; // 'DECI', 'RAT', 'BOTH', 'SCI', 'CF'
     this.decimalLimit = 20; // Maximum decimal places before showing ...
+    this.mixedDisplay = true; // Whether to show fractions as mixed numbers by default
+    this.sciPrecision = 10; // Scientific notation precision (significant digits)
+    this.showPeriodInfo = false; // Whether to show period info in scientific notation
     this.history = []; // Command history for up/down arrows
     this.historyIndex = -1; // Current position in history
     this.outputHistory = []; // All input/output pairs for copying
@@ -217,6 +220,33 @@ class WebCalculator {
       return;
     }
 
+    if (upperInput === "SCI") {
+      this.outputMode = "SCI";
+      const output = "Output mode set to scientific notation";
+      this.addToOutput("", output, false);
+      this.finishEntry(output);
+      this.inputElement.value = "";
+      return;
+    }
+
+    if (upperInput === "CF") {
+      this.outputMode = "CF";
+      const output = "Output mode set to continued fraction";
+      this.addToOutput("", output, false);
+      this.finishEntry(output);
+      this.inputElement.value = "";
+      return;
+    }
+
+    if (upperInput === "MIX") {
+      this.mixedDisplay = !this.mixedDisplay;
+      const output = `Mixed number display ${this.mixedDisplay ? "enabled" : "disabled"}`;
+      this.addToOutput("", output, false);
+      this.finishEntry(output);
+      this.inputElement.value = "";
+      return;
+    }
+
     if (upperInput.startsWith("LIMIT")) {
       const limitStr = upperInput.substring(5).trim();
       let output;
@@ -240,14 +270,49 @@ class WebCalculator {
       return;
     }
 
+    if (upperInput.startsWith("SCIPREC")) {
+      const precStr = upperInput.substring(7).trim();
+      let output;
+      if (precStr === "") {
+        output = `Current scientific notation precision: ${this.sciPrecision} digits`;
+        this.addToOutput("", output, false);
+      } else {
+        const precision = parseInt(precStr);
+        if (isNaN(precision) || precision < 1) {
+          output = "Error: SCIPREC must be a positive integer";
+          this.addToOutput("", output, true);
+          this.currentEntry.isError = true;
+        } else {
+          this.sciPrecision = precision;
+          output = `Scientific notation precision set to ${precision} digits`;
+          this.addToOutput("", output, false);
+        }
+      }
+      this.finishEntry(output);
+      this.inputElement.value = "";
+      return;
+    }
+
+    if (upperInput === "SCIPERIOD") {
+      this.showPeriodInfo = !this.showPeriodInfo;
+      const output = `Period info in scientific notation ${this.showPeriodInfo ? "enabled" : "disabled"}`;
+      this.addToOutput("", output, false);
+      this.finishEntry(output);
+      this.inputElement.value = "";
+      return;
+    }
+
     // Try to process with variable manager first
     const varResult = this.variableManager.processInput(input);
-    
-    if (varResult.type === 'error') {
+
+    if (varResult.type === "error") {
       this.addToOutput("", varResult.message, true);
       this.currentEntry.isError = true;
       this.finishEntry(varResult.message);
-    } else if (varResult.type === 'assignment' || varResult.type === 'function') {
+    } else if (
+      varResult.type === "assignment" ||
+      varResult.type === "function"
+    ) {
       const output = varResult.message;
       this.addToOutput("", output, false);
       this.finishEntry(output);
@@ -299,7 +364,7 @@ class WebCalculator {
   }
 
   formatResult(result) {
-    if (result && result.type === 'sequence') {
+    if (result && result.type === "sequence") {
       return this.variableManager.formatValue(result);
     } else if (result instanceof RationalInterval) {
       return this.formatInterval(result);
@@ -321,7 +386,9 @@ class WebCalculator {
     const repeatingDecimal = repeatingInfo.decimal;
     const period = repeatingInfo.period;
     const decimal = this.formatDecimal(rational);
-    const fraction = rational.toString();
+    const fraction = this.mixedDisplay
+      ? rational.toMixedString()
+      : rational.toString();
 
     const isTerminatingDecimal = repeatingDecimal.endsWith("#0");
     const displayDecimal = isTerminatingDecimal
@@ -335,6 +402,16 @@ class WebCalculator {
         return `${displayDecimal}${periodInfo}`;
       case "RAT":
         return fraction;
+      case "SCI":
+        const scientificNotation = rational.toScientificNotation(
+          true,
+          this.sciPrecision,
+          this.showPeriodInfo,
+        );
+        return `${scientificNotation} (${fraction})`;
+      case "CF":
+        const continuedFraction = rational.toContinuedFractionString();
+        return `${continuedFraction} (${fraction})`;
       case "BOTH":
         if (fraction.includes("/")) {
           return `${displayDecimal}${periodInfo} (${fraction})`;
@@ -342,7 +419,7 @@ class WebCalculator {
           return decimal;
         }
       default:
-        return fraction;
+        return `${displayDecimal}${periodInfo} (${fraction})`;
     }
   }
 
@@ -572,7 +649,7 @@ class WebCalculator {
   showVariables() {
     const variables = this.variableManager.getVariables();
     const functions = this.variableManager.getFunctions();
-    
+
     if (variables.size === 0 && functions.size === 0) {
       const output = "No variables or functions defined";
       this.addToOutput("", output, false);
@@ -581,19 +658,19 @@ class WebCalculator {
     }
 
     let output = "";
-    
+
     if (variables.size > 0) {
       output += "Variables:\n";
       for (const [name, value] of variables) {
         output += `  ${name} = ${this.formatResult(value)}\n`;
       }
     }
-    
+
     if (functions.size > 0) {
       if (output) output += "\n";
       output += "Functions:\n";
       for (const [name, func] of functions) {
-        output += `  ${name}[${func.params.join(',')}] = ${func.expression}\n`;
+        output += `  ${name}[${func.params.join(",")}] = ${func.expression}\n`;
       }
     }
 

@@ -6,7 +6,6 @@ class Rational {
   #wholePart;
   #remainder;
   #initialSegment;
-  #leadingZeros;
   #periodDigits;
   #periodLength;
   #isTerminating;
@@ -714,6 +713,206 @@ class Rational {
     }
     return new Rational(value);
   }
+  static DEFAULT_CF_LIMIT = 1000;
+  static fromContinuedFraction(cfArray) {
+    if (!Array.isArray(cfArray) || cfArray.length === 0) {
+      throw new Error("Continued fraction array cannot be empty");
+    }
+    const cf = cfArray.map((term) => {
+      if (typeof term === "number") {
+        return BigInt(term);
+      } else if (typeof term === "bigint") {
+        return term;
+      } else {
+        throw new Error(`Invalid continued fraction term: ${term}`);
+      }
+    });
+    for (let i = 1;i < cf.length; i++) {
+      if (cf[i] <= 0n) {
+        throw new Error(`Continued fraction terms must be positive: ${cf[i]}`);
+      }
+    }
+    if (cf.length === 1) {
+      return new Rational(cf[0], 1n);
+    }
+    let p_prev = 1n;
+    let p_curr = cf[0];
+    let q_prev = 0n;
+    let q_curr = 1n;
+    const convergents = [new Rational(p_curr, q_curr)];
+    for (let i = 1;i < cf.length; i++) {
+      const a = cf[i];
+      const p_next = a * p_curr + p_prev;
+      const q_next = a * q_curr + q_prev;
+      convergents.push(new Rational(p_next, q_next));
+      p_prev = p_curr;
+      p_curr = p_next;
+      q_prev = q_curr;
+      q_curr = q_next;
+    }
+    const result = convergents[convergents.length - 1];
+    result.cf = cf.slice(1);
+    result._convergents = convergents;
+    result.wholePart = cf[0];
+    return result;
+  }
+  toContinuedFraction(maxTerms = Rational.DEFAULT_CF_LIMIT) {
+    if (this.#denominator === 0n) {
+      throw new Error("Cannot convert infinite value to continued fraction");
+    }
+    if (this.#denominator === 1n) {
+      return [this.#numerator];
+    }
+    const cf = [];
+    let num = this.#numerator;
+    let den = this.#denominator;
+    const isNeg = num < 0n;
+    if (isNeg) {
+      num = -num;
+    }
+    let intPart = num / den;
+    if (isNeg) {
+      intPart = -intPart;
+      if (num % den !== 0n) {
+        intPart = intPart - 1n;
+        num = den - num % den;
+      } else {
+        num = num % den;
+      }
+    } else {
+      num = num % den;
+    }
+    cf.push(intPart);
+    let termCount = 1;
+    while (num !== 0n && termCount < maxTerms) {
+      const quotient = den / num;
+      cf.push(quotient);
+      const remainder = den % num;
+      den = num;
+      num = remainder;
+      termCount++;
+    }
+    if (cf.length > 1 && cf[cf.length - 1] === 1n) {
+      const secondLast = cf[cf.length - 2];
+      cf[cf.length - 2] = secondLast + 1n;
+      cf.pop();
+    }
+    this.cf = cf.slice(1);
+    if (!this.wholePart) {
+      this.wholePart = cf[0];
+    }
+    return cf;
+  }
+  toContinuedFractionString() {
+    const cf = this.toContinuedFraction();
+    if (cf.length === 1) {
+      return `${cf[0]}.~0`;
+    }
+    const intPart = cf[0];
+    const cfTerms = cf.slice(1);
+    return `${intPart}.~${cfTerms.join("~")}`;
+  }
+  static fromContinuedFractionString(cfString) {
+    const cfMatch = cfString.match(/^(-?\d+)\.~(.*)$/);
+    if (!cfMatch) {
+      throw new Error("Invalid continued fraction format");
+    }
+    const [, integerPart, cfTermsStr] = cfMatch;
+    const intPart = BigInt(integerPart);
+    if (cfTermsStr === "0") {
+      return new Rational(intPart, 1n);
+    }
+    if (cfTermsStr === "") {
+      throw new Error("Continued fraction must have at least one term after .~");
+    }
+    if (cfTermsStr.endsWith("~")) {
+      throw new Error("Continued fraction cannot end with ~");
+    }
+    if (cfTermsStr.includes("~~")) {
+      throw new Error("Invalid continued fraction format: double tilde");
+    }
+    const terms = cfTermsStr.split("~");
+    const cfTerms = [];
+    for (const term of terms) {
+      if (!/^\d+$/.test(term)) {
+        throw new Error(`Invalid continued fraction term: ${term}`);
+      }
+      const termValue = BigInt(term);
+      if (termValue <= 0n) {
+        throw new Error(`Continued fraction terms must be positive integers: ${term}`);
+      }
+      cfTerms.push(termValue);
+    }
+    const cfArray = [intPart, ...cfTerms];
+    return Rational.fromContinuedFraction(cfArray);
+  }
+  convergents(maxCount = Rational.DEFAULT_CF_LIMIT) {
+    if (!this._convergents) {
+      const cf = this.toContinuedFraction(maxCount);
+      if (cf.length === 1) {
+        this._convergents = [new Rational(cf[0], 1n)];
+      } else {
+        let p_prev = 1n;
+        let p_curr = cf[0];
+        let q_prev = 0n;
+        let q_curr = 1n;
+        const convergents = [new Rational(p_curr, q_curr)];
+        for (let i = 1;i < cf.length; i++) {
+          const a = cf[i];
+          const p_next = a * p_curr + p_prev;
+          const q_next = a * q_curr + q_prev;
+          convergents.push(new Rational(p_next, q_next));
+          p_prev = p_curr;
+          p_curr = p_next;
+          q_prev = q_curr;
+          q_curr = q_next;
+        }
+        this._convergents = convergents;
+      }
+    }
+    if (maxCount && this._convergents && this._convergents.length > maxCount) {
+      return this._convergents.slice(0, maxCount);
+    }
+    return this._convergents || [];
+  }
+  getConvergent(n) {
+    const convergents = this.convergents();
+    if (n < 0 || n >= convergents.length) {
+      throw new Error(`Convergent index ${n} out of range [0, ${convergents.length - 1}]`);
+    }
+    return convergents[n];
+  }
+  static convergentsFromCF(cfInput, maxCount = Rational.DEFAULT_CF_LIMIT) {
+    let cfArray;
+    if (typeof cfInput === "string") {
+      const rational2 = Rational.fromContinuedFractionString(cfInput);
+      return rational2.convergents(maxCount);
+    } else {
+      cfArray = cfInput;
+    }
+    const rational = Rational.fromContinuedFraction(cfArray);
+    return rational.convergents(maxCount);
+  }
+  approximationError(target) {
+    if (!(target instanceof Rational)) {
+      throw new Error("Target must be a Rational");
+    }
+    const diff = this.subtract(target);
+    return diff.isNegative ? diff.negate() : diff;
+  }
+  bestApproximation(maxDenominator) {
+    const cf = this.toContinuedFraction();
+    let bestApprox = new Rational(cf[0], 1n);
+    const convergents = this.convergents();
+    for (const convergent of convergents) {
+      if (convergent.denominator <= maxDenominator) {
+        bestApprox = convergent;
+      } else {
+        break;
+      }
+    }
+    return bestApprox;
+  }
 }
 
 // src/rational-interval.js
@@ -941,9 +1140,8 @@ class RationalInterval {
     return new RationalInterval(newLow, newHigh);
   }
   union(other) {
-    const oneLow = new Rational(1);
-    const adjacentRight = this.#high.add(oneLow).equals(other.low);
-    const adjacentLeft = other.high.add(oneLow).equals(this.#low);
+    const adjacentRight = this.#high.equals(other.low);
+    const adjacentLeft = other.high.equals(this.#low);
     if (!this.overlaps(other) && !adjacentRight && !adjacentLeft) {
       return null;
     }
@@ -1528,6 +1726,9 @@ class BaseSystem {
     }
   }
   #validateCharacterOrdering() {
+    if (this.#name === "Roman Numerals" || this.#characters.length < 10) {
+      return;
+    }
     const ranges = [
       { start: "0", end: "9", name: "digits" },
       { start: "a", end: "z", name: "lowercase letters" },
@@ -1537,17 +1738,21 @@ class BaseSystem {
       const startCode = range.start.charCodeAt(0);
       const endCode = range.end.charCodeAt(0);
       let rangeChars = [];
-      let lastCode = -1;
       for (let i = 0;i < this.#characters.length; i++) {
         const char = this.#characters[i];
         const code = char.charCodeAt(0);
         if (code >= startCode && code <= endCode) {
           rangeChars.push(char);
-          if (lastCode !== -1 && code !== lastCode + 1) {
+        }
+      }
+      if (rangeChars.length >= 5 && rangeChars.length > (endCode - startCode) / 3) {
+        for (let i = 1;i < rangeChars.length; i++) {
+          const prevCode = rangeChars[i - 1].charCodeAt(0);
+          const currCode = rangeChars[i].charCodeAt(0);
+          if (currCode !== prevCode + 1) {
             console.warn(`Non-contiguous ${range.name} range detected in base system`);
             break;
           }
-          lastCode = code;
         }
       }
     }
@@ -2029,11 +2234,79 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
     isNegative = true;
     numberStr = numberStr.substring(1);
   }
-  if (baseSystem.base <= 36 && baseSystem.base > 10) {
-    numberStr = numberStr.toLowerCase();
+  let eNotationIndex = -1;
+  let eNotationType = null;
+  const baseContainsE = baseSystem.characters.includes("E") || baseSystem.characters.includes("e");
+  if (baseContainsE) {
+    eNotationIndex = numberStr.indexOf("_^");
+    if (eNotationIndex !== -1) {
+      eNotationType = "_^";
+    }
+  } else {
+    const upperStr = numberStr.toUpperCase();
+    const eIndex = upperStr.indexOf("E");
+    if (eIndex !== -1) {
+      eNotationIndex = eIndex;
+      eNotationType = "E";
+    }
   }
-  if (numberStr.includes(":")) {
-    const parts = numberStr.split(":");
+  let baseNumber = numberStr;
+  let exponentStr = null;
+  if (eNotationIndex !== -1) {
+    baseNumber = numberStr.substring(0, eNotationIndex);
+    const exponentStart = eNotationIndex + (eNotationType === "_^" ? 2 : 1);
+    exponentStr = numberStr.substring(exponentStart);
+    if (!baseSystem.isValidString(exponentStr.replace("-", ""))) {
+      throw new Error(`Invalid exponent "${exponentStr}" for base ${baseSystem.base}`);
+    }
+  }
+  if (baseSystem.base <= 36 && baseSystem.base > 10) {
+    const usesLowercase = baseSystem.characters.some((char) => char >= "a" && char <= "z");
+    const usesUppercase = baseSystem.characters.some((char) => char >= "A" && char <= "Z");
+    if (usesLowercase && !usesUppercase) {
+      baseNumber = baseNumber.toLowerCase();
+      if (exponentStr) {
+        exponentStr = exponentStr.toLowerCase();
+      }
+    } else if (usesUppercase && !usesLowercase) {
+      baseNumber = baseNumber.toUpperCase();
+      if (exponentStr) {
+        exponentStr = exponentStr.toUpperCase();
+      }
+    }
+  }
+  if (eNotationIndex !== -1) {
+    const baseValue = parseBaseNotation(baseNumber, baseSystem, options);
+    let exponentDecimal;
+    if (exponentStr.startsWith("-")) {
+      const positiveExponent = baseSystem.toDecimal(exponentStr.substring(1));
+      exponentDecimal = -positiveExponent;
+    } else {
+      exponentDecimal = baseSystem.toDecimal(exponentStr);
+    }
+    let powerOfBase;
+    const baseBigInt = BigInt(baseSystem.base);
+    if (exponentDecimal >= 0n) {
+      powerOfBase = new Rational(baseBigInt ** exponentDecimal);
+    } else {
+      powerOfBase = new Rational(1n, baseBigInt ** -exponentDecimal);
+    }
+    let baseRational;
+    if (baseValue instanceof Integer) {
+      baseRational = baseValue.toRational();
+    } else if (baseValue instanceof Rational) {
+      baseRational = baseValue;
+    } else {
+      throw new Error("E notation can only be applied to simple numbers, not intervals");
+    }
+    let result = baseRational.multiply(powerOfBase);
+    if (isNegative) {
+      result = result.negate();
+    }
+    return options.typeAware && result.denominator === 1n ? new Integer(result.numerator) : result;
+  }
+  if (baseNumber.includes(":")) {
+    const parts = baseNumber.split(":");
     if (parts.length !== 2) {
       throw new Error('Base notation intervals must have exactly two endpoints separated by ":"');
     }
@@ -2063,8 +2336,8 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
     interval._explicitInterval = true;
     return interval;
   }
-  if (numberStr.includes("..")) {
-    const parts = numberStr.split("..");
+  if (baseNumber.includes("..")) {
+    const parts = baseNumber.split("..");
     if (parts.length !== 2) {
       throw new Error('Mixed number notation must have exactly one ".." separator');
     }
@@ -2095,8 +2368,8 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
       return options.typeAware && result.denominator === 1n ? new Integer(result.numerator) : result;
     }
   }
-  if (numberStr.includes("/")) {
-    const parts = numberStr.split("/");
+  if (baseNumber.includes("/")) {
+    const parts = baseNumber.split("/");
     if (parts.length !== 2) {
       throw new Error('Fraction notation must have exactly one "/" separator');
     }
@@ -2114,8 +2387,8 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
     result._explicitFraction = true;
     return result;
   }
-  if (numberStr.includes(".")) {
-    const parts = numberStr.split(".");
+  if (baseNumber.includes(".")) {
+    const parts = baseNumber.split(".");
     if (parts.length !== 2) {
       throw new Error('Decimal notation must have exactly one "." separator');
     }
@@ -2126,7 +2399,7 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
     }
     const fullStr = integerPart + fractionalPart;
     if (!baseSystem.isValidString(fullStr)) {
-      throw new Error(`String "${numberStr}" contains characters not valid for ${baseSystem.name}`);
+      throw new Error(`String "${baseNumber}" contains characters not valid for ${baseSystem.name}`);
     }
     const integerDecimal = baseSystem.toDecimal(integerPart);
     let fractionalDecimal = 0n;
@@ -2144,10 +2417,10 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
     }
     return options.typeAware && result.denominator === 1n ? new Integer(result.numerator) : result;
   }
-  if (!baseSystem.isValidString(numberStr)) {
-    throw new Error(`String "${numberStr}" contains characters not valid for ${baseSystem.name}`);
+  if (!baseSystem.isValidString(baseNumber)) {
+    throw new Error(`String "${baseNumber}" contains characters not valid for ${baseSystem.name}`);
   }
-  let decimalValue = baseSystem.toDecimal(numberStr);
+  let decimalValue = baseSystem.toDecimal(baseNumber);
   if (isNegative) {
     decimalValue = -decimalValue;
   }
@@ -2262,7 +2535,7 @@ class Parser {
         value: subExprResult.value,
         remainingExpr: subExprResult.remainingExpr.substring(1)
       };
-      if (result.remainingExpr.length > 0 && (result.remainingExpr[0] === "E" || result.remainingExpr.startsWith("TE"))) {
+      if (result.remainingExpr.length > 0 && (result.remainingExpr[0] === "E" || result.remainingExpr.startsWith("TE") || result.remainingExpr.startsWith("_^"))) {
         const eResult = Parser.#parseENotation(result.value, result.remainingExpr, options);
         let factorialResult3 = eResult;
         if (factorialResult3.remainingExpr.length > 1 && factorialResult3.remainingExpr.substring(0, 2) === "!!") {
@@ -2433,7 +2706,7 @@ class Parser {
       return factorialResult2;
     }
     if (expr.includes("[") && expr.includes("]")) {
-      const baseMatch = expr.match(/^([^[\]]+(?::[^[\]]+)?)\[(\d+)\]/);
+      const baseMatch = expr.match(/^([-\w./:^]+(?::[-\w./:^]+)?)\[(\d+)\]/);
       if (baseMatch) {
         const [fullMatch, numberStr, baseStr] = baseMatch;
         const baseNum = parseInt(baseStr, 10);
@@ -2486,7 +2759,7 @@ class Parser {
       };
     }
     const numberResult = Parser.#parseInterval(expr, options);
-    if (numberResult.remainingExpr.length > 0 && (numberResult.remainingExpr[0] === "E" || numberResult.remainingExpr.startsWith("TE"))) {
+    if (numberResult.remainingExpr.length > 0 && (numberResult.remainingExpr[0] === "E" || numberResult.remainingExpr.startsWith("TE") || numberResult.remainingExpr.startsWith("_^"))) {
       const eResult = Parser.#parseENotation(numberResult.value, numberResult.remainingExpr, options);
       let factorialResult2 = eResult;
       if (factorialResult2.remainingExpr.length > 1 && factorialResult2.remainingExpr.substring(0, 2) === "!!") {
@@ -2703,6 +2976,9 @@ class Parser {
     return value;
   }
   static #parseENotation(value, expr, options = {}) {
+    if (options.inputBase && options.inputBase !== BaseSystem.DECIMAL) {
+      return Parser.#parseBaseAwareENotation(value, expr, options);
+    }
     let spaceBeforeE = false;
     let startIndex = 1;
     if (expr.startsWith("TE")) {
@@ -2733,6 +3009,74 @@ class Parser {
       remainingExpr: exponentResult.remainingExpr
     };
   }
+  static #parseBaseAwareENotation(value, expr, options = {}) {
+    const baseSystem = options.inputBase;
+    if (!baseSystem) {
+      throw new Error("Base-aware E notation requires inputBase option");
+    }
+    const baseContainsE = baseSystem.characters.includes("E") || baseSystem.characters.includes("e");
+    let notationType;
+    let startIndex;
+    if (baseContainsE) {
+      if (!expr.startsWith("_^")) {
+        throw new Error("Expected _^ notation for bases containing E");
+      }
+      notationType = "_^";
+      startIndex = 2;
+    } else {
+      if (!expr.startsWith("E") && !expr.startsWith("e")) {
+        throw new Error("Expected E notation");
+      }
+      notationType = "E";
+      startIndex = 1;
+    }
+    let endIndex = startIndex;
+    if (endIndex < expr.length && expr[endIndex] === "-") {
+      endIndex++;
+    }
+    while (endIndex < expr.length) {
+      const char = expr[endIndex];
+      if (baseSystem.charMap.has(char)) {
+        endIndex++;
+      } else {
+        break;
+      }
+    }
+    if (endIndex === startIndex || endIndex === startIndex + 1 && expr[startIndex] === "-") {
+      throw new Error(`Missing exponent after ${notationType} notation`);
+    }
+    const exponentStr = expr.substring(startIndex, endIndex);
+    const testExponentStr = exponentStr.startsWith("-") ? exponentStr.substring(1) : exponentStr;
+    if (!baseSystem.isValidString(testExponentStr)) {
+      throw new Error(`Invalid exponent "${exponentStr}" for base ${baseSystem.base}`);
+    }
+    let exponentDecimal;
+    try {
+      exponentDecimal = baseSystem.toDecimal(exponentStr);
+    } catch (error) {
+      throw new Error(`Failed to parse exponent "${exponentStr}": ${error.message}`);
+    }
+    let powerOfBase;
+    const baseBigInt = BigInt(baseSystem.base);
+    if (exponentDecimal >= 0n) {
+      powerOfBase = new Rational(baseBigInt ** exponentDecimal);
+    } else {
+      powerOfBase = new Rational(1n, baseBigInt ** -exponentDecimal);
+    }
+    let valueRational;
+    if (value instanceof Integer) {
+      valueRational = value.toRational();
+    } else if (value instanceof Rational) {
+      valueRational = value;
+    } else {
+      throw new Error(`${notationType} notation can only be applied to simple numbers, not intervals`);
+    }
+    const result = valueRational.multiply(powerOfBase);
+    return {
+      value: Parser.#promoteType(result, options),
+      remainingExpr: expr.substring(endIndex)
+    };
+  }
   static #parseInterval(expr, options = {}) {
     if (expr.includes("[") && expr.includes("]") && /^-?\d*\.?\d*\[/.test(expr)) {
       try {
@@ -2743,16 +3087,67 @@ class Parser {
         };
       } catch {}
     }
+    if (expr.includes(".~")) {
+      if (expr.includes(":")) {
+        const colonIndex = expr.indexOf(":");
+        const leftPart = expr.substring(0, colonIndex);
+        const rightPart = expr.substring(colonIndex + 1);
+        if (leftPart.includes(".~") || rightPart.includes(".~")) {
+          try {
+            let leftResult;
+            if (leftPart.includes(".~")) {
+              leftResult = Parser.#parseContinuedFraction(leftPart, options);
+            } else {
+              leftResult = Parser.#parseInterval(leftPart, options);
+            }
+            let rightResult;
+            if (rightPart.includes(".~")) {
+              rightResult = Parser.#parseContinuedFraction(rightPart, options);
+            } else {
+              rightResult = Parser.#parseInterval(rightPart, options);
+            }
+            let leftRational, rightRational;
+            if (leftResult.value instanceof Integer) {
+              leftRational = leftResult.value.toRational();
+            } else if (leftResult.value instanceof Rational) {
+              leftRational = leftResult.value;
+            } else {
+              throw new Error("Left side must evaluate to a rational");
+            }
+            if (rightResult.value instanceof Integer) {
+              rightRational = rightResult.value.toRational();
+            } else if (rightResult.value instanceof Rational) {
+              rightRational = rightResult.value;
+            } else if (rightResult.value instanceof RationalInterval && rightResult.value.isPoint()) {
+              rightRational = rightResult.value.low;
+            } else {
+              throw new Error("Right side must evaluate to a rational");
+            }
+            const interval2 = new RationalInterval(leftRational, rightRational);
+            return {
+              value: interval2,
+              remainingExpr: rightResult.remainingExpr
+            };
+          } catch (error) {}
+        }
+      }
+      try {
+        const cfResult = Parser.#parseContinuedFraction(expr, options);
+        return cfResult;
+      } catch (error) {}
+    }
     if (expr.includes(".") && !expr.includes("#") && !expr.includes(":") && !expr.includes("[")) {
       let endIndex = 0;
       let hasDecimalPoint = false;
       if (expr[endIndex] === "-") {
         endIndex++;
       }
+      const baseSystem = options.inputBase || BaseSystem.DECIMAL;
       while (endIndex < expr.length) {
-        if (/\d/.test(expr[endIndex])) {
+        const char = expr[endIndex];
+        if (baseSystem.charMap.has(char)) {
           endIndex++;
-        } else if (expr[endIndex] === "." && !hasDecimalPoint && endIndex + 1 < expr.length && expr[endIndex + 1] !== ".") {
+        } else if (char === "." && !hasDecimalPoint && endIndex + 1 < expr.length && expr[endIndex + 1] !== ".") {
           hasDecimalPoint = true;
           endIndex++;
         } else {
@@ -2762,7 +3157,13 @@ class Parser {
       if (hasDecimalPoint && endIndex > (expr[0] === "-" ? 2 : 1)) {
         const decimalStr = expr.substring(0, endIndex);
         try {
-          if (options.typeAware) {
+          if (options.inputBase && options.inputBase !== BaseSystem.DECIMAL) {
+            const result = parseBaseNotation(decimalStr, options.inputBase, options);
+            return {
+              value: result,
+              remainingExpr: expr.substring(endIndex)
+            };
+          } else if (options.typeAware) {
             const result = new Rational(decimalStr);
             return {
               value: result,
@@ -2822,7 +3223,59 @@ class Parser {
         }
       }
     }
-    const firstResult = Parser.#parseRational(expr);
+    if (options.inputBase && options.inputBase !== BaseSystem.DECIMAL && !expr.includes("[") && !expr.includes("#")) {
+      try {
+        let endIndex = 0;
+        let hasDecimalPoint = false;
+        let hasMixedNumber = false;
+        let hasFraction = false;
+        let hasColon = false;
+        if (expr[endIndex] === "-") {
+          endIndex++;
+        }
+        while (endIndex < expr.length) {
+          const char = expr[endIndex];
+          if (options.inputBase.charMap.has(char)) {
+            endIndex++;
+          } else if (char === "." && endIndex + 1 < expr.length && expr[endIndex + 1] === ".") {
+            if (hasMixedNumber || hasDecimalPoint || hasFraction || hasColon)
+              break;
+            hasMixedNumber = true;
+            endIndex += 2;
+          } else if (char === "." && !hasDecimalPoint && !hasMixedNumber) {
+            hasDecimalPoint = true;
+            endIndex++;
+          } else if (char === "/" && !hasFraction) {
+            hasFraction = true;
+            endIndex++;
+          } else if (char === ":" && !hasColon && !hasMixedNumber && !hasDecimalPoint) {
+            hasColon = true;
+            endIndex++;
+          } else {
+            break;
+          }
+        }
+        if (endIndex > (expr[0] === "-" ? 1 : 0)) {
+          const numberStr = expr.substring(0, endIndex);
+          const testStr = numberStr.startsWith("-") ? numberStr.substring(1) : numberStr;
+          const parts = testStr.split(/[\.\/\:]/);
+          const isValidInBase = parts.every((part, index) => {
+            if (part === "") {
+              return testStr.includes(".") && (index === 0 || index === parts.length - 1);
+            }
+            return part.split("").every((char) => options.inputBase.charMap.has(char));
+          });
+          if (isValidInBase) {
+            const result = parseBaseNotation(numberStr, options.inputBase, options);
+            return {
+              value: result,
+              remainingExpr: expr.substring(endIndex)
+            };
+          }
+        }
+      } catch (error) {}
+    }
+    const firstResult = Parser.#parseRational(expr, options);
     let firstValue = firstResult.value;
     let remainingAfterFirst = firstResult.remainingExpr;
     if (remainingAfterFirst.length > 0 && remainingAfterFirst[0] === "E") {
@@ -2876,10 +3329,10 @@ class Parser {
       }
     }
     const secondRationalExpr = remainingAfterFirst.substring(1);
-    const secondResult = Parser.#parseRational(secondRationalExpr);
+    const secondResult = Parser.#parseRational(secondRationalExpr, options);
     let secondValue = secondResult.value;
     let remainingExpr = secondResult.remainingExpr;
-    if (remainingExpr.length > 0 && remainingExpr[0] === "E") {
+    if (remainingExpr.length > 0 && (remainingExpr[0] === "E" || remainingExpr.startsWith("_^"))) {
       const secondInterval = RationalInterval.point(secondResult.value);
       const eResult = Parser.#parseENotation(secondInterval, remainingExpr, options);
       if (eResult.value instanceof RationalInterval) {
@@ -2900,9 +3353,84 @@ class Parser {
       remainingExpr
     };
   }
-  static #parseRational(expr) {
+  static #parseRational(expr, options = {}) {
     if (expr.length === 0) {
       throw new Error("Unexpected end of expression");
+    }
+    if (options.inputBase && options.inputBase !== BaseSystem.DECIMAL && !expr.includes("[") && !expr.includes("#")) {
+      let endIndex = 0;
+      let hasDecimalPoint = false;
+      let hasMixedNumber = false;
+      let hasFraction = false;
+      if (expr[endIndex] === "-") {
+        endIndex++;
+      }
+      while (endIndex < expr.length) {
+        const char = expr[endIndex];
+        let isValidChar = options.inputBase.charMap.has(char);
+        if (!isValidChar) {
+          const baseUsesLowercase = options.inputBase.characters.some((ch) => ch >= "a" && ch <= "z");
+          const baseUsesUppercase = options.inputBase.characters.some((ch) => ch >= "A" && ch <= "Z");
+          if (baseUsesLowercase && !baseUsesUppercase && char >= "A" && char <= "Z") {
+            isValidChar = options.inputBase.charMap.has(char.toLowerCase());
+          } else if (baseUsesUppercase && !baseUsesLowercase && char >= "a" && char <= "z") {
+            isValidChar = options.inputBase.charMap.has(char.toUpperCase());
+          }
+        }
+        if (isValidChar) {
+          endIndex++;
+        } else if (char === "." && endIndex + 1 < expr.length && expr[endIndex + 1] === ".") {
+          if (hasMixedNumber || hasDecimalPoint || hasFraction)
+            break;
+          hasMixedNumber = true;
+          endIndex += 2;
+        } else if (char === "." && !hasDecimalPoint && !hasMixedNumber) {
+          hasDecimalPoint = true;
+          endIndex++;
+        } else if (char === "/" && !hasFraction) {
+          hasFraction = true;
+          endIndex++;
+        } else if ((char === "E" || char === "e") && !options.inputBase.characters.includes("E") && !options.inputBase.characters.includes("e")) {
+          break;
+        } else if (char === "_" && endIndex + 1 < expr.length && expr[endIndex + 1] === "^") {
+          break;
+        } else {
+          break;
+        }
+      }
+      if (endIndex > (expr[0] === "-" ? 1 : 0)) {
+        const numberStr = expr.substring(0, endIndex);
+        const testStr = numberStr.startsWith("-") ? numberStr.substring(1) : numberStr;
+        const parts = testStr.split(/[\.\/]/);
+        const isValidInBase = parts.every((part, index) => {
+          if (part === "") {
+            return testStr.includes(".") && (index === 0 || index === parts.length - 1 || testStr.includes(".."));
+          }
+          const baseUsesLowercase = options.inputBase.characters.some((char) => char >= "a" && char <= "z");
+          const baseUsesUppercase = options.inputBase.characters.some((char) => char >= "A" && char <= "Z");
+          return part.split("").every((char) => {
+            if (options.inputBase.charMap.has(char)) {
+              return true;
+            }
+            if (baseUsesLowercase && !baseUsesUppercase && char >= "A" && char <= "Z") {
+              return options.inputBase.charMap.has(char.toLowerCase());
+            }
+            if (baseUsesUppercase && !baseUsesLowercase && char >= "a" && char <= "z") {
+              return options.inputBase.charMap.has(char.toUpperCase());
+            }
+            return false;
+          });
+        });
+        if (isValidInBase) {
+          try {
+            const result = parseBaseNotation(numberStr, options.inputBase, options);
+            return {
+              value: result,
+              remainingExpr: expr.substring(endIndex)
+            };
+          } catch (error) {}
+        }
+      }
     }
     let hashIndex = expr.indexOf("#");
     if (hashIndex !== -1) {
@@ -3056,13 +3584,72 @@ class Parser {
       remainingExpr: expr.substring(i)
     };
   }
+  static #parseContinuedFraction(expr, options = {}) {
+    const cfMatch = expr.match(/^(-?\d+)\.~((?:\d+~?)*\d*)(.*)$/);
+    if (!cfMatch) {
+      throw new Error("Invalid continued fraction format");
+    }
+    const [fullMatch, integerPart, cfTermsStr, remaining] = cfMatch;
+    if (cfTermsStr === "") {
+      throw new Error("Continued fraction must have at least one term after .~");
+    }
+    if (cfTermsStr.endsWith("~")) {
+      throw new Error("Continued fraction cannot end with ~");
+    }
+    if (cfTermsStr.includes("~~")) {
+      throw new Error("Invalid continued fraction format: double tilde");
+    }
+    const cfArray = Parser.parseContinuedFraction(fullMatch.substring(0, fullMatch.length - remaining.length));
+    if (typeof Rational.fromContinuedFraction === "function") {
+      const rational = Rational.fromContinuedFraction(cfArray);
+      return {
+        value: rational,
+        remainingExpr: remaining
+      };
+    } else {
+      throw new Error("Continued fraction support not yet implemented in Rational class");
+    }
+  }
+  static parseContinuedFraction(cfString) {
+    const cfMatch = cfString.match(/^(-?\d+)\.~(.*)$/);
+    if (!cfMatch) {
+      throw new Error("Invalid continued fraction format");
+    }
+    const [, integerPart, cfTermsStr] = cfMatch;
+    const intPart = BigInt(integerPart);
+    if (cfTermsStr === "0") {
+      return [intPart];
+    }
+    if (cfTermsStr === "") {
+      throw new Error("Continued fraction must have at least one term after .~");
+    }
+    if (cfTermsStr.endsWith("~")) {
+      throw new Error("Continued fraction cannot end with ~");
+    }
+    if (cfTermsStr.includes("~~")) {
+      throw new Error("Invalid continued fraction format: double tilde");
+    }
+    const terms = cfTermsStr.split("~");
+    const cfTerms = [];
+    for (const term of terms) {
+      if (!/^\d+$/.test(term)) {
+        throw new Error(`Invalid continued fraction term: ${term}`);
+      }
+      const termValue = BigInt(term);
+      if (termValue <= 0n) {
+        throw new Error(`Continued fraction terms must be positive integers: ${term}`);
+      }
+      cfTerms.push(termValue);
+    }
+    return [intPart, ...cfTerms];
+  }
 }
 
 // src/fraction.js
 class Fraction {
   #numerator;
   #denominator;
-  constructor(numerator, denominator = 1n) {
+  constructor(numerator, denominator = 1n, options = {}) {
     if (typeof numerator === "string") {
       const parts = numerator.trim().split("/");
       if (parts.length === 1) {
@@ -3079,7 +3666,13 @@ class Fraction {
       this.#denominator = BigInt(denominator);
     }
     if (this.#denominator === 0n) {
-      throw new Error("Denominator cannot be zero");
+      if (options.allowInfinite && (this.#numerator === 1n || this.#numerator === -1n)) {
+        this._isInfinite = true;
+      } else {
+        throw new Error("Denominator cannot be zero");
+      }
+    } else {
+      this._isInfinite = false;
     }
   }
   get numerator() {
@@ -3087,6 +3680,9 @@ class Fraction {
   }
   get denominator() {
     return this.#denominator;
+  }
+  get isInfinite() {
+    return this._isInfinite || false;
   }
   add(other) {
     if (this.#denominator !== other.denominator) {
@@ -3198,6 +3794,212 @@ class Fraction {
       const newDenominator = this.#denominator * 10n ** -exp;
       return new Fraction(this.#numerator, newDenominator);
     }
+  }
+  mediant(other) {
+    if (this.isInfinite && other.isInfinite) {
+      throw new Error("Cannot compute mediant of two infinite fractions");
+    }
+    if (this.isInfinite) {
+      if (this.#numerator > 0n) {
+        return new Fraction(other.numerator + 1n, other.denominator);
+      } else {
+        return new Fraction(other.numerator - 1n, other.denominator);
+      }
+    }
+    if (other.isInfinite) {
+      if (other.numerator > 0n) {
+        return new Fraction(this.#numerator + 1n, this.#denominator);
+      } else {
+        return new Fraction(this.#numerator - 1n, this.#denominator);
+      }
+    }
+    const newNum = this.#numerator + other.numerator;
+    const newDen = this.#denominator + other.denominator;
+    return new Fraction(newNum, newDen);
+  }
+  fareyParents() {
+    if (this.isInfinite) {
+      throw new Error("Cannot find Farey parents of infinite fraction");
+    }
+    if (this.#numerator === 0n) {
+      const left = new Fraction(-1n, 1n);
+      const right = new Fraction(1n, 1n);
+      return { left, right };
+    }
+    if (this.#numerator === this.#denominator) {
+      const left = new Fraction(0n, 1n);
+      const right = new Fraction(1n, 0n, { allowInfinite: true });
+      return { left, right };
+    }
+    let leftBound = new Fraction(0n, 1n);
+    let rightBound = new Fraction(1n, 0n, { allowInfinite: true });
+    let current = new Fraction(1n, 1n);
+    while (!current.equals(this)) {
+      if (this.lessThan(current)) {
+        rightBound = current;
+        current = leftBound.mediant(current);
+      } else {
+        leftBound = current;
+        current = current.mediant(rightBound);
+      }
+    }
+    return { left: leftBound, right: rightBound };
+  }
+  _extendedGcd(a, b) {
+    if (b === 0n) {
+      return { gcd: a, x: 1n, y: 0n };
+    }
+    const result = this._extendedGcd(b, a % b);
+    const x = result.y;
+    const y = result.x - a / b * result.y;
+    return { gcd: result.gcd, x, y };
+  }
+  static mediantPartner(endpoint, mediant) {
+    if (endpoint.isInfinite || mediant.isInfinite) {
+      throw new Error("Cannot compute mediant partner with infinite fractions");
+    }
+    const p = endpoint.numerator;
+    const q = endpoint.denominator;
+    const a = mediant.numerator;
+    const b = mediant.denominator;
+    const s = 1n;
+    const numerator = a * (q + s) - b * p;
+    if (numerator % b !== 0n) {
+      const r2 = a * 2n - p;
+      const s_calculated = b * 2n - q;
+      return new Fraction(r2, s_calculated);
+    }
+    const r = numerator / b;
+    return new Fraction(r, s);
+  }
+  static isMediantTriple(left, mediant, right) {
+    if (mediant.isInfinite) {
+      return false;
+    }
+    if (left.isInfinite && right.isInfinite) {
+      return false;
+    }
+    try {
+      const computedMediant = left.mediant(right);
+      return mediant.equals(computedMediant);
+    } catch (error) {
+      return false;
+    }
+  }
+  static isFareyTriple(left, mediant, right) {
+    if (!Fraction.isMediantTriple(left, mediant, right)) {
+      return false;
+    }
+    if (!left.isInfinite && !right.isInfinite) {
+      const a = left.numerator;
+      const b = left.denominator;
+      const c = right.numerator;
+      const d = right.denominator;
+      const determinant = a * d - b * c;
+      return determinant === 1n || determinant === -1n;
+    }
+    return left.isInfinite || right.isInfinite;
+  }
+  sternBrocotParent() {
+    if (this.isInfinite) {
+      throw new Error("Infinite fractions don't have parents in Stern-Brocot tree");
+    }
+    if (this.numerator === 1n && this.denominator === 1n) {
+      return null;
+    }
+    const path = this.sternBrocotPath();
+    if (path.length === 0) {
+      return null;
+    }
+    const parentPath = path.slice(0, -1);
+    return Fraction.fromSternBrocotPath(parentPath);
+  }
+  sternBrocotChildren() {
+    if (this.isInfinite) {
+      throw new Error("Infinite fractions don't have children in Stern-Brocot tree");
+    }
+    const currentPath = this.sternBrocotPath();
+    const leftPath = [...currentPath, "L"];
+    const rightPath = [...currentPath, "R"];
+    return {
+      left: Fraction.fromSternBrocotPath(leftPath),
+      right: Fraction.fromSternBrocotPath(rightPath)
+    };
+  }
+  sternBrocotPath() {
+    if (this.isInfinite) {
+      throw new Error("Infinite fractions don't have tree paths");
+    }
+    let left = new Fraction(0, 1);
+    let right = new Fraction(1, 0, { allowInfinite: true });
+    let current = new Fraction(1, 1);
+    const path = [];
+    while (!current.equals(this)) {
+      if (this.lessThan(current)) {
+        path.push("L");
+        right = current;
+        current = left.mediant(current);
+      } else {
+        path.push("R");
+        left = current;
+        current = current.mediant(right);
+      }
+      if (path.length > 100) {
+        throw new Error("Stern-Brocot path too long - fraction may not be in canonical form");
+      }
+    }
+    return path;
+  }
+  static fromSternBrocotPath(path) {
+    let left = new Fraction(0, 1);
+    let right = new Fraction(1, 0, { allowInfinite: true });
+    let current = new Fraction(1, 1);
+    for (const direction of path) {
+      if (direction === "L") {
+        right = current;
+        current = left.mediant(current);
+      } else if (direction === "R") {
+        left = current;
+        current = current.mediant(right);
+      } else {
+        throw new Error(`Invalid direction in path: ${direction}`);
+      }
+    }
+    return current;
+  }
+  isSternBrocotValid() {
+    if (this.isInfinite) {
+      return this.numerator === 1n || this.numerator === -1n;
+    }
+    try {
+      const path = this.sternBrocotPath();
+      const reconstructed = Fraction.fromSternBrocotPath(path);
+      return this.equals(reconstructed);
+    } catch (error) {
+      return false;
+    }
+  }
+  sternBrocotDepth() {
+    if (this.isInfinite) {
+      return Infinity;
+    }
+    if (this.numerator === 1n && this.denominator === 1n) {
+      return 0;
+    }
+    return this.sternBrocotPath().length;
+  }
+  sternBrocotAncestors() {
+    if (this.isInfinite) {
+      return [];
+    }
+    const ancestors = [];
+    const path = this.sternBrocotPath();
+    for (let i = 0;i < path.length; i++) {
+      const partialPath = path.slice(0, i);
+      ancestors.push(Fraction.fromSternBrocotPath(partialPath));
+    }
+    ancestors.reverse();
+    return ancestors;
   }
 }
 
@@ -3638,6 +4440,9 @@ class WebCalculator {
   constructor() {
     this.outputMode = "BOTH";
     this.decimalLimit = 20;
+    this.mixedDisplay = true;
+    this.sciPrecision = 10;
+    this.showPeriodInfo = false;
     this.history = [];
     this.historyIndex = -1;
     this.outputHistory = [];
@@ -3799,6 +4604,30 @@ class WebCalculator {
       this.inputElement.value = "";
       return;
     }
+    if (upperInput === "SCI") {
+      this.outputMode = "SCI";
+      const output = "Output mode set to scientific notation";
+      this.addToOutput("", output, false);
+      this.finishEntry(output);
+      this.inputElement.value = "";
+      return;
+    }
+    if (upperInput === "CF") {
+      this.outputMode = "CF";
+      const output = "Output mode set to continued fraction";
+      this.addToOutput("", output, false);
+      this.finishEntry(output);
+      this.inputElement.value = "";
+      return;
+    }
+    if (upperInput === "MIX") {
+      this.mixedDisplay = !this.mixedDisplay;
+      const output = `Mixed number display ${this.mixedDisplay ? "enabled" : "disabled"}`;
+      this.addToOutput("", output, false);
+      this.finishEntry(output);
+      this.inputElement.value = "";
+      return;
+    }
     if (upperInput.startsWith("LIMIT")) {
       const limitStr = upperInput.substring(5).trim();
       let output;
@@ -3817,6 +4646,36 @@ class WebCalculator {
           this.addToOutput("", output, false);
         }
       }
+      this.finishEntry(output);
+      this.inputElement.value = "";
+      return;
+    }
+    if (upperInput.startsWith("SCIPREC")) {
+      const precStr = upperInput.substring(7).trim();
+      let output;
+      if (precStr === "") {
+        output = `Current scientific notation precision: ${this.sciPrecision} digits`;
+        this.addToOutput("", output, false);
+      } else {
+        const precision = parseInt(precStr);
+        if (isNaN(precision) || precision < 1) {
+          output = "Error: SCIPREC must be a positive integer";
+          this.addToOutput("", output, true);
+          this.currentEntry.isError = true;
+        } else {
+          this.sciPrecision = precision;
+          output = `Scientific notation precision set to ${precision} digits`;
+          this.addToOutput("", output, false);
+        }
+      }
+      this.finishEntry(output);
+      this.inputElement.value = "";
+      return;
+    }
+    if (upperInput === "SCIPERIOD") {
+      this.showPeriodInfo = !this.showPeriodInfo;
+      const output = `Period info in scientific notation ${this.showPeriodInfo ? "enabled" : "disabled"}`;
+      this.addToOutput("", output, false);
       this.finishEntry(output);
       this.inputElement.value = "";
       return;
@@ -3884,7 +4743,7 @@ class WebCalculator {
     const repeatingDecimal = repeatingInfo.decimal;
     const period = repeatingInfo.period;
     const decimal = this.formatDecimal(rational);
-    const fraction = rational.toString();
+    const fraction = this.mixedDisplay ? rational.toMixedString() : rational.toString();
     const isTerminatingDecimal = repeatingDecimal.endsWith("#0");
     const displayDecimal = isTerminatingDecimal ? repeatingDecimal : this.formatRepeatingDecimal(rational);
     const periodInfo = period > 0 ? ` {period: ${period}}` : "";
@@ -3893,6 +4752,12 @@ class WebCalculator {
         return `${displayDecimal}${periodInfo}`;
       case "RAT":
         return fraction;
+      case "SCI":
+        const scientificNotation = rational.toScientificNotation(true, this.sciPrecision, this.showPeriodInfo);
+        return `${scientificNotation} (${fraction})`;
+      case "CF":
+        const continuedFraction = rational.toContinuedFractionString();
+        return `${continuedFraction} (${fraction})`;
       case "BOTH":
         if (fraction.includes("/")) {
           return `${displayDecimal}${periodInfo} (${fraction})`;
@@ -3900,7 +4765,7 @@ class WebCalculator {
           return decimal;
         }
       default:
-        return fraction;
+        return `${displayDecimal}${periodInfo} (${fraction})`;
     }
   }
   formatDecimal(rational) {

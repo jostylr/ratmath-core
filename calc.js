@@ -14,7 +14,7 @@ import { createInterface } from "readline";
 
 class Calculator {
   constructor() {
-    this.outputMode = "BOTH"; // 'DECI', 'RAT', 'BOTH', 'SCI'
+    this.outputMode = "BOTH"; // 'DECI', 'RAT', 'BOTH', 'SCI', 'CF'
     this.decimalLimit = 20; // Maximum decimal places before showing ...
     this.mixedDisplay = true; // Whether to show fractions as mixed numbers by default
     this.sciPrecision = 10; // Scientific notation precision (significant digits)
@@ -119,6 +119,12 @@ class Calculator {
     if (upperInput === "SCI") {
       this.outputMode = "SCI";
       console.log("Output mode set to scientific notation");
+      return;
+    }
+
+    if (upperInput === "CF") {
+      this.outputMode = "CF";
+      console.log("Output mode set to continued fraction");
       return;
     }
 
@@ -236,7 +242,7 @@ class Calculator {
 
     // Check for format commands after expressions (exclude standalone BASES command)
     const formatMatch = input.match(
-      /^(.*?)\s+(BASE\s+\d+|BASE\s+[a-zA-Z0-9\-]+|BIN|HEX|OCT|DEC|DECI|RAT|BOTH|SCI|MIX)$/i,
+      /^(.*?)\s+(BASE\s+\d+|BASE\s+[a-zA-Z0-9\-]+|BIN|HEX|OCT|DEC|DECI|RAT|BOTH|SCI|CF|MIX)$/i,
     );
 
     if (formatMatch && formatMatch[2].toUpperCase() !== "BASES") {
@@ -473,6 +479,11 @@ class Calculator {
       this.outputMode = "SCI";
       this.displayResult(result);
       this.outputMode = oldMode;
+    } else if (upperFormat === "CF") {
+      const oldMode = this.outputMode;
+      this.outputMode = "CF";
+      this.displayResult(result);
+      this.outputMode = oldMode;
     } else if (upperFormat.startsWith("BASE")) {
       // Handle base format commands
       const baseSpec = upperFormat.substring(4).trim();
@@ -641,6 +652,10 @@ class Calculator {
           this.showPeriodInfo,
         );
         console.log(`${scientificNotation} (${fraction})${baseRepresentation}`);
+        break;
+      case "CF":
+        const continuedFraction = rational.toContinuedFractionString();
+        console.log(`${continuedFraction} (${fraction})${baseRepresentation}`);
         break;
     }
   }
@@ -828,6 +843,7 @@ COMMANDS:
   RAT               Show results as fractions only
   BOTH              Show both decimal and fraction (default)
   SCI               Show results in scientific notation
+  CF                Show results as continued fractions
   MIX               Toggle mixed number display (default: on)
   LIMIT <n>         Set decimal display limit to n digits (default: 20)
   SCIPREC <n>       Set scientific notation precision to n digits (default: 10)
@@ -849,6 +865,7 @@ FORMAT AFTER EXPRESSIONS:
   <expr> OCT        Show result in octal
   <expr> DECI       Show result in decimal format
   <expr> RAT        Show result in rational format
+  <expr> CF         Show result as continued fraction
   <expr> MIX        Show result with mixed numbers toggled
 
 DECIMAL DISPLAY:
@@ -923,6 +940,8 @@ Press Ctrl+C to exit
           this.sciPrecision,
           this.showPeriodInfo,
         );
+      case "CF":
+        return rational.toContinuedFractionString();
       default:
         return fraction;
     }
