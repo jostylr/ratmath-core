@@ -163,6 +163,18 @@ header p {
     box-shadow: none;
 }
 
+.nav-btn.left-child {
+    background: linear-gradient(135deg, #27AE60 0%, #229954 100%);
+}
+
+.nav-btn.right-child {
+    background: linear-gradient(135deg, #9B59B6 0%, #8E44AD 100%);
+}
+
+.nav-btn.parent {
+    background: linear-gradient(135deg, #F39C12 0%, #E67E22 100%);
+}
+
 .jump-controls {
     background: #F8F9FA;
     border-radius: 8px;

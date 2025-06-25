@@ -4145,6 +4145,7 @@ class SternBrocotTreeVisualizer {
     this.treeContainer = null;
     this.initializeElements();
     this.setupEventListeners();
+    this.loadFromURL();
     this.updateDisplay();
     this.renderTree();
   }
@@ -4206,6 +4207,9 @@ class SternBrocotTreeVisualizer {
         this.closeModal("convergents");
         this.closeModal("farey");
       }
+    });
+    window.addEventListener("popstate", (e) => {
+      this.loadFromURL(false);
     });
   }
   formatFraction(fraction, mode = null, use2D = false) {
@@ -4269,7 +4273,7 @@ class SternBrocotTreeVisualizer {
       return [text];
     }
     const elements = [];
-    const lineHeight = fontSize * 0.5;
+    const lineHeight = fontSize < 16 ? fontSize * 0.6 : fontSize * 0.5;
     const numerator = document.createElementNS("http://www.w3.org/2000/svg", "text");
     numerator.setAttribute("x", x);
     numerator.setAttribute("y", y - lineHeight);
@@ -4302,11 +4306,20 @@ class SternBrocotTreeVisualizer {
     return elements;
   }
   updateDisplay() {
-    this.elements.currentFraction.innerHTML = this.formatFraction(this.currentFraction, "fraction", true);
+    if (this.displayMode === "fraction") {
+      this.elements.currentFraction.innerHTML = this.formatFraction(this.currentFraction, "fraction", true);
+    } else {
+      this.elements.currentFraction.textContent = this.formatFraction(this.currentFraction, this.displayMode);
+    }
     const depth = this.currentFraction.sternBrocotDepth();
     this.elements.currentDepth.textContent = depth === Infinity ? "∞" : depth.toString();
     const path = this.currentFraction.sternBrocotPath();
-    this.elements.currentPath.textContent = path.length === 0 ? "Root" : path.join("");
+    if (path.length === 0) {
+      this.elements.currentPath.textContent = "Root";
+    } else {
+      const pathString = path.join("");
+      this.elements.currentPath.innerHTML = this.wrapPath(pathString);
+    }
     const parents = this.currentFraction.fareyParents();
     const leftBoundary = this.formatFraction(parents.left, "fraction", true);
     const rightBoundary = this.formatFraction(parents.right, "fraction", true);
@@ -4387,7 +4400,7 @@ class SternBrocotTreeVisualizer {
       }
       this.elements.continuedFraction.innerHTML = `
                 <strong>Standard notation:</strong> ${cfDisplay}<br>
-                <strong>RatMath notation:</strong> ${tildaDisplay}<br>
+                <strong>RatMath notation:</strong> ${this.wrapContinuedFraction(tildaDisplay)}<br>
                 <strong>Convergents:</strong> ${convergentsDisplay}
             `;
     } catch (error) {
@@ -4448,6 +4461,7 @@ class SternBrocotTreeVisualizer {
   animateToNewFraction(newFraction) {
     const oldCenter = { x: this.svgWidth / 2, y: this.svgHeight / 2 };
     this.currentFraction = newFraction;
+    this.updateURL();
     this.scrollOffset = { x: 0, y: 0 };
     this.updateDisplay();
     this.renderTree();
@@ -4659,19 +4673,26 @@ class SternBrocotTreeVisualizer {
       y -= verticalSpacing;
       const parentSize = ancestorLevel === 1 ? 40 : Math.max(30, 40 - ancestorLevel * 2);
       let parentX = center.x;
-      if (ancestorLevel <= 3) {
-        try {
-          const currentRational = this.currentFraction.toRational();
-          const parentRational = parent.toRational();
-          const comparison = parentRational.compareTo(currentRational);
+      try {
+        const currentRational = this.currentFraction.toRational();
+        const parentRational = parent.toRational();
+        const comparison = parentRational.compareTo(currentRational);
+        if (ancestorLevel <= 3) {
           const shift = Math.min(50, 20 * ancestorLevel);
           if (comparison < 0) {
             parentX = center.x - shift;
           } else if (comparison > 0) {
             parentX = center.x + shift;
           }
-        } catch (e) {}
-      }
+        } else {
+          const standardShift = 80;
+          if (comparison < 0) {
+            parentX = center.x - standardShift;
+          } else if (comparison > 0) {
+            parentX = center.x + standardShift;
+          }
+        }
+      } catch (e) {}
       nodes.set(parent.toString(), {
         fraction: parent,
         x: parentX,
@@ -4894,6 +4915,57 @@ class SternBrocotTreeVisualizer {
       return aVal - bVal;
     });
     return fractions;
+  }
+  wrapPath(pathString) {
+    if (pathString.length <= 20)
+      return pathString;
+    let wrapped = "";
+    for (let i = 0;i < pathString.length; i += 20) {
+      if (i > 0)
+        wrapped += "<br>";
+      wrapped += pathString.slice(i, i + 20);
+    }
+    return wrapped;
+  }
+  wrapContinuedFraction(cfString) {
+    if (!cfString.includes("~"))
+      return cfString;
+    const parts = cfString.split("~");
+    let wrapped = parts[0];
+    for (let i = 1;i < parts.length; i++) {
+      if (i > 1 && (i % 4 === 1 || wrapped.split("<br>").pop().length > 15)) {
+        wrapped += "<br>~" + parts[i];
+      } else {
+        wrapped += "~" + parts[i];
+      }
+    }
+    return wrapped;
+  }
+  loadFromURL(pushToHistory = true) {
+    const hash = window.location.hash.slice(1);
+    if (hash && hash.includes("_")) {
+      try {
+        const [numerator, denominator] = hash.split("_").map((s) => BigInt(s));
+        if (numerator > 0 && denominator > 0) {
+          const fraction = new Fraction(numerator, denominator);
+          this.currentFraction = fraction;
+          this.updateDisplay();
+          this.renderTree();
+          return;
+        }
+      } catch (e) {
+        console.warn("Invalid URL hash:", hash);
+      }
+    }
+    if (pushToHistory && !hash) {
+      this.updateURL();
+    }
+  }
+  updateURL() {
+    const hash = `#${this.currentFraction.numerator}_${this.currentFraction.denominator}`;
+    if (window.location.hash !== hash) {
+      history.pushState(null, "", hash);
+    }
   }
   closeModal(type) {
     if (type === "convergents") {

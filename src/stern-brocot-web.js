@@ -19,6 +19,7 @@ class SternBrocotTreeVisualizer {
         
         this.initializeElements();
         this.setupEventListeners();
+        this.loadFromURL(); // Check for URL hash
         this.updateDisplay();
         this.renderTree();
     }
@@ -98,6 +99,11 @@ class SternBrocotTreeVisualizer {
                 this.closeModal('farey');
             }
         });
+
+        // Handle browser back/forward
+        window.addEventListener('popstate', (e) => {
+            this.loadFromURL(false); // Don't push to history
+        });
     }
 
     formatFraction(fraction, mode = null, use2D = false) {
@@ -170,7 +176,8 @@ class SternBrocotTreeVisualizer {
         }
 
         const elements = [];
-        const lineHeight = fontSize * 0.5; // Increased spacing
+        // Adjust spacing based on font size - more spacing for smaller fonts
+        const lineHeight = fontSize < 16 ? fontSize * 0.6 : fontSize * 0.5;
         
         // Numerator
         const numerator = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -215,16 +222,25 @@ class SternBrocotTreeVisualizer {
     }
 
     updateDisplay() {
-        // Update current fraction display with 2D format
-        this.elements.currentFraction.innerHTML = this.formatFraction(this.currentFraction, 'fraction', true);
+        // Update current fraction display with 2D format or based on display mode
+        if (this.displayMode === 'fraction') {
+            this.elements.currentFraction.innerHTML = this.formatFraction(this.currentFraction, 'fraction', true);
+        } else {
+            this.elements.currentFraction.textContent = this.formatFraction(this.currentFraction, this.displayMode);
+        }
 
         // Update depth
         const depth = this.currentFraction.sternBrocotDepth();
         this.elements.currentDepth.textContent = depth === Infinity ? '∞' : depth.toString();
 
-        // Update path
+        // Update path with intelligent wrapping
         const path = this.currentFraction.sternBrocotPath();
-        this.elements.currentPath.textContent = path.length === 0 ? 'Root' : path.join('');
+        if (path.length === 0) {
+            this.elements.currentPath.textContent = 'Root';
+        } else {
+            const pathString = path.join('');
+            this.elements.currentPath.innerHTML = this.wrapPath(pathString);
+        }
 
         // Update boundaries with better layout
         const parents = this.currentFraction.fareyParents();
@@ -343,7 +359,7 @@ class SternBrocotTreeVisualizer {
             
             this.elements.continuedFraction.innerHTML = `
                 <strong>Standard notation:</strong> ${cfDisplay}<br>
-                <strong>RatMath notation:</strong> ${tildaDisplay}<br>
+                <strong>RatMath notation:</strong> ${this.wrapContinuedFraction(tildaDisplay)}<br>
                 <strong>Convergents:</strong> ${convergentsDisplay}
             `;
         } catch (error) {
@@ -421,6 +437,9 @@ class SternBrocotTreeVisualizer {
         
         // Update the fraction
         this.currentFraction = newFraction;
+        
+        // Update URL and history
+        this.updateURL();
         
         // Reset scroll offset to center on new fraction
         this.scrollOffset = { x: 0, y: 0 };
@@ -703,21 +722,30 @@ class SternBrocotTreeVisualizer {
             
             // Position parent/ancestor based on value relative to current
             let parentX = center.x;
-            if (ancestorLevel <= 3) { // Only shift first few levels to avoid too much spread
-                try {
-                    const currentRational = this.currentFraction.toRational();
-                    const parentRational = parent.toRational();
-                    const comparison = parentRational.compareTo(currentRational);
-                    const shift = Math.min(50, 20 * ancestorLevel); // Gradual shift
-                    
+            try {
+                const currentRational = this.currentFraction.toRational();
+                const parentRational = parent.toRational();
+                const comparison = parentRational.compareTo(currentRational);
+                
+                if (ancestorLevel <= 3) {
+                    // First few levels: gradual shift based on value
+                    const shift = Math.min(50, 20 * ancestorLevel);
                     if (comparison < 0) {
                         parentX = center.x - shift; // Parent is less, shift left
                     } else if (comparison > 0) {
                         parentX = center.x + shift; // Parent is greater, shift right
                     }
-                } catch (e) {
-                    // Fallback to center if comparison fails
+                } else {
+                    // Higher levels: standard left/right positions
+                    const standardShift = 80;
+                    if (comparison < 0) {
+                        parentX = center.x - standardShift; // Left position
+                    } else if (comparison > 0) {
+                        parentX = center.x + standardShift; // Right position
+                    }
                 }
+            } catch (e) {
+                // Fallback to center if comparison fails
             }
             
             // Add the parent
@@ -1012,6 +1040,65 @@ class SternBrocotTreeVisualizer {
         });
         
         return fractions;
+    }
+
+    wrapPath(pathString) {
+        if (pathString.length <= 20) return pathString;
+        
+        let wrapped = '';
+        for (let i = 0; i < pathString.length; i += 20) {
+            if (i > 0) wrapped += '<br>';
+            wrapped += pathString.slice(i, i + 20);
+        }
+        return wrapped;
+    }
+
+    wrapContinuedFraction(cfString) {
+        if (!cfString.includes('~')) return cfString;
+        
+        const parts = cfString.split('~');
+        let wrapped = parts[0]; // Start with the integer part
+        
+        for (let i = 1; i < parts.length; i++) {
+            // Add line break after every few tildes or if line gets too long
+            if (i > 1 && (i % 4 === 1 || wrapped.split('<br>').pop().length > 15)) {
+                wrapped += '<br>~' + parts[i];
+            } else {
+                wrapped += '~' + parts[i];
+            }
+        }
+        
+        return wrapped;
+    }
+
+    loadFromURL(pushToHistory = true) {
+        const hash = window.location.hash.slice(1); // Remove #
+        if (hash && hash.includes('_')) {
+            try {
+                const [numerator, denominator] = hash.split('_').map(s => BigInt(s));
+                if (numerator > 0 && denominator > 0) {
+                    const fraction = new Fraction(numerator, denominator);
+                    this.currentFraction = fraction;
+                    this.updateDisplay();
+                    this.renderTree();
+                    return;
+                }
+            } catch (e) {
+                console.warn('Invalid URL hash:', hash);
+            }
+        }
+        
+        // Fallback to root if URL is invalid or empty
+        if (pushToHistory && !hash) {
+            this.updateURL();
+        }
+    }
+
+    updateURL() {
+        const hash = `#${this.currentFraction.numerator}_${this.currentFraction.denominator}`;
+        if (window.location.hash !== hash) {
+            history.pushState(null, '', hash);
+        }
     }
 
     closeModal(type) {
