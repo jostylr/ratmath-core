@@ -100,11 +100,16 @@ class SternBrocotTreeVisualizer {
         });
     }
 
-    formatFraction(fraction, mode = null) {
+    formatFraction(fraction, mode = null, use2D = false) {
         const displayMode = mode || this.displayMode;
         
         if (fraction.isInfinite) {
             return fraction.numerator > 0 ? '+∞' : '-∞';
+        }
+
+        // Use 2D format for specific cases
+        if (use2D && displayMode === 'fraction') {
+            return this.format2DFraction(fraction);
         }
 
         switch (displayMode) {
@@ -137,9 +142,81 @@ class SternBrocotTreeVisualizer {
         }
     }
 
+    format2DFraction(fraction) {
+        if (fraction.isInfinite) {
+            return fraction.numerator > 0 ? '+∞' : '-∞';
+        }
+        
+        // For HTML display in left panels
+        return `<div class="fraction-2d">
+            <div class="numerator">${fraction.numerator}</div>
+            <div class="fraction-bar"></div>
+            <div class="denominator">${fraction.denominator}</div>
+        </div>`;
+    }
+
+    createSVG2DFraction(fraction, x, y, fontSize) {
+        if (fraction.isInfinite) {
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', x);
+            text.setAttribute('y', y);
+            text.setAttribute('font-size', fontSize);
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('dominant-baseline', 'central');
+            text.setAttribute('fill', 'black');
+            text.setAttribute('font-weight', 'bold');
+            text.textContent = fraction.numerator > 0 ? '+∞' : '-∞';
+            return [text];
+        }
+
+        const elements = [];
+        const lineHeight = fontSize * 0.5; // Increased spacing
+        
+        // Numerator
+        const numerator = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        numerator.setAttribute('x', x);
+        numerator.setAttribute('y', y - lineHeight);
+        numerator.setAttribute('font-size', fontSize);
+        numerator.setAttribute('text-anchor', 'middle');
+        numerator.setAttribute('dominant-baseline', 'central');
+        numerator.setAttribute('fill', 'black');
+        numerator.setAttribute('font-weight', 'bold');
+        numerator.textContent = fraction.numerator.toString();
+        elements.push(numerator);
+        
+        // Fraction bar
+        const maxWidth = Math.max(
+            fraction.numerator.toString().length,
+            fraction.denominator.toString().length
+        ) * fontSize * 0.7; // Slightly wider for better proportion
+        
+        const bar = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        bar.setAttribute('x1', x - maxWidth/2);
+        bar.setAttribute('y1', y);
+        bar.setAttribute('x2', x + maxWidth/2);
+        bar.setAttribute('y2', y);
+        bar.setAttribute('stroke', 'black');
+        bar.setAttribute('stroke-width', '2'); // Slightly thicker
+        elements.push(bar);
+        
+        // Denominator
+        const denominator = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        denominator.setAttribute('x', x);
+        denominator.setAttribute('y', y + lineHeight);
+        denominator.setAttribute('font-size', fontSize);
+        denominator.setAttribute('text-anchor', 'middle');
+        denominator.setAttribute('dominant-baseline', 'central');
+        denominator.setAttribute('fill', 'black');
+        denominator.setAttribute('font-weight', 'bold');
+        denominator.textContent = fraction.denominator.toString();
+        elements.push(denominator);
+        
+        return elements;
+    }
+
     updateDisplay() {
-        // Update current fraction display
-        this.elements.currentFraction.textContent = this.formatFraction(this.currentFraction);
+        // Update current fraction display with 2D format
+        this.elements.currentFraction.innerHTML = this.formatFraction(this.currentFraction, 'fraction', true);
 
         // Update depth
         const depth = this.currentFraction.sternBrocotDepth();
@@ -149,12 +226,18 @@ class SternBrocotTreeVisualizer {
         const path = this.currentFraction.sternBrocotPath();
         this.elements.currentPath.textContent = path.length === 0 ? 'Root' : path.join('');
 
-        // Update boundaries
+        // Update boundaries with better layout
         const parents = this.currentFraction.fareyParents();
-        const leftBoundary = this.formatFraction(parents.left, 'fraction');
-        const rightBoundary = this.formatFraction(parents.right, 'fraction');
-        this.elements.currentBoundaries.textContent = 
-            `${leftBoundary} ← ${this.formatFraction(this.currentFraction, 'fraction')} → ${rightBoundary}`;
+        const leftBoundary = this.formatFraction(parents.left, 'fraction', true);
+        const rightBoundary = this.formatFraction(parents.right, 'fraction', true);
+        const currentBoundary = this.formatFraction(this.currentFraction, 'fraction', true);
+        this.elements.currentBoundaries.innerHTML = `
+            <div class="boundaries-line">
+                <span class="left-boundary">${leftBoundary}</span>
+                <span class="right-boundary">${rightBoundary}</span>
+            </div>
+            <div class="current-boundary">${currentBoundary}</div>
+        `;
 
         // Update navigation button states
         const hasParent = this.currentFraction.sternBrocotParent() !== null;
@@ -186,8 +269,9 @@ class SternBrocotTreeVisualizer {
         for (let i = 0; i < path.length; i++) {
             const partialPath = path.slice(0, i + 1);
             const fraction = Fraction.fromSternBrocotPath(partialPath);
-            const direction = path[i] === 'L' ? 'Left' : 'Right';
-            breadcrumbHtml += ` → <span class="breadcrumb">${this.formatFraction(fraction, 'fraction')} (${direction})</span>`;
+            const direction = path[i]; // Use R/L directly
+            const directionClass = direction === 'L' ? 'left-direction' : 'right-direction';
+            breadcrumbHtml += ` → <span class="breadcrumb ${directionClass}">${this.formatFraction(fraction, 'fraction')} (${direction})</span>`;
         }
         
         // Mark current as current
@@ -211,16 +295,17 @@ class SternBrocotTreeVisualizer {
         }
 
         const mediant = left.mediant(right);
-        const leftStr = this.formatFraction(left, 'fraction');
-        const rightStr = this.formatFraction(right, 'fraction');
-        const mediantStr = this.formatFraction(mediant, 'fraction');
+        const leftStr = this.formatFraction(left, 'fraction', true);
+        const rightStr = this.formatFraction(right, 'fraction', true);
+        const mediantStr = this.formatFraction(mediant, 'fraction', true);
+        const currentStr = this.formatFraction(this.currentFraction, 'fraction', true);
         
         this.elements.mediantCalculation.innerHTML = `
             <strong>Mediant calculation:</strong><br>
             ${leftStr} ⊕ ${rightStr} = (${left.numerator}+${right.numerator})/(${left.denominator}+${right.denominator}) = ${mediantStr}<br>
             <br>
             <strong>Verification:</strong><br>
-            ${mediantStr} = ${this.formatFraction(this.currentFraction, 'fraction')} ✓
+            ${mediantStr} = ${currentStr} ✓
         `;
     }
 
@@ -249,7 +334,7 @@ class SternBrocotTreeVisualizer {
             const remainingCount = allConvergents.length - displayConvergents.length;
             
             let convergentsDisplay = displayConvergents
-                .map(c => this.formatFraction(Fraction.fromRational(c), 'fraction'))
+                .map(c => this.formatFraction(Fraction.fromRational(c), 'fraction', true))
                 .join(', ');
             
             if (remainingCount > 0) {
@@ -272,12 +357,8 @@ class SternBrocotTreeVisualizer {
             const rational = this.currentFraction.toRational();
             const bestApprox = rational.bestApproximation(100);
             
-            // Calculate Farey sequence level where this fraction first appears
-            // This is the denominator of the reduced fraction
-            const reducedFraction = this.currentFraction.reduce();
-            const fareyLevel = Number(reducedFraction.denominator);
-            
             // Check if fraction is in canonical form by comparing with reduced version
+            const reducedFraction = this.currentFraction.reduce();
             const isReduced = this.currentFraction.numerator === reducedFraction.numerator && 
                              this.currentFraction.denominator === reducedFraction.denominator;
             
@@ -285,14 +366,13 @@ class SternBrocotTreeVisualizer {
             const decimalValue = rational.toDecimal();
             
             this.elements.fareyInfo.innerHTML = `
-                <strong>First appears in:</strong> Farey sequence F<sub>${fareyLevel}</sub> <span class="more-link" onclick="sternBrocotApp.showFareyModal()">Show sequence</span><br>
                 <strong>Tree depth:</strong> ${depth === Infinity ? '∞' : depth}<br>
-                <strong>Best approximation (denom ≤ 100):</strong> ${this.formatFraction(Fraction.fromRational(bestApprox), 'fraction')}<br>
+                <strong>Best approximation (denom ≤ 100):</strong> ${this.formatFraction(Fraction.fromRational(bestApprox), 'fraction', true)}<br>
                 <strong>Is reduced:</strong> ${isReduced ? 'Yes' : 'No'}<br>
                 <strong>Decimal value:</strong> ${decimalValue}
             `;
         } catch (error) {
-            console.error('Farey info error:', error);
+            console.error('Node info error:', error);
             // Fallback with basic information
             try {
                 const depth = this.currentFraction.sternBrocotDepth();
@@ -308,7 +388,7 @@ class SternBrocotTreeVisualizer {
             } catch (fallbackError) {
                 this.elements.fareyInfo.innerHTML = `
                     <strong>Fraction:</strong> ${this.currentFraction.toString()}<br>
-                    <em>Error calculating Farey information</em>
+                    <em>Error calculating node information</em>
                 `;
             }
         }
@@ -429,6 +509,8 @@ class SternBrocotTreeVisualizer {
         e.preventDefault();
         const scrollSpeed = 20;
         
+        const oldOffset = { ...this.scrollOffset };
+        
         if (e.shiftKey) {
             // Horizontal scrolling with Shift+wheel
             this.scrollOffset.x -= e.deltaY * scrollSpeed * 0.1;
@@ -437,7 +519,65 @@ class SternBrocotTreeVisualizer {
             this.scrollOffset.y -= e.deltaY * scrollSpeed * 0.1;
         }
         
+        // Apply bounds checking
+        this.applyScrollBounds();
+        
         this.updateTreeTransform();
+    }
+
+    applyScrollBounds() {
+        if (!this.treeContainer) return;
+        
+        // Calculate tree bounds
+        const bounds = this.calculateTreeBounds();
+        if (!bounds) return;
+        
+        const svgRect = this.svg.getBoundingClientRect();
+        const svgWidth = svgRect.width;
+        const svgHeight = svgRect.height;
+        
+        // Calculate maximum scroll limits
+        const maxScrollLeft = Math.min(0, svgWidth - bounds.right - 50); // 50px padding
+        const maxScrollRight = Math.max(0, -bounds.left + 50); // 50px padding
+        const maxScrollUp = Math.min(0, svgHeight - bounds.bottom - 50); // 50px padding
+        const maxScrollDown = Math.max(0, -bounds.top + 50); // 50px padding
+        
+        // Apply bounds
+        this.scrollOffset.x = Math.max(maxScrollLeft, Math.min(maxScrollRight, this.scrollOffset.x));
+        this.scrollOffset.y = Math.max(maxScrollUp, Math.min(maxScrollDown, this.scrollOffset.y));
+    }
+
+    calculateTreeBounds() {
+        if (!this.treeContainer) return null;
+        
+        const nodes = this.treeContainer.querySelectorAll('.tree-node');
+        if (nodes.length === 0) return null;
+        
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+        
+        nodes.forEach(node => {
+            const circle = node.querySelector('circle');
+            if (circle) {
+                const x = parseFloat(circle.getAttribute('cx'));
+                const y = parseFloat(circle.getAttribute('cy'));
+                const r = parseFloat(circle.getAttribute('r'));
+                
+                minX = Math.min(minX, x - r);
+                maxX = Math.max(maxX, x + r);
+                minY = Math.min(minY, y - r);
+                maxY = Math.max(maxY, y + r);
+            }
+        });
+        
+        return {
+            left: minX,
+            right: maxX,
+            top: minY,
+            bottom: maxY,
+            width: maxX - minX,
+            height: maxY - minY
+        };
     }
 
     handleTouchStart(e) {
@@ -457,6 +597,9 @@ class SternBrocotTreeVisualizer {
             
             this.scrollOffset.x += deltaX * 0.5;
             this.scrollOffset.y += deltaY * 0.5;
+            
+            // Apply bounds checking
+            this.applyScrollBounds();
             
             this.lastTouchPosition = {
                 x: e.touches[0].clientX,
@@ -558,10 +701,29 @@ class SternBrocotTreeVisualizer {
             y -= verticalSpacing;
             const parentSize = ancestorLevel === 1 ? 40 : Math.max(30, 40 - ancestorLevel * 2);
             
+            // Position parent/ancestor based on value relative to current
+            let parentX = center.x;
+            if (ancestorLevel <= 3) { // Only shift first few levels to avoid too much spread
+                try {
+                    const currentRational = this.currentFraction.toRational();
+                    const parentRational = parent.toRational();
+                    const comparison = parentRational.compareTo(currentRational);
+                    const shift = Math.min(50, 20 * ancestorLevel); // Gradual shift
+                    
+                    if (comparison < 0) {
+                        parentX = center.x - shift; // Parent is less, shift left
+                    } else if (comparison > 0) {
+                        parentX = center.x + shift; // Parent is greater, shift right
+                    }
+                } catch (e) {
+                    // Fallback to center if comparison fails
+                }
+            }
+            
             // Add the parent
             nodes.set(parent.toString(), {
                 fraction: parent,
-                x: center.x,
+                x: parentX,
                 y: y,
                 type: ancestorLevel === 1 ? 'parent' : 'ancestor',
                 size: parentSize
@@ -580,7 +742,7 @@ class SternBrocotTreeVisualizer {
                         if (!nodes.has(siblingKey)) {
                             nodes.set(siblingKey, {
                                 fraction: parentSiblings.left,
-                                x: center.x - siblingSpacing,
+                                x: parentX - siblingSpacing,
                                 y: y,
                                 type: 'sibling',
                                 size: Math.max(25, parentSize - 5)
@@ -594,7 +756,7 @@ class SternBrocotTreeVisualizer {
                         if (!nodes.has(siblingKey)) {
                             nodes.set(siblingKey, {
                                 fraction: parentSiblings.right,
-                                x: center.x + siblingSpacing,
+                                x: parentX + siblingSpacing,
                                 y: y,
                                 type: 'sibling',
                                 size: Math.max(25, parentSize - 5)
@@ -626,11 +788,23 @@ class SternBrocotTreeVisualizer {
             levelNodes.forEach((node, index) => {
                 const key = node.toString();
                 if (!nodes.has(key)) {
+                    // Determine direction based on parent relationship
+                    let nodeType = depth === 1 ? 'child' : 'descendant';
+                    if (depth === 1) {
+                        // For immediate children, determine if they're left or right
+                        const children = this.currentFraction.sternBrocotChildren();
+                        if (node.equals(children.left)) {
+                            nodeType = 'left-child';
+                        } else if (node.equals(children.right)) {
+                            nodeType = 'right-child';
+                        }
+                    }
+                    
                     nodes.set(key, {
                         fraction: node,
                         x: startX + index * horizontalSpacing,
                         y: y,
-                        type: depth === 1 ? 'child' : 'descendant',
+                        type: nodeType,
                         size: nodeSize
                     });
                 }
@@ -708,18 +882,15 @@ class SternBrocotTreeVisualizer {
             circle.setAttribute('cy', y);
             circle.setAttribute('r', size);
             
-            // Create text
-            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', x);
-            text.setAttribute('y', y);
-            text.textContent = this.formatFraction(fraction);
-            
-            // Adjust font size based on node size
-            const fontSize = Math.max(10, Math.min(16, size / 2.5));
-            text.setAttribute('font-size', fontSize);
+            // Use 2D fraction display for nodes
+            const fontSize = Math.max(14, Math.min(20, size / 2.2)); // Increased font size
+            const fractionElements = this.createSVG2DFraction(fraction, x, y, fontSize);
             
             nodeGroup.appendChild(circle);
-            nodeGroup.appendChild(text);
+            fractionElements.forEach(element => {
+                nodeGroup.appendChild(element);
+            });
+            
             this.treeContainer.appendChild(nodeGroup);
         });
     }
