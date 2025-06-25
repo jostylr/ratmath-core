@@ -788,6 +788,9 @@ export class Fraction {
       throw new Error("Infinite fractions don't have tree paths");
     }
 
+    // Ensure we're working with the reduced form
+    const reduced = this.reduce();
+
     // Start with tree boundaries: 0/1 (left) and 1/0 (right)
     let left = new Fraction(0, 1);
     let right = new Fraction(1, 0, { allowInfinite: true });
@@ -796,8 +799,8 @@ export class Fraction {
     const path = [];
     
     // Navigate down the tree until we reach the target fraction
-    while (!current.equals(this)) {
-      if (this.lessThan(current)) {
+    while (!current.equals(reduced)) {
+      if (reduced.lessThan(current)) {
         // Go left: new right boundary becomes current
         path.push('L');
         right = current;
@@ -809,9 +812,9 @@ export class Fraction {
         current = current.mediant(right);
       }
       
-      // Safety check to prevent infinite loops
-      if (path.length > 100) {
-        throw new Error("Stern-Brocot path too long - fraction may not be in canonical form");
+      // Safety check to prevent infinite loops (increased limit for very long paths)
+      if (path.length > 500) {
+        throw new Error("Stern-Brocot path too long - this may indicate a bug in the algorithm");
       }
     }
     

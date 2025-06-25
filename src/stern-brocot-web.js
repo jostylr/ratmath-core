@@ -31,7 +31,7 @@ class SternBrocotTreeVisualizer {
             currentDepth: document.getElementById('currentDepth'),
             currentPath: document.getElementById('currentPath'),
             currentBoundaries: document.getElementById('currentBoundaries'),
-            displayMode: document.getElementById('displayMode'),
+            decimalValue: document.getElementById('decimalValue'),
             parentBtn: document.getElementById('parentBtn'),
             leftChildBtn: document.getElementById('leftChildBtn'),
             rightChildBtn: document.getElementById('rightChildBtn'),
@@ -41,7 +41,6 @@ class SternBrocotTreeVisualizer {
             breadcrumbPath: document.getElementById('breadcrumbPath'),
             mediantCalculation: document.getElementById('mediantCalculation'),
             continuedFraction: document.getElementById('continuedFraction'),
-            fareyInfo: document.getElementById('fareyInfo'),
             convergentsModal: document.getElementById('convergentsModal'),
             fareyModal: document.getElementById('fareyModal'),
             allConvergents: document.getElementById('allConvergents'),
@@ -52,12 +51,6 @@ class SternBrocotTreeVisualizer {
     }
 
     setupEventListeners() {
-        // Display mode change
-        this.elements.displayMode.addEventListener('change', (e) => {
-            this.displayMode = e.target.value;
-            this.updateDisplay();
-            this.renderTree();
-        });
 
         // Navigation buttons
         this.elements.parentBtn.addEventListener('click', () => this.navigateToParent());
@@ -222,24 +215,44 @@ class SternBrocotTreeVisualizer {
     }
 
     updateDisplay() {
-        // Update current fraction display with 2D format or based on display mode
-        if (this.displayMode === 'fraction') {
-            this.elements.currentFraction.innerHTML = this.formatFraction(this.currentFraction, 'fraction', true);
-        } else {
-            this.elements.currentFraction.textContent = this.formatFraction(this.currentFraction, this.displayMode);
-        }
+        // Update current fraction display with 2D format
+        this.elements.currentFraction.innerHTML = this.formatFraction(this.currentFraction, 'fraction', true);
 
         // Update depth
         const depth = this.currentFraction.sternBrocotDepth();
         this.elements.currentDepth.textContent = depth === Infinity ? '∞' : depth.toString();
 
-        // Update path with intelligent wrapping
+        // Update decimal value
+        try {
+            const rational = this.currentFraction.toRational();
+            this.elements.decimalValue.textContent = rational.toDecimal();
+        } catch (e) {
+            this.elements.decimalValue.textContent = (Number(this.currentFraction.numerator) / Number(this.currentFraction.denominator)).toFixed(6);
+        }
+
+        // Update path with intelligent wrapping or 2D fractions for long paths
         const path = this.currentFraction.sternBrocotPath();
         if (path.length === 0) {
             this.elements.currentPath.textContent = 'Root';
         } else {
             const pathString = path.join('');
-            this.elements.currentPath.innerHTML = this.wrapPath(pathString);
+            if (pathString.length > 40) {
+                // Use 2D fraction display for very long paths
+                let pathDisplay = '<strong>Path fractions:</strong><br>';
+                for (let i = 1; i <= Math.min(path.length, 8); i += 2) {
+                    const partialPath = path.slice(0, i);
+                    const pathFraction = Fraction.fromSternBrocotPath(partialPath);
+                    pathDisplay += this.formatFraction(pathFraction, 'fraction', true);
+                    if (i < Math.min(path.length, 8)) pathDisplay += ' → ';
+                }
+                if (path.length > 8) {
+                    pathDisplay += ` → ... → ${this.formatFraction(this.currentFraction, 'fraction', true)}`;
+                }
+                pathDisplay += `<br><small style="color: #6C757D;">Path length: ${path.length} steps</small>`;
+                this.elements.currentPath.innerHTML = pathDisplay;
+            } else {
+                this.elements.currentPath.innerHTML = this.wrapPath(pathString);
+            }
         }
 
         // Update boundaries with better layout
@@ -267,9 +280,6 @@ class SternBrocotTreeVisualizer {
 
         // Update continued fraction
         this.updateContinuedFraction();
-
-        // Update Farey info
-        this.updateFareyInfo();
     }
 
     updateBreadcrumbs() {
@@ -316,12 +326,23 @@ class SternBrocotTreeVisualizer {
         const mediantStr = this.formatFraction(mediant, 'fraction', true);
         const currentStr = this.formatFraction(this.currentFraction, 'fraction', true);
         
+        const numeratorSum = left.numerator + right.numerator;
+        const denominatorSum = left.denominator + right.denominator;
+        
         this.elements.mediantCalculation.innerHTML = `
             <strong>Mediant calculation:</strong><br>
-            ${leftStr} ⊕ ${rightStr} = (${left.numerator}+${right.numerator})/(${left.denominator}+${right.denominator}) = ${mediantStr}<br>
-            <br>
-            <strong>Verification:</strong><br>
-            ${mediantStr} = ${currentStr} ✓
+            ${leftStr} ⊕ ${rightStr} = 
+            <div class="fraction-2d" style="display: inline-block; margin: 0 0.5rem;">
+                <div class="numerator">${left.numerator}+${right.numerator}</div>
+                <div class="fraction-bar"></div>
+                <div class="denominator">${left.denominator}+${right.denominator}</div>
+            </div>
+            = 
+            <div class="fraction-2d" style="display: inline-block; margin: 0 0.5rem;">
+                <div class="numerator">${numeratorSum}</div>
+                <div class="fraction-bar"></div>
+                <div class="denominator">${denominatorSum}</div>
+            </div>
         `;
     }
 
@@ -360,55 +381,13 @@ class SternBrocotTreeVisualizer {
             this.elements.continuedFraction.innerHTML = `
                 <strong>Standard notation:</strong> ${cfDisplay}<br>
                 <strong>RatMath notation:</strong> ${this.wrapContinuedFraction(tildaDisplay)}<br>
-                <strong>Convergents:</strong> ${convergentsDisplay}
+                <strong><span class="more-link" onclick="sternBrocotApp.showConvergentsModal()" style="text-decoration: none; color: inherit; cursor: pointer;" title="Click to view all convergents">Convergents:</span></strong> <span class="more-link" onclick="sternBrocotApp.showConvergentsModal()" style="cursor: pointer;">${convergentsDisplay}</span>
             `;
         } catch (error) {
             this.elements.continuedFraction.textContent = 'Error calculating continued fraction';
         }
     }
 
-    updateFareyInfo() {
-        try {
-            const depth = this.currentFraction.sternBrocotDepth();
-            const rational = this.currentFraction.toRational();
-            const bestApprox = rational.bestApproximation(100);
-            
-            // Check if fraction is in canonical form by comparing with reduced version
-            const reducedFraction = this.currentFraction.reduce();
-            const isReduced = this.currentFraction.numerator === reducedFraction.numerator && 
-                             this.currentFraction.denominator === reducedFraction.denominator;
-            
-            // Get decimal representation using Rational class
-            const decimalValue = rational.toDecimal();
-            
-            this.elements.fareyInfo.innerHTML = `
-                <strong>Tree depth:</strong> ${depth === Infinity ? '∞' : depth}<br>
-                <strong>Best approximation (denom ≤ 100):</strong> ${this.formatFraction(Fraction.fromRational(bestApprox), 'fraction', true)}<br>
-                <strong>Is reduced:</strong> ${isReduced ? 'Yes' : 'No'}<br>
-                <strong>Decimal value:</strong> ${decimalValue}
-            `;
-        } catch (error) {
-            console.error('Node info error:', error);
-            // Fallback with basic information
-            try {
-                const depth = this.currentFraction.sternBrocotDepth();
-                const rational = this.currentFraction.toRational();
-                const decimalValue = rational.toDecimal();
-                
-                this.elements.fareyInfo.innerHTML = `
-                    <strong>Tree depth:</strong> ${depth === Infinity ? '∞' : depth}<br>
-                    <strong>Decimal value:</strong> ${decimalValue}<br>
-                    <strong>Fraction:</strong> ${this.currentFraction.toString()}<br>
-                    <em>Some advanced features unavailable</em>
-                `;
-            } catch (fallbackError) {
-                this.elements.fareyInfo.innerHTML = `
-                    <strong>Fraction:</strong> ${this.currentFraction.toString()}<br>
-                    <em>Error calculating node information</em>
-                `;
-            }
-        }
-    }
 
     navigateToParent() {
         const parent = this.currentFraction.sternBrocotParent();
@@ -896,6 +875,8 @@ class SternBrocotTreeVisualizer {
     }
 
     renderNodes(treeData) {
+        const center = { x: this.svgWidth / 2, y: this.svgHeight / 2 };
+        
         treeData.forEach(nodeData => {
             const { fraction, x, y, type, size } = nodeData;
             
@@ -904,18 +885,55 @@ class SternBrocotTreeVisualizer {
             nodeGroup.classList.add('tree-node', type);
             nodeGroup.dataset.fraction = fraction.toString();
             
-            // Create circle
-            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('cx', x);
-            circle.setAttribute('cy', y);
-            circle.setAttribute('r', size);
+            // Calculate rectangle dimensions based on text content
+            const fontSize = Math.max(14, Math.min(20, size / 2.2));
+            const lineHeight = fontSize < 16 ? fontSize * 0.6 : fontSize * 0.5;
             
-            // Use 2D fraction display for nodes
-            const fontSize = Math.max(14, Math.min(20, size / 2.2)); // Increased font size
-            const fractionElements = this.createSVG2DFraction(fraction, x, y, fontSize);
+            // Estimate text dimensions
+            const numStr = fraction.numerator.toString();
+            const denStr = fraction.denominator.toString();
+            const maxWidth = Math.max(numStr.length, denStr.length) * fontSize * 0.7;
+            const textHeight = lineHeight * 2; // Space for numerator and denominator
             
-            nodeGroup.appendChild(circle);
+            // Rectangle dimensions with increased padding
+            const rectWidth = Math.max(maxWidth + 24, 50); // Increased padding and minimum width
+            const rectHeight = textHeight + 18; // Increased padding above and below
+            
+            // Position rectangle to expand away from center
+            let rectX = x - rectWidth / 2;
+            let rectY = y - rectHeight / 2;
+            
+            // Expand away from center
+            if (x < center.x) {
+                rectX = x - rectWidth; // Expand left
+            } else if (x > center.x) {
+                rectX = x; // Expand right
+            }
+            
+            if (y < center.y) {
+                rectY = y - rectHeight; // Expand up
+            } else if (y > center.y) {
+                rectY = y; // Expand down
+            }
+            
+            // Create rounded rectangle
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', rectX);
+            rect.setAttribute('y', rectY);
+            rect.setAttribute('width', rectWidth);
+            rect.setAttribute('height', rectHeight);
+            rect.setAttribute('rx', 8); // Rounded corners
+            rect.setAttribute('ry', 8);
+            
+            // Use 2D fraction display for nodes, adjusted for rectangle center
+            const textCenterX = rectX + rectWidth / 2;
+            const textCenterY = rectY + rectHeight / 2;
+            const fractionElements = this.createSVG2DFraction(fraction, textCenterX, textCenterY, fontSize);
+            
+            nodeGroup.appendChild(rect);
             fractionElements.forEach(element => {
+                // Add text overflow handling
+                element.setAttribute('text-overflow', 'ellipsis');
                 nodeGroup.appendChild(element);
             });
             
@@ -924,9 +942,45 @@ class SternBrocotTreeVisualizer {
     }
 
     renderEdges(treeData) {
+        const center = { x: this.svgWidth / 2, y: this.svgHeight / 2 };
         const nodeMap = new Map();
+        
+        // Calculate rectangle positions for each node first
         treeData.forEach(node => {
-            nodeMap.set(node.fraction.toString(), node);
+            const { fraction, x, y, size } = node;
+            const fontSize = Math.max(14, Math.min(20, size / 2.2));
+            const lineHeight = fontSize < 16 ? fontSize * 0.6 : fontSize * 0.5;
+            
+            const numStr = fraction.numerator.toString();
+            const denStr = fraction.denominator.toString();
+            const maxWidth = Math.max(numStr.length, denStr.length) * fontSize * 0.7;
+            const textHeight = lineHeight * 2;
+            
+            const rectWidth = Math.max(maxWidth + 24, 50);
+            const rectHeight = textHeight + 18;
+            
+            // Calculate rectangle position (same logic as renderNodes)
+            let rectX = x - rectWidth / 2;
+            let rectY = y - rectHeight / 2;
+            
+            if (x < center.x) {
+                rectX = x - rectWidth;
+            } else if (x > center.x) {
+                rectX = x;
+            }
+            
+            if (y < center.y) {
+                rectY = y - rectHeight;
+            } else if (y > center.y) {
+                rectY = y;
+            }
+            
+            // Store rectangle info with node
+            node.rectX = rectX;
+            node.rectY = rectY;
+            node.rectWidth = rectWidth;
+            node.rectHeight = rectHeight;
+            nodeMap.set(fraction.toString(), node);
         });
 
         treeData.forEach(nodeData => {
@@ -944,10 +998,18 @@ class SternBrocotTreeVisualizer {
                     line.classList.add('current');
                 }
                 
-                line.setAttribute('x1', parentNode.x);
-                line.setAttribute('y1', parentNode.y + parentNode.size);
-                line.setAttribute('x2', nodeData.x);
-                line.setAttribute('y2', nodeData.y - nodeData.size);
+                // Line starts from bottom center of parent rectangle
+                const parentBottomCenterX = parentNode.rectX + parentNode.rectWidth / 2;
+                const parentBottomCenterY = parentNode.rectY + parentNode.rectHeight;
+                
+                // Line ends at top center of child rectangle
+                const childTopCenterX = nodeData.rectX + nodeData.rectWidth / 2;
+                const childTopCenterY = nodeData.rectY;
+                
+                line.setAttribute('x1', parentBottomCenterX);
+                line.setAttribute('y1', parentBottomCenterY);
+                line.setAttribute('x2', childTopCenterX);
+                line.setAttribute('y2', childTopCenterY);
                 
                 this.treeContainer.appendChild(line);
             }
@@ -959,18 +1021,63 @@ class SternBrocotTreeVisualizer {
             const rational = this.currentFraction.toRational();
             const allConvergents = rational.convergents();
             const currentFractionStr = this.formatFraction(this.currentFraction, 'fraction');
+            const targetValue = Number(this.currentFraction.numerator) / Number(this.currentFraction.denominator);
             
-            let modalContent = '<div class="convergents-grid">';
+            let modalContent = `
+                <table class="convergents-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Convergent</th>
+                            <th>Decimal</th>
+                            <th>Distance</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
             allConvergents.forEach((convergent, index) => {
                 const convergentFraction = Fraction.fromRational(convergent);
                 const convergentStr = this.formatFraction(convergentFraction, 'fraction');
                 const isCurrent = convergentStr === currentFractionStr;
                 
-                modalContent += `<span class="convergent-item ${isCurrent ? 'current' : ''}" title="Convergent ${index + 1}">
-                    ${convergentStr}
-                </span>`;
+                // Use repeating decimal with period info
+                const convergentRational = convergentFraction.toRational();
+                const decimalInfo = convergentRational.toRepeatingDecimalWithPeriod(true);
+                const decimalDisplay = decimalInfo.period > 0 ? 
+                    `${decimalInfo.decimal} (p:${decimalInfo.period})` : 
+                    decimalInfo.decimal;
+                
+                // Calculate exact fractional distance
+                const targetRational = this.currentFraction.toRational();
+                const exactDistance = targetRational.subtract(convergentRational).abs();
+                const distanceScientific = Math.abs(targetValue - Number(convergentFraction.numerator) / Number(convergentFraction.denominator)).toExponential(3);
+                
+                modalContent += `
+                    <tr class="${isCurrent ? 'current-row' : ''}">
+                        <td>${index + 1}</td>
+                        <td class="fraction-cell">${convergentStr}</td>
+                        <td class="decimal-cell">${decimalDisplay}</td>
+                        <td class="distance-cell">
+                            <div style="font-size: 0.8rem;">
+                                <div>${distanceScientific}</div>
+                                <div style="color: #6C757D;">${exactDistance.toString()}</div>
+                            </div>
+                        </td>
+                        <td class="action-cell">
+                            <button class="nav-convergent" onclick="sternBrocotApp.navigateToConvergent('${convergentFraction.numerator}', '${convergentFraction.denominator}')">
+                                Go
+                            </button>
+                        </td>
+                    </tr>
+                `;
             });
-            modalContent += '</div>';
+            
+            modalContent += `
+                    </tbody>
+                </table>
+            `;
             
             this.elements.allConvergents.innerHTML = modalContent;
             this.elements.convergentsModal.style.display = 'block';
@@ -1060,11 +1167,14 @@ class SternBrocotTreeVisualizer {
         let wrapped = parts[0]; // Start with the integer part
         
         for (let i = 1; i < parts.length; i++) {
-            // Add line break after every few tildes or if line gets too long
-            if (i > 1 && (i % 4 === 1 || wrapped.split('<br>').pop().length > 15)) {
-                wrapped += '<br>~' + parts[i];
+            const nextPart = '~' + parts[i];
+            const currentLine = wrapped.split('<br>').pop();
+            
+            // Add line break if current line would become too long (25 characters)
+            if (currentLine.length + nextPart.length > 25) {
+                wrapped += '<br>' + nextPart;
             } else {
-                wrapped += '~' + parts[i];
+                wrapped += nextPart;
             }
         }
         
@@ -1098,6 +1208,18 @@ class SternBrocotTreeVisualizer {
         const hash = `#${this.currentFraction.numerator}_${this.currentFraction.denominator}`;
         if (window.location.hash !== hash) {
             history.pushState(null, '', hash);
+        }
+    }
+
+    navigateToConvergent(numeratorStr, denominatorStr) {
+        try {
+            const numerator = BigInt(numeratorStr);
+            const denominator = BigInt(denominatorStr);
+            const fraction = new Fraction(numerator, denominator);
+            this.animateToNewFraction(fraction);
+            this.closeModal('convergents');
+        } catch (error) {
+            console.error('Error navigating to convergent:', error);
         }
     }
 

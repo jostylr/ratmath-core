@@ -224,49 +224,49 @@ header p {
     transition: all 0.3s ease;
 }
 
-.tree-node circle {
+.tree-node rect {
     fill: #3498DB;
     stroke: #2980B9;
     stroke-width: 2;
 }
 
-.tree-node.current circle {
+.tree-node.current rect {
     fill: #E74C3C;
     stroke: #C0392B;
     stroke-width: 3;
 }
 
-.tree-node.parent circle {
+.tree-node.parent rect {
     fill: #F39C12;
     stroke: #E67E22;
 }
 
-.tree-node.ancestor circle {
+.tree-node.ancestor rect {
     fill: #F1C40F;
     stroke: #F4D03F;
 }
 
-.tree-node.child circle {
+.tree-node.child rect {
     fill: #27AE60;
     stroke: #229954;
 }
 
-.tree-node.left-child circle {
+.tree-node.left-child rect {
     fill: #27AE60;
     stroke: #229954;
 }
 
-.tree-node.right-child circle {
+.tree-node.right-child rect {
     fill: #9B59B6;
     stroke: #8E44AD;
 }
 
-.tree-node.descendant circle {
+.tree-node.descendant rect {
     fill: #85C1E9;
     stroke: #5DADE2;
 }
 
-.tree-node.sibling circle {
+.tree-node.sibling rect {
     fill: #BDC3C7;
     stroke: #95A5A6;
     opacity: 0.7;
@@ -277,7 +277,7 @@ header p {
     opacity: 0.8;
 }
 
-.tree-node.current-sibling circle {
+.tree-node.current-sibling rect {
     fill: #E67E22;
     stroke: #D68910;
     opacity: 0.6;
@@ -288,7 +288,7 @@ header p {
     opacity: 0.9;
 }
 
-.tree-node:hover circle {
+.tree-node:hover rect {
     fill: #3498DB !important;
     stroke: #2980B9 !important;
 }
@@ -523,6 +523,81 @@ header p {
     padding: 1.5rem;
     max-height: 60vh;
     overflow-y: auto;
+}
+
+/* Convergents Table Styles */
+.convergents-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: monospace;
+    font-size: 0.9rem;
+}
+
+.convergents-table th,
+.convergents-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #DEE2E6;
+}
+
+.convergents-table th {
+    background: #F8F9FA;
+    font-weight: bold;
+    color: #495057;
+    border-bottom: 2px solid #DEE2E6;
+}
+
+.convergents-table tr:hover {
+    background: #F8F9FA;
+}
+
+.convergents-table .current-row {
+    background: #E74C3C;
+    color: white;
+}
+
+.convergents-table .current-row:hover {
+    background: #C0392B;
+}
+
+.convergents-table .fraction-cell {
+    font-weight: bold;
+}
+
+.convergents-table .decimal-cell {
+    font-family: monospace;
+    color: #6C757D;
+}
+
+.convergents-table .distance-cell {
+    font-family: monospace;
+    color: #28A745;
+    font-size: 0.8rem;
+}
+
+.convergents-table .action-cell {
+    text-align: center;
+}
+
+.nav-convergent {
+    background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.nav-convergent:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.current-row .nav-convergent {
+    background: #95A5A6;
+    cursor: not-allowed;
 }
 
 .convergent-item {

@@ -38,14 +38,11 @@
           </div>
         </div>
 
-        <div class="display-mode">
-          <label for="displayMode">Display Mode:</label>
-          <select id="displayMode">
-            <option value="fraction">Fraction</option>
-            <option value="decimal">Decimal</option>
-            <option value="mixed">Mixed Number</option>
-            <option value="cf">Continued Fraction</option>
-          </select>
+        <div class="decimal-display">
+          <div class="info-item">
+            <label>Decimal:</label>
+            <span id="decimalValue"></span>
+          </div>
         </div>
 
         <div class="navigation-controls">
@@ -88,10 +85,6 @@
           <div id="continuedFraction"></div>
         </div>
 
-        <div class="farey-info">
-          <h3>Node Info</h3>
-          <div id="fareyInfo"></div>
-        </div>
       </div>
     </div>
 
