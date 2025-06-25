@@ -3,6 +3,10 @@
 ## Overview
 Add comprehensive visualization capabilities to RatMath for displaying interval arithmetic on number lines, showcasing operations visually, and creating educational tools that make interval mathematics intuitive and accessible. This will enhance understanding of uncertainty propagation, measurement precision, and exact arithmetic concepts.
 
+This will be just for the web-based calculator; ignore any mention of the terminal. Also ignore any open or half-open intervals. The intervals are always closed in ratmath. In the web calculator, each computation should have a little icon button to open a modal that will show the intervals of the inputs, the intermediate intervals, and the outputs. The input intervals can have the endpoints moved for exploration. There should then be a button to save the computation in the calculator or even replace the original.
+
+The main files to interact with is this one (check off items as they get completed), src/web-calc.js which is the javascript file for the web calc, and in the docs folder calc.css and calc.html. The calc.js is a build artifact and should not be modified except for debugging purposes. Ideally, the interval cpaability should be in its own file and something that could be exported along with the rest of the library to allow for interval creation in other environments.
+
 ## Core Visualization Framework
 
 ### 1. Number Line Rendering System
@@ -16,16 +20,12 @@ Add comprehensive visualization capabilities to RatMath for displaying interval 
 
 #### Interval Representation Styles
 - [ ] **Closed Intervals**: Solid dots (●) at endpoints with solid line connection
-- [ ] **Open Intervals**: Hollow circles (○) at endpoints with solid line connection
-- [ ] **Half-Open Intervals**: Mixed endpoint styles (●---○ or ○---●)
 - [ ] **Point Intervals**: Single solid dot for degenerate intervals
-- [ ] **Infinite Intervals**: Arrows extending to infinity with appropriate notation
 
 #### Visual Styling Options
 ```javascript
 const intervalStyle = {
-  closedEndpoint: 'solid-dot',     // ●, solid-square, etc.
-  openEndpoint: 'hollow-circle',   // ○, hollow-square, etc.
+  closedEndpoint: 'solid-dot',     // ●, solid-square, etc
   lineStyle: 'solid',             // solid, dashed, dotted
   color: '#2196F3',               // CSS color specification
   thickness: 2,                   // Line thickness in pixels
@@ -114,12 +114,6 @@ const measurementScenario = {
 
 ### 4. Implementation Technologies
 
-#### ASCII Art Visualization (Terminal)
-- [ ] **Unicode Characters**: Use ●○─ for clean terminal display
-- [ ] **Proportional Spacing**: Accurate positioning within character constraints
-- [ ] **Multi-Line Layout**: Stack multiple intervals vertically
-- [ ] **Terminal Width Adaptation**: Responsive to different terminal sizes
-- [ ] **Color Support**: ANSI color codes where supported
 
 #### SVG Visualization (Web)
 - [ ] **Scalable Graphics**: Clean rendering at any zoom level
@@ -146,7 +140,6 @@ const measurementScenario = {
 
 #### Calculator Integration
 - [ ] **Web Calculator Panel**: Integrated visualization pane
-- [ ] **Terminal Output**: ASCII art for command-line results
 - [ ] **Export Functions**: Generate visualizations from calculations
 - [ ] **History Visualization**: Show progression of calculations visually
 - [ ] **Interactive Mode**: Direct manipulation within calculator
