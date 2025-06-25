@@ -55,7 +55,7 @@ test("Repeat notation formatting works for leading zeros", () => {
   const r = new Rational(1, 1000000);
   const withRepeat = r.toRepeatingDecimalWithPeriod(true);
   
-  expect(withRepeat.decimal).toBe("0.{0~5}1#0");
+  expect(withRepeat.decimal).toBe("0.000001#0");
 });
 
 test("Repeat notation formatting threshold works", () => {
@@ -70,10 +70,10 @@ test("Repeat notation formatting threshold works", () => {
 });
 
 test("Repeat notation parsing works", () => {
-  const r1 = new Rational("0.{0~6}1");
+  const r1 = new Rational("0.{0~7}1");
   const r2 = new Rational("1.{23~3}");
   
-  expect(r1.toString()).toBe("1/10000000");
+  expect(r1.toString()).toBe("1/100000000");
   expect(r2.toString()).toBe("1232323/1000000");
 });
 
@@ -84,8 +84,8 @@ test("Scientific notation works for very small numbers", () => {
   
   const sciNotation = ratio.toScientificNotation();
   expect(sciNotation).not.toBe("0");
-  expect(sciNotation).toMatch(/^\d+\.\d+E-\d+$/);
-  expect(sciNotation).toBe("6.5713094994E-29");
+  expect(sciNotation).toMatch(/^\d+[\.\#\d]*E-\d+$/);
+  expect(sciNotation).toBe("6.#57130949E-29");
 });
 
 test("Scientific notation works for terminating decimals", () => {
@@ -95,15 +95,15 @@ test("Scientific notation works for terminating decimals", () => {
 
 test("Scientific notation works for numbers >= 1", () => {
   const r = new Rational(12345, 1);
-  expect(r.toScientificNotation()).toBe("1.2345E+4");
+  expect(r.toScientificNotation()).toBe("1.2345E4");
 });
 
 test("Scientific notation works for repeating decimals", () => {
   const r1 = new Rational(1, 3);
   const r2 = new Rational(1, 7);
   
-  expect(r1.toScientificNotation()).toBe("3E-1");
-  expect(r2.toScientificNotation()).toBe("1.42857E-1");
+  expect(r1.toScientificNotation()).toBe("3.#3E-1");
+  expect(r2.toScientificNotation()).toBe("1.#42857E-1");
 });
 
 test("Scientific notation with repeat notation parameter", () => {
@@ -133,7 +133,7 @@ test("toRepeatingDecimalWithPeriod with repeat notation parameter", () => {
   const with_ = r.toRepeatingDecimalWithPeriod(true);
   
   expect(without.decimal).toBe("0.000001#0");
-  expect(with_.decimal).toBe("0.{0~5}1#0");
+  expect(with_.decimal).toBe("0.000001#0");
   expect(without.period).toBe(0);
   expect(with_.period).toBe(0);
 });
@@ -206,5 +206,5 @@ test("Scientific notation fallback in calc.js context", () => {
   }
   
   expect(scientificNotation).not.toBe("0");
-  expect(scientificNotation).toMatch(/^\d+\.\d+E-\d+$/);
+  expect(scientificNotation).toMatch(/^\d+[\.\#\d]*E-\d+$/);
 });

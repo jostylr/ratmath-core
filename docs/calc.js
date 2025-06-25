@@ -308,7 +308,7 @@ class Rational {
     let result = (this.#isNegative ? "-" : "") + this.#wholePart.toString();
     if (this.#isTerminating) {
       if (this.#initialSegment) {
-        const formattedInitial = useRepeatNotation ? Rational.#formatRepeatedDigits(this.#initialSegment, 4) : this.#initialSegment;
+        const formattedInitial = useRepeatNotation ? Rational.#formatRepeatedDigits(this.#initialSegment, 7) : this.#initialSegment;
         result += "." + formattedInitial + "#0";
       } else {}
       return { decimal: result, period: 0 };
@@ -317,19 +317,19 @@ class Rational {
       if (this.#periodLength > 0 && this.#periodLength <= Rational.MAX_PERIOD_DIGITS && this.#periodDigits.length < this.#periodLength) {
         periodDigits = this.extractPeriodSegment(this.#initialSegment, this.#periodLength, this.#periodLength);
       }
-      const formattedInitial = useRepeatNotation ? Rational.#formatRepeatedDigits(this.#initialSegment, 4) : this.#initialSegment;
+      const formattedInitial = useRepeatNotation ? Rational.#formatRepeatedDigits(this.#initialSegment, 7) : this.#initialSegment;
       let displayPeriod = periodDigits;
       if (useRepeatNotation && this.#leadingZerosInPeriod < 1000) {
         const significantDigits = this.#periodDigitsRest;
         if (significantDigits && significantDigits.length > 0) {
-          const leadingZerosFormatted = this.#leadingZerosInPeriod > 0 ? `{0~${this.#leadingZerosInPeriod}}` : "";
+          const leadingZerosFormatted = this.#leadingZerosInPeriod > 6 ? `{0~${this.#leadingZerosInPeriod}}` : this.#leadingZerosInPeriod > 0 ? "0".repeat(this.#leadingZerosInPeriod) : "";
           const maxSignificantDigits = Math.min(significantDigits.length, 20);
           displayPeriod = leadingZerosFormatted + significantDigits.substring(0, maxSignificantDigits);
         } else {
-          displayPeriod = useRepeatNotation ? Rational.#formatRepeatedDigits(periodDigits, 6) : periodDigits;
+          displayPeriod = useRepeatNotation ? Rational.#formatRepeatedDigits(periodDigits, 7) : periodDigits;
         }
       } else {
-        displayPeriod = useRepeatNotation ? Rational.#formatRepeatedDigits(periodDigits, 6) : periodDigits;
+        displayPeriod = useRepeatNotation ? Rational.#formatRepeatedDigits(periodDigits, 7) : periodDigits;
       }
       if (this.#initialSegment) {
         result += "." + formattedInitial + "#" + displayPeriod;
@@ -629,28 +629,56 @@ class Rational {
       const firstDigit = wholeStr[0];
       const exponent = wholeStr.length - 1;
       let mantissa = firstDigit;
-      if (wholeStr.length > 1 || this.#remainder > 0n) {
-        mantissa += ".";
-        if (wholeStr.length > 1) {
-          mantissa += wholeStr.substring(1);
-        }
-        if (this.#remainder > 0n) {
-          if (this.#isTerminating) {
-            const formattedInitial = useRepeatNotation ? Rational.#formatRepeatedDigits(this.#initialSegment, 4) : this.#initialSegment;
-            mantissa += formattedInitial;
+      const hasMoreWholeDigits = wholeStr.length > 1;
+      const hasFractionalPart = this.#remainder > 0n;
+      if (hasFractionalPart || hasMoreWholeDigits) {
+        if (hasFractionalPart && !this.#isTerminating) {
+          mantissa += ".";
+          const remainingWholeDigits = hasMoreWholeDigits ? wholeStr.substring(1) : "";
+          const formattedInitial = useRepeatNotation ? Rational.#formatRepeatedDigits(this.#initialSegment, 7) : this.#initialSegment;
+          let periodDigits = this.#periodDigits;
+          if (this.#periodLength > 0 && this.#periodLength <= Rational.MAX_PERIOD_DIGITS && periodDigits.length < this.#periodLength) {
+            periodDigits = this.extractPeriodSegment(this.#initialSegment, this.#periodLength, Math.min(10, this.#periodLength));
+          }
+          if (remainingWholeDigits && periodDigits && remainingWholeDigits === periodDigits.substring(0, remainingWholeDigits.length)) {
+            mantissa += "#" + periodDigits;
           } else {
-            const formattedInitial = useRepeatNotation ? Rational.#formatRepeatedDigits(this.#initialSegment, 4) : this.#initialSegment;
-            mantissa += formattedInitial + "#";
-            let periodDigits = this.#periodDigits;
-            if (this.#periodLength > 0 && this.#periodLength <= Rational.MAX_PERIOD_DIGITS && periodDigits.length < this.#periodLength) {
-              periodDigits = this.extractPeriodSegment(this.#initialSegment, this.#periodLength, Math.min(10, this.#periodLength));
+            if (hasMoreWholeDigits) {
+              mantissa += remainingWholeDigits;
             }
-            const formattedPeriod = useRepeatNotation ? Rational.#formatRepeatedDigits(periodDigits, 6) : periodDigits.substring(0, Math.max(1, precision - mantissa.length + 1));
+            mantissa += formattedInitial + "#";
+            const formattedPeriod = useRepeatNotation ? Rational.#formatRepeatedDigits(periodDigits, 7) : periodDigits.substring(0, Math.max(1, precision - mantissa.length + 1));
             mantissa += formattedPeriod;
           }
+        } else {
+          if (hasMoreWholeDigits || hasFractionalPart) {
+            mantissa += ".";
+            if (hasMoreWholeDigits) {
+              const remainingDigits = wholeStr.substring(1);
+              if (!hasFractionalPart) {
+                const trimmedDigits = remainingDigits.replace(/0+$/, "");
+                if (trimmedDigits === "") {
+                  mantissa = mantissa.slice(0, -1);
+                } else {
+                  mantissa += trimmedDigits;
+                }
+              } else {
+                mantissa += remainingDigits;
+              }
+            }
+            if (hasFractionalPart) {
+              const formattedInitial = useRepeatNotation ? Rational.#formatRepeatedDigits(this.#initialSegment, 7) : this.#initialSegment;
+              const trimmedInitial = formattedInitial.replace(/0+$/, "");
+              if (trimmedInitial) {
+                mantissa += trimmedInitial;
+              } else if (!hasMoreWholeDigits) {
+                mantissa = mantissa.slice(0, -1);
+              }
+            }
+          }
         }
-      }
-      const result = `${prefix}${mantissa}E+${exponent}`;
+      } else if (!hasFractionalPart && !hasMoreWholeDigits) {}
+      const result = `${prefix}${mantissa}E${exponent}`;
       return result + this.#generatePeriodInfo(showPeriodInfo);
     }
     if (this.#isTerminating) {
@@ -679,7 +707,7 @@ class Rational {
             mantissa += this.#initialSegmentRest.substring(1);
           }
           mantissa += "#";
-          if (this.#leadingZerosInPeriod > 0 && useRepeatNotation && this.#leadingZerosInPeriod >= 6) {
+          if (this.#leadingZerosInPeriod > 0 && useRepeatNotation && this.#leadingZerosInPeriod > 6) {
             mantissa += `{0~${this.#leadingZerosInPeriod}}`;
           } else if (this.#leadingZerosInPeriod > 0) {
             mantissa += "0".repeat(Math.min(this.#leadingZerosInPeriod, 10));
@@ -697,8 +725,11 @@ class Rational {
         const exponent = -(totalLeadingZeros + 1);
         let mantissa = firstDigit;
         if (firstNonZeroInPeriod.length > 1) {
-          const remainingDigits = Math.max(0, precision - 1);
-          mantissa += "." + firstNonZeroInPeriod.substring(1, remainingDigits + 1);
+          mantissa += ".#";
+          const remainingDigits = Math.max(0, precision - 3);
+          mantissa += firstNonZeroInPeriod.substring(1, remainingDigits + 1);
+        } else {
+          mantissa += ".#" + firstDigit;
         }
         const result = `${prefix}${mantissa}E${exponent}`;
         return result + this.#generatePeriodInfo(showPeriodInfo);
