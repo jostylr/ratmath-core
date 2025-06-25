@@ -135,36 +135,45 @@ Add continued fraction support to RatMath library using the syntax `3.~7~15~1~29
 - [ ] Add continued fraction examples to help documentation
 
 ### 13. Stern-Brocot Tree Interactive Demonstration
-- [ ] Create separate web page for Stern-Brocot tree navigation
-  - Located at `docs/stern-brocot.html` with supporting CSS/JS/SVG
-  - Interactive tree visualization starting from any reduced fraction
-  - Clicking on a node centers on it
-- [ ] Tree visualization features
-  - [ ] Each node displays the number in it; there should be mode toggling for what is displayed (modes as in calc.js)
-  - [ ] The current node is largest and then parents, children, siblings reduce in size based on number of steps to reach them
-  - [ ] Show current tree path from root as L/R sequence
-  - [ ] Display left and right boundary fractions for current position
-  - [ ] Show tree depth/level information
-  - [ ] Highlight parent and children relationships
-- [ ] Navigation interface
-  - [ ] Up arrow: navigate to parent fraction
-  - [ ] Down arrow: show children options, then Left/Right to select
-  - [ ] Left/Right arrows: move between sibling fractions at same level
-  - [ ] Input field: jump directly to any fraction and find its tree position
-  - [ ] Reset button: return to root (1/1)
-- [ ] Educational features
-  - [ ] Show mediant calculations: display how current fraction = mediant(left, right)
-  - [ ] Breadcrumb trail showing full path from root
-  - [ ] Fraction reduction verification (ensure input fractions are in lowest terms)
-  - [ ] Connection to continued fraction representation
-  - [ ] Display Farey sequence level where fraction first appears
-- [ ] Technical implementation
-  - [ ] Use Fraction class with ±1/0 boundary support
-  - [ ] Implement tree traversal algorithms
-  - [ ] Responsive design for mobile devices
-  - [ ] Keyboard shortcuts for navigation
-  - [ ] URL state management (shareable tree positions)
-  - [ ] Could use https://en.wikipedia.org/wiki/Stern–Brocot_tree#/media/File:SternBrocotTree.svg as inspiration for laying out tree
+- [x] Create separate web page for Stern-Brocot tree navigation
+  - [x] Located at `docs/stern-brocot.html` with supporting CSS/JS/SVG
+  - [x] Interactive tree visualization starting from any reduced fraction
+  - [x] Clicking on a node centers on it
+- [x] Tree visualization features
+  - [x] Each node displays the number in it; ~~there should be mode toggling for what is displayed (modes as in calc.js)~~ **REMOVED: Display mode removed in favor of consistent 2D fraction display**
+  - [x] The current node is largest and then parents, children, siblings reduce in size based on number of steps to reach them
+  - [x] Show current tree path from root as L/R sequence
+  - [x] Display left and right boundary fractions for current position
+  - [x] Show tree depth/level information
+  - [x] Highlight parent and children relationships
+- [x] Navigation interface
+  - [x] Up arrow: navigate to parent fraction
+  - ~~[ ] Down arrow: show children options, then Left/Right to select~~ **CHANGED: Left/Right arrows directly navigate to children**
+  - [x] Left/Right arrows: move between sibling fractions at same level → **CHANGED: Navigate to left/right children**
+  - [x] Input field: jump directly to any fraction and find its tree position
+  - [x] Reset button: return to root (1/1)
+- [x] Educational features
+  - [x] Show mediant calculations: display how current fraction = mediant(left, right)
+  - [x] Breadcrumb trail showing full path from root
+  - [x] Fraction reduction verification (ensure input fractions are in lowest terms)
+  - [x] Connection to continued fraction representation
+  - [x] Display Farey sequence level where fraction first appears **ENHANCED: Shows Farey info with modal**
+- [x] Technical implementation
+  - [x] Use Fraction class with ±1/0 boundary support
+  - [x] Implement tree traversal algorithms
+  - [x] Responsive design for mobile devices
+  - [x] Keyboard shortcuts for navigation
+  - [x] URL state management (shareable tree positions)
+  - [x] Tree layout inspired by mathematical structure (rectangular nodes, proper spacing)
+- [x] **ADDITIONAL FEATURES IMPLEMENTED:**
+  - [x] Convergents modal with interactive table showing convergent approximations, decimal representations, distance calculations, and navigation
+  - [x] Mobile-friendly design with touch scrolling and long-press tooltips
+  - [x] Hover tooltips for desktop showing exact fraction values
+  - [x] Comprehensive help documentation explaining Stern-Brocot trees, continued fractions, mediants, and providing mathematical examples
+  - [x] Enhanced breadcrumb navigation with clickable path elements and intelligent horizontal/2D display switching
+  - [x] Tree scrolling with proper bounds checking for exploring unlimited ancestor depth
+  - [x] 2D fraction display throughout interface for better mathematical readability
+  - [x] Repeating decimal notation with period information for consistency across all displays
 
 ## Implementation Notes
 

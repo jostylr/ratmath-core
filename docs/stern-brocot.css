@@ -5,8 +5,10 @@
 }
 
 body {
-    font-family: "SF Mono", "Monaco", "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
-    background: linear-gradient(135deg, #2C3E50 0%, #3498DB 100%);
+    font-family:
+        "SF Mono", "Monaco", "Cascadia Code", "Roboto Mono", Consolas,
+        "Courier New", monospace;
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
     color: #333;
     line-height: 1.4;
     min-height: 100vh;
@@ -61,16 +63,16 @@ header p {
 .current-fraction h2 {
     font-size: 2rem;
     text-align: center;
-    color: #2C3E50;
+    color: #2c3e50;
     margin-bottom: 1rem;
     padding: 1rem;
-    background: linear-gradient(135deg, #ECF0F1 0%, #BDC3C7 100%);
+    background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%);
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .fraction-info {
-    background: #F8F9FA;
+    background: #f8f9fa;
     border-radius: 8px;
     padding: 1rem;
 }
@@ -86,11 +88,11 @@ header p {
 
 .info-item label {
     font-weight: bold;
-    color: #34495E;
+    color: #34495e;
 }
 
 .info-item span {
-    color: #2C3E50;
+    color: #2c3e50;
     font-family: monospace;
     word-wrap: break-word;
     overflow-wrap: break-word;
@@ -98,7 +100,7 @@ header p {
 }
 
 .display-mode {
-    background: #F8F9FA;
+    background: #f8f9fa;
     border-radius: 8px;
     padding: 1rem;
 }
@@ -107,13 +109,13 @@ header p {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: bold;
-    color: #34495E;
+    color: #34495e;
 }
 
 .display-mode select {
     width: 100%;
     padding: 0.5rem;
-    border: 1px solid #BDC3C7;
+    border: 1px solid #bdc3c7;
     border-radius: 4px;
     background: white;
     font-family: inherit;
@@ -134,7 +136,7 @@ header p {
     padding: 0.75rem 1rem;
     border: none;
     border-radius: 6px;
-    background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
     color: white;
     font-family: inherit;
     font-size: 0.9rem;
@@ -153,30 +155,67 @@ header p {
 }
 
 .nav-btn.reset {
-    background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
 }
 
 .nav-btn:disabled {
-    background: #BDC3C7;
+    background: #bdc3c7;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
 }
 
 .nav-btn.left-child {
-    background: linear-gradient(135deg, #27AE60 0%, #229954 100%);
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
 }
 
 .nav-btn.right-child {
-    background: linear-gradient(135deg, #9B59B6 0%, #8E44AD 100%);
+    background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
 }
 
 .nav-btn.parent {
-    background: linear-gradient(135deg, #F39C12 0%, #E67E22 100%);
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+}
+
+.expression-calculator {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 2px solid #e3f2fd;
+}
+
+.expression-calculator label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #34495e;
+}
+
+.expression-calculator input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    font-size: 0.9rem;
+}
+
+.expression-calculator input:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.expression-examples {
+    background: rgba(52, 152, 219, 0.1);
+    padding: 0.5rem;
+    border-radius: 4px;
+    border-left: 3px solid #3498db;
 }
 
 .jump-controls {
-    background: #F8F9FA;
+    background: #f8f9fa;
     border-radius: 8px;
     padding: 1rem;
 }
@@ -185,13 +224,13 @@ header p {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: bold;
-    color: #34495E;
+    color: #34495e;
 }
 
 .jump-controls input {
     width: 100%;
     padding: 0.5rem;
-    border: 1px solid #BDC3C7;
+    border: 1px solid #bdc3c7;
     border-radius: 4px;
     margin-bottom: 0.5rem;
     font-family: inherit;
@@ -199,7 +238,7 @@ header p {
 
 /* Tree Container */
 .tree-container {
-    background: #F8F9FA;
+    background: #f8f9fa;
     border-radius: 8px;
     padding: 1rem;
     overflow: hidden;
@@ -209,7 +248,7 @@ header p {
 #treeSvg {
     width: 100%;
     height: 500px;
-    border: 1px solid #E5E5E5;
+    border: 1px solid #e5e5e5;
     border-radius: 4px;
     background: white;
 }
@@ -225,50 +264,50 @@ header p {
 }
 
 .tree-node rect {
-    fill: #3498DB;
-    stroke: #2980B9;
+    fill: #3498db;
+    stroke: #2980b9;
     stroke-width: 2;
 }
 
 .tree-node.current rect {
-    fill: #E74C3C;
-    stroke: #C0392B;
+    fill: #e74c3c;
+    stroke: #c0392b;
     stroke-width: 3;
 }
 
 .tree-node.parent rect {
-    fill: #F39C12;
-    stroke: #E67E22;
+    fill: #f39c12;
+    stroke: #e67e22;
 }
 
 .tree-node.ancestor rect {
-    fill: #F1C40F;
-    stroke: #F4D03F;
+    fill: #f1c40f;
+    stroke: #f4d03f;
 }
 
 .tree-node.child rect {
-    fill: #27AE60;
+    fill: #27ae60;
     stroke: #229954;
 }
 
 .tree-node.left-child rect {
-    fill: #27AE60;
+    fill: #27ae60;
     stroke: #229954;
 }
 
 .tree-node.right-child rect {
-    fill: #9B59B6;
-    stroke: #8E44AD;
+    fill: #9b59b6;
+    stroke: #8e44ad;
 }
 
 .tree-node.descendant rect {
-    fill: #85C1E9;
-    stroke: #5DADE2;
+    fill: #85c1e9;
+    stroke: #5dade2;
 }
 
 .tree-node.sibling rect {
-    fill: #BDC3C7;
-    stroke: #95A5A6;
+    fill: #bdc3c7;
+    stroke: #95a5a6;
     opacity: 0.7;
 }
 
@@ -278,8 +317,8 @@ header p {
 }
 
 .tree-node.current-sibling rect {
-    fill: #E67E22;
-    stroke: #D68910;
+    fill: #e67e22;
+    stroke: #d68910;
     opacity: 0.6;
 }
 
@@ -289,8 +328,8 @@ header p {
 }
 
 .tree-node:hover rect {
-    fill: #3498DB !important;
-    stroke: #2980B9 !important;
+    fill: #3498db !important;
+    stroke: #2980b9 !important;
 }
 
 .tree-node text {
@@ -304,13 +343,13 @@ header p {
 }
 
 .tree-edge {
-    stroke: #7F8C8D;
+    stroke: #7f8c8d;
     stroke-width: 2;
     fill: none;
 }
 
 .tree-edge.current {
-    stroke: #E74C3C;
+    stroke: #e74c3c;
     stroke-width: 3;
 }
 
@@ -322,22 +361,22 @@ header p {
 }
 
 .info-panel > div {
-    background: #F8F9FA;
+    background: #f8f9fa;
     border-radius: 8px;
     padding: 1rem;
 }
 
 .info-panel h3 {
-    color: #2C3E50;
+    color: #2c3e50;
     margin-bottom: 0.75rem;
     font-size: 1rem;
-    border-bottom: 2px solid #3498DB;
+    border-bottom: 2px solid #3498db;
     padding-bottom: 0.5rem;
 }
 
 .breadcrumb {
     display: inline-block;
-    background: #3498DB;
+    background: #3498db;
     color: white;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
@@ -346,25 +385,39 @@ header p {
 }
 
 .breadcrumb.current {
-    background: #E74C3C;
+    background: #e74c3c;
 }
 
 .breadcrumb.left-direction {
-    background: #27AE60;
+    background: #27ae60;
     color: white;
 }
 
 .breadcrumb.right-direction {
-    background: #9B59B6;
+    background: #9b59b6;
     color: white;
 }
 
-#mediantCalculation, #continuedFraction, #fareyInfo {
+.clickable-breadcrumb {
+    cursor: pointer;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.clickable-breadcrumb:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#mediantCalculation,
+#continuedFraction,
+#fareyInfo {
     font-family: monospace;
     background: white;
     padding: 0.75rem;
     border-radius: 4px;
-    border: 1px solid #E5E5E5;
+    border: 1px solid #e5e5e5;
     margin-top: 0.5rem;
     min-height: 3rem;
     font-size: 0.9rem;
@@ -391,21 +444,21 @@ header p {
         grid-template-columns: 1fr;
         grid-template-rows: auto auto auto;
     }
-    
+
     .nav-panel {
         order: 1;
     }
-    
+
     .tree-container {
         order: 2;
     }
-    
+
     .info-panel {
         order: 3;
         flex-direction: row;
         flex-wrap: wrap;
     }
-    
+
     .info-panel > div {
         flex: 1;
         min-width: 200px;
@@ -416,23 +469,23 @@ header p {
     .container {
         padding: 0.5rem;
     }
-    
+
     header h1 {
         font-size: 2rem;
     }
-    
+
     .main-content {
         padding: 1rem;
     }
-    
+
     .child-controls {
         flex-direction: column;
     }
-    
+
     .info-panel {
         flex-direction: column;
     }
-    
+
     #treeSvg {
         height: 400px;
     }
@@ -442,11 +495,11 @@ header p {
     header h1 {
         font-size: 1.5rem;
     }
-    
+
     .current-fraction h2 {
         font-size: 1.5rem;
     }
-    
+
     #treeSvg {
         height: 300px;
     }
@@ -491,7 +544,7 @@ header p {
 }
 
 .modal-header {
-    background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
     color: white;
     padding: 1.5rem;
     display: flex;
@@ -537,27 +590,27 @@ header p {
 .convergents-table td {
     padding: 0.75rem;
     text-align: left;
-    border-bottom: 1px solid #DEE2E6;
+    border-bottom: 1px solid #dee2e6;
 }
 
 .convergents-table th {
-    background: #F8F9FA;
+    background: #f8f9fa;
     font-weight: bold;
     color: #495057;
-    border-bottom: 2px solid #DEE2E6;
+    border-bottom: 2px solid #dee2e6;
 }
 
 .convergents-table tr:hover {
-    background: #F8F9FA;
+    background: #f8f9fa;
 }
 
 .convergents-table .current-row {
-    background: #E74C3C;
+    background: #e74c3c;
     color: white;
 }
 
 .convergents-table .current-row:hover {
-    background: #C0392B;
+    background: #c0392b;
 }
 
 .convergents-table .fraction-cell {
@@ -566,12 +619,12 @@ header p {
 
 .convergents-table .decimal-cell {
     font-family: monospace;
-    color: #6C757D;
+    color: #6c757d;
 }
 
 .convergents-table .distance-cell {
     font-family: monospace;
-    color: #28A745;
+    color: #28a745;
     font-size: 0.8rem;
 }
 
@@ -580,7 +633,7 @@ header p {
 }
 
 .nav-convergent {
-    background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
     color: white;
     border: none;
     border-radius: 4px;
@@ -596,14 +649,14 @@ header p {
 }
 
 .current-row .nav-convergent {
-    background: #95A5A6;
+    background: #95a5a6;
     cursor: not-allowed;
 }
 
 .convergent-item {
     display: inline-block;
-    background: #ECF0F1;
-    border: 1px solid #BDC3C7;
+    background: #ecf0f1;
+    border: 1px solid #bdc3c7;
     border-radius: 6px;
     padding: 0.5rem 0.75rem;
     margin: 0.25rem;
@@ -613,17 +666,17 @@ header p {
 }
 
 .convergent-item:hover {
-    background: #D5DBDB;
+    background: #d5dbdb;
 }
 
 .convergent-item.current {
-    background: #E74C3C;
+    background: #e74c3c;
     color: white;
-    border-color: #C0392B;
+    border-color: #c0392b;
 }
 
 .more-link {
-    color: #3498DB;
+    color: #3498db;
     cursor: pointer;
     text-decoration: underline;
     font-weight: bold;
@@ -635,13 +688,13 @@ header p {
 }
 
 .more-link:hover {
-    background: #EBF3FD;
+    background: #ebf3fd;
 }
 
 .farey-item {
     display: inline-block;
-    background: #F8F9FA;
-    border: 1px solid #DEE2E6;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
     border-radius: 4px;
     padding: 0.4rem 0.6rem;
     margin: 0.2rem;
@@ -651,13 +704,13 @@ header p {
 }
 
 .farey-item:hover {
-    background: #E9ECEF;
+    background: #e9ecef;
 }
 
 .farey-item.current {
-    background: #E74C3C;
+    background: #e74c3c;
     color: white;
-    border-color: #C0392B;
+    border-color: #c0392b;
     font-weight: bold;
 }
 
@@ -707,6 +760,6 @@ header p {
 .current-boundary {
     text-align: center;
     font-weight: bold;
-    color: #E74C3C;
+    color: #e74c3c;
     margin-top: 0.25rem;
 }

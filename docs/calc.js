@@ -3961,12 +3961,13 @@ class Fraction {
     if (this.isInfinite) {
       throw new Error("Infinite fractions don't have tree paths");
     }
+    const reduced = this.reduce();
     let left = new Fraction(0, 1);
     let right = new Fraction(1, 0, { allowInfinite: true });
     let current = new Fraction(1, 1);
     const path = [];
-    while (!current.equals(this)) {
-      if (this.lessThan(current)) {
+    while (!current.equals(reduced)) {
+      if (reduced.lessThan(current)) {
         path.push("L");
         right = current;
         current = left.mediant(current);
@@ -3975,8 +3976,8 @@ class Fraction {
         left = current;
         current = current.mediant(right);
       }
-      if (path.length > 100) {
-        throw new Error("Stern-Brocot path too long - fraction may not be in canonical form");
+      if (path.length > 500) {
+        throw new Error("Stern-Brocot path too long - this may indicate a bug in the algorithm");
       }
     }
     return path;
