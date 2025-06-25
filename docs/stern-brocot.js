@@ -4141,6 +4141,8 @@ class SternBrocotTreeVisualizer {
     this.svg = document.getElementById("treeSvg");
     this.svgWidth = 800;
     this.svgHeight = 600;
+    this.scrollOffset = { x: 0, y: 0 };
+    this.treeContainer = null;
     this.initializeElements();
     this.setupEventListeners();
     this.updateDisplay();
@@ -4162,7 +4164,13 @@ class SternBrocotTreeVisualizer {
       breadcrumbPath: document.getElementById("breadcrumbPath"),
       mediantCalculation: document.getElementById("mediantCalculation"),
       continuedFraction: document.getElementById("continuedFraction"),
-      fareyInfo: document.getElementById("fareyInfo")
+      fareyInfo: document.getElementById("fareyInfo"),
+      convergentsModal: document.getElementById("convergentsModal"),
+      fareyModal: document.getElementById("fareyModal"),
+      allConvergents: document.getElementById("allConvergents"),
+      fareySequenceContent: document.getElementById("fareySequenceContent"),
+      closeConvergents: document.getElementById("closeConvergents"),
+      closeFarey: document.getElementById("closeFarey")
     };
   }
   setupEventListeners() {
@@ -4182,6 +4190,23 @@ class SternBrocotTreeVisualizer {
     });
     document.addEventListener("keydown", (e) => this.handleKeyPress(e));
     this.svg.addEventListener("click", (e) => this.handleSvgClick(e));
+    this.svg.addEventListener("wheel", (e) => this.handleScroll(e), { passive: false });
+    this.svg.addEventListener("touchstart", (e) => this.handleTouchStart(e), { passive: false });
+    this.svg.addEventListener("touchmove", (e) => this.handleTouchMove(e), { passive: false });
+    this.elements.closeConvergents.addEventListener("click", () => this.closeModal("convergents"));
+    this.elements.closeFarey.addEventListener("click", () => this.closeModal("farey"));
+    window.addEventListener("click", (e) => {
+      if (e.target === this.elements.convergentsModal)
+        this.closeModal("convergents");
+      if (e.target === this.elements.fareyModal)
+        this.closeModal("farey");
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        this.closeModal("convergents");
+        this.closeModal("farey");
+      }
+    });
   }
   formatFraction(fraction, mode = null) {
     const displayMode = mode || this.displayMode;
@@ -4285,10 +4310,17 @@ class SternBrocotTreeVisualizer {
       } else {
         tildaDisplay += ".~0";
       }
+      const allConvergents = rational.convergents();
+      const displayConvergents = allConvergents.slice(0, 6);
+      const remainingCount = allConvergents.length - displayConvergents.length;
+      let convergentsDisplay = displayConvergents.map((c) => this.formatFraction(Fraction.fromRational(c), "fraction")).join(", ");
+      if (remainingCount > 0) {
+        convergentsDisplay += ` <span class="more-link" onclick="sternBrocotApp.showConvergentsModal()">...(+${remainingCount})</span>`;
+      }
       this.elements.continuedFraction.innerHTML = `
                 <strong>Standard notation:</strong> ${cfDisplay}<br>
                 <strong>RatMath notation:</strong> ${tildaDisplay}<br>
-                <strong>Convergents:</strong> ${rational.convergents(5).map((c) => this.formatFraction(Fraction.fromRational(c), "fraction")).join(", ")}...
+                <strong>Convergents:</strong> ${convergentsDisplay}
             `;
     } catch (error) {
       this.elements.continuedFraction.textContent = "Error calculating continued fraction";
@@ -4304,7 +4336,7 @@ class SternBrocotTreeVisualizer {
       const isReduced = this.currentFraction.numerator === reducedFraction.numerator && this.currentFraction.denominator === reducedFraction.denominator;
       const decimalValue = rational.toDecimal();
       this.elements.fareyInfo.innerHTML = `
-                <strong>First appears in:</strong> Farey sequence F<sub>${fareyLevel}</sub><br>
+                <strong>First appears in:</strong> Farey sequence F<sub>${fareyLevel}</sub> <span class="more-link" onclick="sternBrocotApp.showFareyModal()">Show sequence</span><br>
                 <strong>Tree depth:</strong> ${depth === Infinity ? "∞" : depth}<br>
                 <strong>Best approximation (denom ≤ 100):</strong> ${this.formatFraction(Fraction.fromRational(bestApprox), "fraction")}<br>
                 <strong>Is reduced:</strong> ${isReduced ? "Yes" : "No"}<br>
@@ -4333,27 +4365,34 @@ class SternBrocotTreeVisualizer {
   navigateToParent() {
     const parent = this.currentFraction.sternBrocotParent();
     if (parent) {
-      this.currentFraction = parent;
-      this.updateDisplay();
-      this.renderTree();
+      this.animateToNewFraction(parent);
     }
   }
   navigateToLeftChild() {
     const children = this.currentFraction.sternBrocotChildren();
-    this.currentFraction = children.left;
-    this.updateDisplay();
-    this.renderTree();
+    this.animateToNewFraction(children.left);
   }
   navigateToRightChild() {
     const children = this.currentFraction.sternBrocotChildren();
-    this.currentFraction = children.right;
-    this.updateDisplay();
-    this.renderTree();
+    this.animateToNewFraction(children.right);
   }
   reset() {
-    this.currentFraction = new Fraction(1, 1);
+    this.animateToNewFraction(new Fraction(1, 1));
+  }
+  animateToNewFraction(newFraction) {
+    const oldCenter = { x: this.svgWidth / 2, y: this.svgHeight / 2 };
+    this.currentFraction = newFraction;
+    this.scrollOffset = { x: 0, y: 0 };
     this.updateDisplay();
     this.renderTree();
+    if (this.treeContainer) {
+      this.treeContainer.style.opacity = "0.7";
+      setTimeout(() => {
+        if (this.treeContainer) {
+          this.treeContainer.style.opacity = "1";
+        }
+      }, 100);
+    }
   }
   jumpToFraction() {
     const input = this.elements.jumpInput.value.trim();
@@ -4373,10 +4412,8 @@ class SternBrocotTreeVisualizer {
       if (fraction.numerator <= 0 || fraction.denominator <= 0) {
         throw new Error("Only positive fractions are supported");
       }
-      this.currentFraction = fraction;
       this.elements.jumpInput.value = "";
-      this.updateDisplay();
-      this.renderTree();
+      this.animateToNewFraction(fraction);
     } catch (error) {
       alert(`Invalid input: ${error.message}`);
     }
@@ -4408,19 +4445,59 @@ class SternBrocotTreeVisualizer {
     const target = e.target.closest(".tree-node");
     if (target && target.dataset.fraction) {
       const [num, den] = target.dataset.fraction.split("/").map(BigInt);
-      this.currentFraction = new Fraction(num, den);
-      this.updateDisplay();
-      this.renderTree();
+      const newFraction = new Fraction(num, den);
+      this.animateToNewFraction(newFraction);
+    }
+  }
+  handleScroll(e) {
+    e.preventDefault();
+    const scrollSpeed = 20;
+    if (e.shiftKey) {
+      this.scrollOffset.x -= e.deltaY * scrollSpeed * 0.1;
+    } else {
+      this.scrollOffset.y -= e.deltaY * scrollSpeed * 0.1;
+    }
+    this.updateTreeTransform();
+  }
+  handleTouchStart(e) {
+    if (e.touches.length === 1) {
+      this.lastTouchPosition = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY
+      };
+    }
+  }
+  handleTouchMove(e) {
+    e.preventDefault();
+    if (e.touches.length === 1 && this.lastTouchPosition) {
+      const deltaX = e.touches[0].clientX - this.lastTouchPosition.x;
+      const deltaY = e.touches[0].clientY - this.lastTouchPosition.y;
+      this.scrollOffset.x += deltaX * 0.5;
+      this.scrollOffset.y += deltaY * 0.5;
+      this.lastTouchPosition = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY
+      };
+      this.updateTreeTransform();
+    }
+  }
+  updateTreeTransform() {
+    if (this.treeContainer) {
+      this.treeContainer.setAttribute("transform", `translate(${this.scrollOffset.x}, ${this.scrollOffset.y})`);
     }
   }
   renderTree() {
     this.svg.innerHTML = "";
+    this.treeContainer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    this.treeContainer.setAttribute("class", "tree-container");
+    this.svg.appendChild(this.treeContainer);
     const treeData = this.getTreeStructure();
     this.renderEdges(treeData);
     this.renderNodes(treeData);
+    this.updateTreeTransform();
   }
   getTreeStructure() {
-    const maxDepth = 4;
+    const maxDescendantDepth = 2;
     const nodes = new Map;
     const center = { x: this.svgWidth / 2, y: this.svgHeight / 2 };
     nodes.set(this.currentFraction.toString(), {
@@ -4430,20 +4507,48 @@ class SternBrocotTreeVisualizer {
       type: "current",
       size: 45
     });
+    const currentParent = this.currentFraction.sternBrocotParent();
+    if (currentParent) {
+      try {
+        const currentSiblings = currentParent.sternBrocotChildren();
+        const siblingSpacing = 140;
+        let currentSibling = null;
+        if (currentSiblings.left.equals(this.currentFraction)) {
+          currentSibling = currentSiblings.right;
+        } else if (currentSiblings.right.equals(this.currentFraction)) {
+          currentSibling = currentSiblings.left;
+        }
+        if (currentSibling) {
+          const siblingKey = currentSibling.toString();
+          if (!nodes.has(siblingKey)) {
+            const isLeftSibling = currentSiblings.right.equals(this.currentFraction);
+            nodes.set(siblingKey, {
+              fraction: currentSibling,
+              x: center.x + (isLeftSibling ? -siblingSpacing : siblingSpacing),
+              y: center.y,
+              type: "current-sibling",
+              size: 35
+            });
+          }
+        }
+      } catch (e) {}
+    }
     let current = this.currentFraction;
     let y = center.y;
     const verticalSpacing = 90;
-    for (let i = 0;i < maxDepth; i++) {
+    let ancestorLevel = 0;
+    while (true) {
       const parent = current.sternBrocotParent();
       if (!parent)
         break;
+      ancestorLevel++;
       y -= verticalSpacing;
-      const parentSize = i === 0 ? 40 : 35;
+      const parentSize = ancestorLevel === 1 ? 40 : Math.max(30, 40 - ancestorLevel * 2);
       nodes.set(parent.toString(), {
         fraction: parent,
         x: center.x,
         y,
-        type: i === 0 ? "parent" : "ancestor",
+        type: ancestorLevel === 1 ? "parent" : "ancestor",
         size: parentSize
       });
       const grandparent = parent.sternBrocotParent();
@@ -4482,7 +4587,7 @@ class SternBrocotTreeVisualizer {
     current = this.currentFraction;
     y = center.y;
     const horizontalSpacing = 140;
-    for (let depth = 1;depth <= maxDepth; depth++) {
+    for (let depth = 1;depth <= maxDescendantDepth; depth++) {
       y += verticalSpacing;
       const levelNodes = this.getNodesAtDepth(current, depth);
       const nodeSize = depth === 1 ? 40 : Math.max(25, 40 - depth * 5);
@@ -4562,7 +4667,7 @@ class SternBrocotTreeVisualizer {
       text.setAttribute("font-size", fontSize);
       nodeGroup.appendChild(circle);
       nodeGroup.appendChild(text);
-      this.svg.appendChild(nodeGroup);
+      this.treeContainer.appendChild(nodeGroup);
     });
   }
   renderEdges(treeData) {
@@ -4584,11 +4689,86 @@ class SternBrocotTreeVisualizer {
         line.setAttribute("y1", parentNode.y + parentNode.size);
         line.setAttribute("x2", nodeData.x);
         line.setAttribute("y2", nodeData.y - nodeData.size);
-        this.svg.appendChild(line);
+        this.treeContainer.appendChild(line);
       }
     });
   }
+  showConvergentsModal() {
+    try {
+      const rational = this.currentFraction.toRational();
+      const allConvergents = rational.convergents();
+      const currentFractionStr = this.formatFraction(this.currentFraction, "fraction");
+      let modalContent = '<div class="convergents-grid">';
+      allConvergents.forEach((convergent, index) => {
+        const convergentFraction = Fraction.fromRational(convergent);
+        const convergentStr = this.formatFraction(convergentFraction, "fraction");
+        const isCurrent = convergentStr === currentFractionStr;
+        modalContent += `<span class="convergent-item ${isCurrent ? "current" : ""}" title="Convergent ${index + 1}">
+                    ${convergentStr}
+                </span>`;
+      });
+      modalContent += "</div>";
+      this.elements.allConvergents.innerHTML = modalContent;
+      this.elements.convergentsModal.style.display = "block";
+    } catch (error) {
+      console.error("Error showing convergents modal:", error);
+    }
+  }
+  showFareyModal() {
+    try {
+      const reducedFraction = this.currentFraction.reduce();
+      const fareyLevel = Math.min(Number(reducedFraction.denominator), 10);
+      const fareySequence = this.generateFareySequence(fareyLevel);
+      const currentFractionStr = this.formatFraction(this.currentFraction, "fraction");
+      let modalContent = `<h3>Farey Sequence F<sub>${fareyLevel}</sub></h3>`;
+      modalContent += '<div class="farey-grid">';
+      fareySequence.forEach((fraction) => {
+        const fractionStr = this.formatFraction(fraction, "fraction");
+        const isCurrent = fractionStr === currentFractionStr;
+        modalContent += `<span class="farey-item ${isCurrent ? "current" : ""}">
+                    ${fractionStr}
+                </span>`;
+      });
+      modalContent += "</div>";
+      if (fareyLevel === 10 && Number(reducedFraction.denominator) > 10) {
+        modalContent += `<p><em>Note: Showing F<sub>10</sub> only. The fraction ${currentFractionStr} first appears in F<sub>${reducedFraction.denominator}</sub>.</em></p>`;
+      }
+      this.elements.fareySequenceContent.innerHTML = modalContent;
+      this.elements.fareyModal.style.display = "block";
+    } catch (error) {
+      console.error("Error showing Farey modal:", error);
+    }
+  }
+  generateFareySequence(n) {
+    const fractions = [];
+    for (let b = 1;b <= n; b++) {
+      for (let a = 0;a <= b; a++) {
+        try {
+          const fraction = new Fraction(BigInt(a), BigInt(b));
+          const reduced = fraction.reduce();
+          const fractionStr = reduced.toString();
+          if (!fractions.some((f) => f.toString() === fractionStr)) {
+            fractions.push(reduced);
+          }
+        } catch (e) {}
+      }
+    }
+    fractions.sort((a, b) => {
+      const aVal = Number(a.numerator) / Number(a.denominator);
+      const bVal = Number(b.numerator) / Number(b.denominator);
+      return aVal - bVal;
+    });
+    return fractions;
+  }
+  closeModal(type) {
+    if (type === "convergents") {
+      this.elements.convergentsModal.style.display = "none";
+    } else if (type === "farey") {
+      this.elements.fareyModal.style.display = "none";
+    }
+  }
 }
+var sternBrocotApp;
 document.addEventListener("DOMContentLoaded", () => {
-  new SternBrocotTreeVisualizer;
+  sternBrocotApp = new SternBrocotTreeVisualizer;
 });
