@@ -129,18 +129,19 @@ Add continued fraction support to RatMath library using the syntax `3.~7~15~1~29
 - ✅ **Complete: All 47/47 tests passing - algorithmic issues resolved**
 
 ### 12. Calculator Integration
-- [ ] Update terminal calculator to display continued fraction option
-- [ ] Add CF command to show continued fraction representation
-- [ ] Update web calculator to support continued fraction input/output
+- [x] Update terminal calculator to display continued fraction option
+- [x] Add CF command to show continued fraction representation
+- [x] Update web calculator to support continued fraction input/output
 - [ ] Add continued fraction examples to help documentation
 
 ### 13. Stern-Brocot Tree Interactive Demonstration
 - [ ] Create separate web page for Stern-Brocot tree navigation
-  - Located at `docs/stern-brocot.html` with supporting CSS/JS
+  - Located at `docs/stern-brocot.html` with supporting CSS/JS/SVG
   - Interactive tree visualization starting from any reduced fraction
-  - Navigation controls: Up/Down arrows (to parent/child) + Left/Right arrows (sibling selection)
+  - Clicking on a node centers on it
 - [ ] Tree visualization features
-  - [ ] Display current fraction prominently with decimal approximation
+  - [ ] Each node displays the number in it; there should be mode toggling for what is displayed (modes as in calc.js)
+  - [ ] The current node is largest and then parents, children, siblings reduce in size based on number of steps to reach them
   - [ ] Show current tree path from root as L/R sequence
   - [ ] Display left and right boundary fractions for current position
   - [ ] Show tree depth/level information
@@ -163,6 +164,7 @@ Add continued fraction support to RatMath library using the syntax `3.~7~15~1~29
   - [ ] Responsive design for mobile devices
   - [ ] Keyboard shortcuts for navigation
   - [ ] URL state management (shareable tree positions)
+  - [ ] Could use https://en.wikipedia.org/wiki/Stern–Brocot_tree#/media/File:SternBrocotTree.svg as inspiration for laying out tree
 
 ## Implementation Notes
 

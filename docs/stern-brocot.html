@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stern-Brocot Tree Explorer - Ratmath</title>
+  <meta name="description" content="Interactive Stern-Brocot tree visualization showing relationships between rational numbers">
+  <meta name="keywords" content="stern-brocot, tree, fractions, rationals, mathematics, visualization">
+  <meta name="author" content="James Taylor">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌳</text></svg>">
+  <link rel="stylesheet" href="stern-brocot.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Stern-Brocot Tree Explorer</h1>
+      <p>Navigate the infinite binary tree of all positive rational numbers</p>
+    </header>
+
+    <div class="main-content">
+      <!-- Navigation Panel -->
+      <div class="nav-panel">
+        <div class="current-fraction">
+          <h2 id="currentFraction">1/1</h2>
+          <div class="fraction-info">
+            <div class="info-item">
+              <label>Depth:</label>
+              <span id="currentDepth">0</span>
+            </div>
+            <div class="info-item">
+              <label>Path:</label>
+              <span id="currentPath">Root</span>
+            </div>
+            <div class="info-item">
+              <label>Boundaries:</label>
+              <span id="currentBoundaries">0/1 ← 1/1 → 1/0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="display-mode">
+          <label for="displayMode">Display Mode:</label>
+          <select id="displayMode">
+            <option value="fraction">Fraction</option>
+            <option value="decimal">Decimal</option>
+            <option value="mixed">Mixed Number</option>
+            <option value="cf">Continued Fraction</option>
+          </select>
+        </div>
+
+        <div class="navigation-controls">
+          <button id="parentBtn" class="nav-btn" title="Navigate to parent (Up Arrow)">↑ Parent</button>
+          <div class="child-controls">
+            <button id="leftChildBtn" class="nav-btn" title="Navigate to left child (Left Arrow)">← Left Child</button>
+            <button id="rightChildBtn" class="nav-btn" title="Navigate to right child (Right Arrow)">→ Right Child</button>
+          </div>
+          <button id="resetBtn" class="nav-btn reset" title="Return to root 1/1">🏠 Reset</button>
+        </div>
+
+        <div class="jump-controls">
+          <label for="jumpInput">Jump to fraction:</label>
+          <input type="text" id="jumpInput" placeholder="e.g., 3/4, 0.75, 1..2/3" />
+          <button id="jumpBtn" class="nav-btn">Go</button>
+        </div>
+      </div>
+
+      <!-- Tree Visualization -->
+      <div class="tree-container">
+        <svg id="treeSvg" viewBox="0 0 800 600">
+          <!-- Tree will be rendered here -->
+        </svg>
+      </div>
+
+      <!-- Info Panel -->
+      <div class="info-panel">
+        <div class="breadcrumbs">
+          <h3>Path from Root</h3>
+          <div id="breadcrumbPath"></div>
+        </div>
+
+        <div class="mediant-info">
+          <h3>Mediant Calculation</h3>
+          <div id="mediantCalculation"></div>
+        </div>
+
+        <div class="continued-fraction">
+          <h3>Continued Fraction</h3>
+          <div id="continuedFraction"></div>
+        </div>
+
+        <div class="farey-info">
+          <h3>Farey Sequence</h3>
+          <div id="fareyInfo"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="help-text">
+      <p><strong>Navigation:</strong> Use arrow keys or buttons to navigate. Click nodes to center on them. Type a fraction to jump directly to its position in the tree.</p>
+    </div>
+  </div>
+
+  <script src="stern-brocot.js"></script>
+</body>
+</html>

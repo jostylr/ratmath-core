@@ -2,6 +2,14 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## Stern-Brocot Tree Interactive Visualization
+
+**Model:** Claude Sonnet 4, **Date:** 2025-06-25
+
+Implemented item 13 from cf-todo.md: created an interactive Stern-Brocot tree visualization web page at `docs/stern-brocot.html`. Features include SVG-based tree rendering with dynamic node sizing based on distance from current node, multiple display modes (fraction, decimal, mixed number, continued fraction), keyboard navigation (arrow keys for tree traversal), click-to-navigate functionality, and a jump-to-fraction input field supporting RatMath notation. Educational features include breadcrumb path display, mediant calculation explanations, continued fraction representations, and Farey sequence information. The interface is fully responsive with mobile support and integrates seamlessly with the existing Fraction class Stern-Brocot tree methods.
+
+**Improvements (same date):** Enhanced the visualization with significantly larger node sizes for better mobile readability (45px for current node, 40px for children), increased font sizes (10-16px range), added grayed-out sibling nodes at each level to provide better tree context, fixed Farey sequence calculation errors with proper error handling, increased node spacing for clearer layout, and added proper CSS styling for sibling nodes with reduced opacity. The visualization now provides a much clearer understanding of the mathematical relationships between rational numbers in the infinite binary tree structure.
+
 ## Continued Fractions Implementation - Parser Extension
 
 **Model:** Claude Sonnet 4, **Date:** 2025-01-22
