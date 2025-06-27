@@ -11,6 +11,7 @@ class SternBrocotTreeVisualizer {
   constructor() {
     this.currentFraction = new Fraction(1, 1); // Start at root
     this.displayMode = "fraction";
+    this.cfNotationMode = "ratmath"; // Default to RatMath notation
     this.svg = document.getElementById("treeSvg");
     this.svgWidth = 800;
     this.svgHeight = 600;
@@ -55,6 +56,7 @@ class SternBrocotTreeVisualizer {
       fractionTooltip: document.getElementById("fractionTooltip"),
       expressionInput: document.getElementById("expressionInput"),
       expressionResult: document.getElementById("expressionResult"),
+      notationToggle: document.getElementById("notationToggle"),
     };
   }
 
@@ -81,6 +83,9 @@ class SternBrocotTreeVisualizer {
 
     // Help button
     this.elements.helpBtn.addEventListener("click", () => this.showHelpModal());
+
+    // Notation toggle button
+    this.elements.notationToggle.addEventListener("click", () => this.toggleNotation());
 
     // Expression calculator
     this.elements.expressionInput.addEventListener("input", () =>
@@ -498,18 +503,24 @@ class SternBrocotTreeVisualizer {
       const rational = this.currentFraction.toRational();
       const cf = rational.toContinuedFraction();
 
-      let cfDisplay = `[${cf[0]}`;
-      if (cf.length > 1) {
-        cfDisplay += `; ${cf.slice(1).join(", ")}`;
-      }
-      cfDisplay += "]";
-
-      // Also show the ~notation
-      let tildaDisplay = cf[0].toString();
-      if (cf.length > 1) {
-        tildaDisplay += ".~" + cf.slice(1).join("~");
+      let cfDisplay, notationLabel;
+      if (this.cfNotationMode === "standard") {
+        cfDisplay = `[${cf[0]}`;
+        if (cf.length > 1) {
+          cfDisplay += `; ${cf.slice(1).join(", ")}`;
+        }
+        cfDisplay += "]";
+        notationLabel = "Standard notation";
       } else {
-        tildaDisplay += ".~0";
+        // RatMath notation
+        cfDisplay = cf[0].toString();
+        if (cf.length > 1) {
+          cfDisplay += ".~" + cf.slice(1).join("~");
+        } else {
+          cfDisplay += ".~0";
+        }
+        cfDisplay = this.wrapContinuedFraction(cfDisplay);
+        notationLabel = "RatMath notation";
       }
 
       // Get convergents with enhanced display
@@ -528,8 +539,7 @@ class SternBrocotTreeVisualizer {
       }
 
       this.elements.continuedFraction.innerHTML = `
-                <strong>Standard notation:</strong> ${cfDisplay}<br>
-                <strong>RatMath notation:</strong> ${this.wrapContinuedFraction(tildaDisplay)}<br>
+                <strong>${notationLabel}:</strong> ${cfDisplay}<br>
                 <strong><span class="more-link" onclick="sternBrocotApp.showConvergentsModal()" style="text-decoration: none; color: inherit; cursor: pointer;" title="Click to view all convergents">Convergents:</span></strong> <span class="more-link" onclick="sternBrocotApp.showConvergentsModal()" style="cursor: pointer;">${convergentsDisplay}</span>
             `;
     } catch (error) {
@@ -557,6 +567,12 @@ class SternBrocotTreeVisualizer {
 
   reset() {
     this.animateToNewFraction(new Fraction(1, 1));
+  }
+
+  toggleNotation() {
+    this.cfNotationMode = this.cfNotationMode === "ratmath" ? "standard" : "ratmath";
+    this.elements.notationToggle.textContent = this.cfNotationMode === "ratmath" ? "Show Standard" : "Show RatMath";
+    this.updateContinuedFraction();
   }
 
   animateToNewFraction(newFraction) {
@@ -623,25 +639,42 @@ class SternBrocotTreeVisualizer {
   }
 
   handleKeyPress(e) {
+    // Don't interfere with arrow keys when user is typing in input fields
+    const activeElement = document.activeElement;
+    const isInputFocused = activeElement && (
+      activeElement.tagName === 'INPUT' || 
+      activeElement.tagName === 'TEXTAREA' || 
+      activeElement.contentEditable === 'true'
+    );
+
     switch (e.key) {
       case "ArrowUp":
-        e.preventDefault();
-        this.navigateToParent();
+        if (!isInputFocused) {
+          e.preventDefault();
+          this.navigateToParent();
+        }
         break;
       case "ArrowLeft":
-        e.preventDefault();
-        this.navigateToLeftChild();
+        if (!isInputFocused) {
+          e.preventDefault();
+          this.navigateToLeftChild();
+        }
         break;
       case "ArrowRight":
-        e.preventDefault();
-        this.navigateToRightChild();
+        if (!isInputFocused) {
+          e.preventDefault();
+          this.navigateToRightChild();
+        }
         break;
       case "Home":
-        e.preventDefault();
-        this.reset();
+        if (!isInputFocused) {
+          e.preventDefault();
+          this.reset();
+        }
         break;
       case "Escape":
         this.elements.jumpInput.blur();
+        this.elements.expressionInput.blur();
         break;
     }
   }

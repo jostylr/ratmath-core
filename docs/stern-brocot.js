@@ -4139,6 +4139,7 @@ class SternBrocotTreeVisualizer {
   constructor() {
     this.currentFraction = new Fraction(1, 1);
     this.displayMode = "fraction";
+    this.cfNotationMode = "ratmath";
     this.svg = document.getElementById("treeSvg");
     this.svgWidth = 800;
     this.svgHeight = 600;
@@ -4179,7 +4180,8 @@ class SternBrocotTreeVisualizer {
       closeHelp: document.getElementById("closeHelp"),
       fractionTooltip: document.getElementById("fractionTooltip"),
       expressionInput: document.getElementById("expressionInput"),
-      expressionResult: document.getElementById("expressionResult")
+      expressionResult: document.getElementById("expressionResult"),
+      notationToggle: document.getElementById("notationToggle")
     };
   }
   setupEventListeners() {
@@ -4193,6 +4195,7 @@ class SternBrocotTreeVisualizer {
         this.jumpToFraction();
     });
     this.elements.helpBtn.addEventListener("click", () => this.showHelpModal());
+    this.elements.notationToggle.addEventListener("click", () => this.toggleNotation());
     this.elements.expressionInput.addEventListener("input", () => this.updateExpressionResult());
     this.elements.expressionInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter")
@@ -4465,16 +4468,23 @@ class SternBrocotTreeVisualizer {
     try {
       const rational = this.currentFraction.toRational();
       const cf = rational.toContinuedFraction();
-      let cfDisplay = `[${cf[0]}`;
-      if (cf.length > 1) {
-        cfDisplay += `; ${cf.slice(1).join(", ")}`;
-      }
-      cfDisplay += "]";
-      let tildaDisplay = cf[0].toString();
-      if (cf.length > 1) {
-        tildaDisplay += ".~" + cf.slice(1).join("~");
+      let cfDisplay, notationLabel;
+      if (this.cfNotationMode === "standard") {
+        cfDisplay = `[${cf[0]}`;
+        if (cf.length > 1) {
+          cfDisplay += `; ${cf.slice(1).join(", ")}`;
+        }
+        cfDisplay += "]";
+        notationLabel = "Standard notation";
       } else {
-        tildaDisplay += ".~0";
+        cfDisplay = cf[0].toString();
+        if (cf.length > 1) {
+          cfDisplay += ".~" + cf.slice(1).join("~");
+        } else {
+          cfDisplay += ".~0";
+        }
+        cfDisplay = this.wrapContinuedFraction(cfDisplay);
+        notationLabel = "RatMath notation";
       }
       const allConvergents = rational.convergents();
       const displayConvergents = allConvergents.slice(0, 6);
@@ -4484,8 +4494,7 @@ class SternBrocotTreeVisualizer {
         convergentsDisplay += ` <span class="more-link" onclick="sternBrocotApp.showConvergentsModal()">...(+${remainingCount})</span>`;
       }
       this.elements.continuedFraction.innerHTML = `
-                <strong>Standard notation:</strong> ${cfDisplay}<br>
-                <strong>RatMath notation:</strong> ${this.wrapContinuedFraction(tildaDisplay)}<br>
+                <strong>${notationLabel}:</strong> ${cfDisplay}<br>
                 <strong><span class="more-link" onclick="sternBrocotApp.showConvergentsModal()" style="text-decoration: none; color: inherit; cursor: pointer;" title="Click to view all convergents">Convergents:</span></strong> <span class="more-link" onclick="sternBrocotApp.showConvergentsModal()" style="cursor: pointer;">${convergentsDisplay}</span>
             `;
     } catch (error) {
@@ -4508,6 +4517,11 @@ class SternBrocotTreeVisualizer {
   }
   reset() {
     this.animateToNewFraction(new Fraction(1, 1));
+  }
+  toggleNotation() {
+    this.cfNotationMode = this.cfNotationMode === "ratmath" ? "standard" : "ratmath";
+    this.elements.notationToggle.textContent = this.cfNotationMode === "ratmath" ? "Show Standard" : "Show RatMath";
+    this.updateContinuedFraction();
   }
   animateToNewFraction(newFraction) {
     const oldCenter = { x: this.svgWidth / 2, y: this.svgHeight / 2 };
@@ -4550,25 +4564,36 @@ class SternBrocotTreeVisualizer {
     }
   }
   handleKeyPress(e) {
+    const activeElement = document.activeElement;
+    const isInputFocused = activeElement && (activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA" || activeElement.contentEditable === "true");
     switch (e.key) {
       case "ArrowUp":
-        e.preventDefault();
-        this.navigateToParent();
+        if (!isInputFocused) {
+          e.preventDefault();
+          this.navigateToParent();
+        }
         break;
       case "ArrowLeft":
-        e.preventDefault();
-        this.navigateToLeftChild();
+        if (!isInputFocused) {
+          e.preventDefault();
+          this.navigateToLeftChild();
+        }
         break;
       case "ArrowRight":
-        e.preventDefault();
-        this.navigateToRightChild();
+        if (!isInputFocused) {
+          e.preventDefault();
+          this.navigateToRightChild();
+        }
         break;
       case "Home":
-        e.preventDefault();
-        this.reset();
+        if (!isInputFocused) {
+          e.preventDefault();
+          this.reset();
+        }
         break;
       case "Escape":
         this.elements.jumpInput.blur();
+        this.elements.expressionInput.blur();
         break;
     }
   }

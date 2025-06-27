@@ -2,6 +2,12 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## RatTree UI Improvements - Notation Toggle and Input Navigation
+
+**Model:** Claude Sonnet 4, **Date:** 2025-06-27
+
+Enhanced the RatTree (Stern-Brocot Tree Explorer) with improved user interface functionality. Added continued fraction notation toggle button that switches between RatMath notation (default) and standard mathematical notation, replacing the previous dual display with a cleaner single-notation view. The toggle button is styled consistently with the existing interface and positioned inline with the "Continued Fraction" heading. Fixed arrow key navigation conflict where tree navigation was overriding normal text input behavior in the expression box and jump input field. Modified keyboard event handling to only intercept arrow keys when input fields are not focused, allowing proper cursor movement and text selection within input elements while preserving tree navigation functionality. Updated the `handleKeyPress` method to check for active input elements (INPUT, TEXTAREA, contentEditable) before preventing default arrow key behavior. Enhanced escape key handling to blur both jump input and expression input fields. These improvements provide a more intuitive user experience with better input field functionality and cleaner notation display options.
+
 ## Visualization Help Documentation and Integration
 
 **Model:** Claude Sonnet 4, **Date:** 2025-06-27
