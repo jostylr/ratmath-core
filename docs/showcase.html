@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>RatMath Library - Interactive Showcase</title>
+        <meta
+            name="description"
+            content="Explore the RatMath JavaScript library with interactive examples"
+        />
+        <meta
+            name="keywords"
+            content="ratmath, javascript, library, rational, arithmetic, bigint, examples"
+        />
+        <meta name="author" content="James Taylor" />
+        <link
+            rel="icon"
+            href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>"
+        />
+        <link rel="stylesheet" href="showcase.css" />
+    </head>
+    <body>
+        <a href="index.html" class="home-link" title="RatMath Home">
+            <img src="logo.svg" alt="RatMath Logo" width="40" height="40" />
+        </a>
+
+        <div class="container">
+            <header>
+                <h1>RatMath Library</h1>
+                <p>
+                    JavaScript library for exact rational arithmetic using
+                    BigInt
+                </p>
+            </header>
+
+            <nav class="page-nav">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#examples" class="nav-link">Examples</a>
+                <a href="#playground" class="nav-link">Playground</a>
+                <a href="#api" class="nav-link">API</a>
+                <a href="#installation" class="nav-link">Installation</a>
+            </nav>
+
+            <section id="features" class="section">
+                <h2>Key Features</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <h3>🎯 Exact Arithmetic</h3>
+                        <p>
+                            No floating-point errors. Every calculation
+                            maintains perfect precision using BigInt internally.
+                        </p>
+                        <div class="code-example">
+                            <pre><code>// JavaScript floats
+0.1 + 0.2 === 0.3  // false!
+
+// RatMath
+R`0.1 + 0.2`.equals(R`0.3`)  // true!</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>📊 Interval Arithmetic</h3>
+                        <p>
+                            Built-in support for interval calculations, perfect
+                            for uncertainty analysis.
+                        </p>
+                        <div class="code-example">
+                            <pre><code>// Create intervals
+const a = R`1:2`      // [1, 2]
+const b = R`0.5:1.5`  // [0.5, 1.5]
+
+// Operations preserve bounds
+R`1:2 + 0.5:1.5`  // [1.5, 3.5]</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>🔢 Type System</h3>
+                        <p>
+                            Smart type promotion: Integer → Rational →
+                            RationalInterval as needed.
+                        </p>
+                        <div class="code-example">
+                            <pre><code>R`5 + 7`        // Integer(12)
+R`5 / 2`        // Rational(5/2)
+R`5 + 1:2`      // RationalInterval([6, 7])</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>🎨 Rich Notation</h3>
+                        <p>
+                            Support for mixed numbers, repeating decimals,
+                            continued fractions, and more.
+                        </p>
+                        <div class="code-example">
+                            <pre><code>R`2..1/3`    // Mixed: 2 and 1/3
+R`0.#3`      // Repeating: 0.333... = 1/3
+R`3.~7~15~1` // Continued fraction = 355/113</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="examples" class="section">
+                <h2>Interactive Examples</h2>
+
+                <div class="example-box">
+                    <h3>Basic Arithmetic</h3>
+                    <div class="example-input">
+                        <input
+                            type="text"
+                            id="basic-expr"
+                            value="1/3 + 1/6"
+                            placeholder="Enter expression"
+                        />
+                        <button onclick="evaluateBasic()">Evaluate</button>
+                    </div>
+                    <div class="example-output" id="basic-output"></div>
+                </div>
+
+                <div class="example-box">
+                    <h3>Repeating Decimals</h3>
+                    <div class="example-input">
+                        <input
+                            type="text"
+                            id="repeat-expr"
+                            value="0.#142857 * 7"
+                            placeholder="e.g., 0.#3, 0.#142857"
+                        />
+                        <button onclick="evaluateRepeating()">Evaluate</button>
+                    </div>
+                    <div class="example-output" id="repeat-output"></div>
+                </div>
+
+                <div class="example-box">
+                    <h3>Interval Operations</h3>
+                    <div class="example-input">
+                        <input
+                            type="text"
+                            id="interval-expr"
+                            value="(1.4:1.6) * (2.9:3.1)"
+                            placeholder="e.g., 1:2 + 0.5:1"
+                        />
+                        <button onclick="evaluateInterval()">Evaluate</button>
+                    </div>
+                    <div class="example-output" id="interval-output"></div>
+                </div>
+
+                <div class="example-box">
+                    <h3>Continued Fractions</h3>
+                    <div class="example-input">
+                        <input
+                            type="text"
+                            id="cf-expr"
+                            value="3.~7~15~1"
+                            placeholder="e.g., 3.~7~15~1 for π approximation"
+                        />
+                        <button onclick="evaluateCF()">Evaluate</button>
+                    </div>
+                    <div class="example-output" id="cf-output"></div>
+                </div>
+            </section>
+
+            <section id="playground" class="section">
+                <h2>Code Playground</h2>
+                <p>
+                    Try the RatMath API directly in your browser. Press
+                    <kbd>Ctrl+Enter</kbd> (or <kbd>Cmd+Enter</kbd>) to run code:
+                </p>
+
+                <div class="playground">
+                    <div class="playground-editor">
+                        <textarea id="playground-code" rows="10">
+// Using RatMath template literals
+const { R, F, Parser } = RatMath;
+
+// Exact fractions using expressions
+const sum = R`1/3 + 1/6`;
+console.log(`1/3 + 1/6 = ${sum}`);
+console.log(`Decimal: ${sum.toDecimal()}`);
+
+// Or using method calls
+const a = R`1/3`;
+const b = R`1/6`;
+const sum2 = a.add(b);
+console.log(`Method call: ${a}.add(${b}) = ${sum2}`);
+
+// Interval arithmetic with range notation
+const iv1 = R`1.5[+-1.2]`;
+const iv2 = R`2.3[+5,-3]`;
+console.log(`Intervals: ${iv1.toRepeatingDecimal()}, ${iv2.toRepeatingDecimal()}, and their sum ${iv1.add(iv2).toRepeatingDecimal()}`);
+
+// Type promotion in expressions
+const result = R`42 / (7/3)`;
+console.log(`42 ÷ (7/3) = ${result} (${result.constructor.name})`);</textarea
+                        >
+                    </div>
+                    <div class="playground-controls">
+                        <button onclick="runPlayground()">Run Code</button>
+                        <button onclick="clearPlayground()">
+                            Clear Output
+                        </button>
+                    </div>
+                    <div class="playground-output" id="playground-output"></div>
+                </div>
+            </section>
+
+            <section id="api" class="section">
+                <h2>API Quick Reference</h2>
+
+                <div class="api-grid">
+                    <div class="api-card">
+                        <h3>Creating Numbers</h3>
+                        <pre><code>R\`1/2\`         // Rational
+R\`42\`          // Integer
+R\`1:2\`         // Interval
+F\`3/4\`         // Fraction (no reduction)</code></pre>
+                    </div>
+
+                    <div class="api-card">
+                        <h3>Operations</h3>
+                        <pre><code>.add(other)
+.subtract(other)
+.multiply(other)
+.divide(other)
+.pow(n)</code></pre>
+                    </div>
+
+                    <div class="api-card">
+                        <h3>Comparisons</h3>
+                        <pre><code>.equals(other)
+.lessThan(other)
+.greaterThan(other)
+.lessThanOrEqual(other)
+.greaterThanOrEqual(other)</code></pre>
+                    </div>
+
+                    <div class="api-card">
+                        <h3>Conversions</h3>
+                        <pre><code>.toString()
+.toDecimal(limit)
+.toMixed()
+.toContinuedFraction()
+.toScientific(precision)</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="installation" class="section">
+                <h2>Installation</h2>
+
+                <div class="install-options">
+                    <div class="install-card">
+                        <h3>NPM</h3>
+                        <pre><code>npm install ratmath</code></pre>
+                    </div>
+
+                    <div class="install-card">
+                        <h3>Bun</h3>
+                        <pre><code>bun add ratmath</code></pre>
+                    </div>
+
+                    <div class="install-card">
+                        <h3>Browser (ES Modules)</h3>
+                        <pre><code>&lt;script type="module"&gt;
+  import { R, F } from './ratmath.js';
+  // Your code here
+&lt;/script&gt;</code></pre>
+                    </div>
+                </div>
+
+                <div class="usage-example">
+                    <h3>Basic Usage</h3>
+                    <pre><code>import { R, Parser } from 'ratmath';
+
+// Using template literals with expressions
+const sum = R\`1/3 + 2/3\`;  // Rational(1)
+
+// Or using method calls
+const third = R\`1/3\`;
+const twoThirds = R\`2/3\`;
+const sum2 = third.add(twoThirds);  // Rational(1)
+
+// Using Parser directly
+const expr = Parser.parse("1/2 + 1/3");  // Rational(5/6)
+
+// Working with intervals
+const measurement = R\`5.2[+-0.05]\`;  // [5.15, 5.25]</code></pre>
+                </div>
+            </section>
+
+            <footer>
+                <div class="footer-links">
+                    <a href="https://github.com/jostylr/ratmath" target="_blank"
+                        >GitHub</a
+                    >
+                    <a href="calc.html">RatCalc</a>
+                    <a href="stern-brocot.html">RatTree</a>
+                </div>
+                <p>
+                    Created by James Taylor with the help of Novix and Zeddy! 🎉
+                </p>
+            </footer>
+        </div>
+
+        <script type="module" src="showcase.js"></script>
+    </body>
+</html>

@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Important to note: 1) Do not modify docs/calc.js. This is a build artifact; modify web-calc.js instead. 2) Changes to the repository by claude should be recorded in a brief fashion in ai-changelog.md A major new change should be under its own heading. Each change should have the model and date/time, a single summary sentence, and then a small paragraph if more details are necessary.
+Important to note: 1) Do not modify docs/calc.js, docs/stern-brocot.js, or docs/ratmath.js. These are build artifacts; modify the source files and rebuild instead. 2) Changes to the repository by claude should be recorded in a brief fashion in ai-changelog.md A major new change should be under its own heading. Each change should have the model and date/time, a single summary sentence, and then a small paragraph if more details are necessary.
 
 ## Project Overview
 
@@ -14,7 +14,12 @@ Important to note: 1) Do not modify docs/calc.js. This is a build artifact; modi
 - `bun test` - Run all tests (preferred runtime)
 - `bun test tests/specific-test.js` - Run single test file
 - `bun calc.js` - Launch terminal calculator for testing
-- `bun run build-web` - Build web calculator bundle
+
+### Build Commands
+- `bun run build-web` - Build web calculator bundle (docs/calc.js)
+- `bun run build-stern-brocot` - Build Stern-Brocot tree explorer (docs/stern-brocot.js)
+- `bun run build-showcase` - Build showcase page library bundle (docs/ratmath.js)
+- `bun run build-all` - Build all web components
 - `bun run serve` - Serve web calculator locally on port 3000
 
 ### Project Uses Bun as Primary Runtime

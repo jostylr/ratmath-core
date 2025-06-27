@@ -2769,7 +2769,7 @@ class Parser {
         }
       }
     }
-    if (expr[0] === "-" && !expr.includes("[")) {
+    if (expr[0] === "-" && !expr.includes("[") && !expr.includes(":")) {
       const factorResult = Parser.#parseFactor(expr.substring(1), options);
       let negatedValue;
       if (options.typeAware && factorResult.value instanceof Integer) {
@@ -3217,7 +3217,7 @@ class Parser {
       if (colonIndex > 0) {
         const beforeColon = expr.substring(0, colonIndex);
         const afterColonStart = expr.substring(colonIndex + 1);
-        if (/^-?[\d.#]+$/.test(beforeColon) && /^-?[\d.#]/.test(afterColonStart)) {
+        if (/^-?[\d.#]+$/.test(beforeColon) && /^-?[\d.#]/.test(afterColonStart) && (beforeColon.includes("#") || afterColonStart.includes("#"))) {
           try {
             const possibleInterval = parseRepeatingDecimal(expr);
             if (possibleInterval instanceof RationalInterval) {
@@ -5306,18 +5306,18 @@ class SternBrocotTreeVisualizer {
       <p>To approximate √2 using the Stern-Brocot tree:</p>
       <ol>
         <li><strong>Enter expression:</strong> Type "x^2" in the expression calculator</li>
-        <li><strong>Navigate the tree:</strong> The result shows whether x² is greater than, less than, or approximately equal to 2</li>
+        <li><strong>Navigate the tree:</strong> Compare the result to 2</li>
         <li><strong>Binary search:</strong>
           <ul>
-            <li>If result shows "> 2", go left (fraction too large)</li>
-            <li>If result shows "< 2", go right (fraction too small)</li>
-            <li>If result shows "≈ 2", you've found a good approximation!</li>
+            <li>If the result is > 2, go left (fraction too large)</li>
+            <li>If result is < 2, go right (fraction too small)</li>
+            <li>Stop when the result is close enough to 2 for your liking.</li>
           </ul>
         </li>
         <li><strong>Example path:</strong> Starting from 1/1, you might navigate R→R→L→L→R→... getting closer to √2 ≈ 1.414</li>
         <li><strong>Convergents:</strong> Each step gives you the best rational approximation with that denominator</li>
       </ol>
-      <p><strong>Try it:</strong> Start at 1/1, enter "x^2", and follow the > 2 / < 2 guidance to discover the continued fraction [1; 2, 2, 2, 2, ...] for √2!</p>
+      <p><strong>Try it:</strong> Start at 1/1, enter "x^2", and follow the guidance to discover the continued fraction [1; 2, 2, 2, 2, ...] for √2!</p>
 
       <h3>Navigation Tips</h3>
       <ul>

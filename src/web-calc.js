@@ -660,7 +660,7 @@ class WebCalculator {
     welcome.className = "output-entry";
     welcome.innerHTML = `
       <div class="output-line no-mobile" style="color: #059669; font-weight: 600;">
-        Welcome to Ratmath Calculator!
+        Welcome to RatCalc!
       </div>
       <div class="output-line no-mobile" style="margin-top: 0.5rem;">
         Type mathematical expressions and press Enter to calculate.

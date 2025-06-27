@@ -4,6 +4,28 @@
     box-sizing: border-box;
 }
 
+/* Home navigation */
+.home-link {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 100;
+    opacity: 0.8;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.home-link:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.home-link img {
+    display: block;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
 html,
 body {
     height: 100%;

@@ -787,7 +787,7 @@ class Calculator {
 
   showHelp() {
     console.log(`
-Ratmath Terminal Calculator
+RatCalc Terminal
 
 BASIC ARITHMETIC:
   +, -, *, /        Basic operations
@@ -954,7 +954,7 @@ Press Ctrl+C to exit
   }
 
   start() {
-    console.log("Ratmath Terminal Calculator");
+    console.log("RatCalc Terminal");
     console.log("Type HELP for help, EXIT to quit");
     console.log("");
     this.rl.prompt();
