@@ -7,6 +7,7 @@
 
 import { Parser, Rational, RationalInterval, Integer } from "../index.js";
 import { VariableManager } from "./var.js";
+import { IntervalVisualization, OperationVisualization, MultiStepVisualization } from "./IntervalVisualization.js";
 
 class WebCalculator {
   constructor() {
@@ -22,6 +23,8 @@ class WebCalculator {
     this.mobileInput = ""; // Track mobile input separately
     this.mobileKeypadSetup = false; // Track if mobile keypad is setup
     this.variableManager = new VariableManager(); // Variable and function management
+    this.currentVisualization = null; // Current visualization instance
+    this.lastResult = null; // Store last result for visualization
 
     this.initializeElements();
     this.setupEventListeners();
@@ -39,6 +42,15 @@ class WebCalculator {
     this.mobileKeypad = document.getElementById("mobileKeypad");
     this.commandPanel = document.getElementById("commandPanel");
     this.closeCommandPanel = document.getElementById("closeCommandPanel");
+    
+    // Visualization elements
+    this.visualizationModal = document.getElementById("visualizationModal");
+    this.visualizationContainer = document.getElementById("visualizationContainer");
+    this.closeVisualization = document.getElementById("closeVisualization");
+    this.exportSVGBtn = document.getElementById("exportSVGBtn");
+    this.exportHTMLBtn = document.getElementById("exportHTMLBtn");
+    this.saveComputationBtn = document.getElementById("saveComputationBtn");
+    this.stepSizeInput = document.getElementById("stepSizeInput");
   }
 
   setupEventListeners() {
@@ -58,10 +70,30 @@ class WebCalculator {
       }
     });
 
+    // Visualization modal handlers
+    this.closeVisualization.addEventListener("click", () => this.hideVisualization());
+    this.visualizationModal.addEventListener("click", (e) => {
+      if (e.target === this.visualizationModal) {
+        this.hideVisualization();
+      }
+    });
+
+
+    // Visualization control handlers
+    this.exportSVGBtn.addEventListener("click", () => this.exportVisualizationSVG());
+    this.exportHTMLBtn.addEventListener("click", () => this.exportVisualizationHTML());
+    this.saveComputationBtn.addEventListener("click", () => this.saveVisualizationToCalculator());
+    this.stepSizeInput.addEventListener("input", () => this.updateVisualizationStepSize());
+    this.stepSizeInput.addEventListener("keydown", (e) => this.handleStepSizeKeydown(e));
+
     // Keyboard shortcuts
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         this.hideHelp();
+        this.hideVisualization();
+      } else if (this.visualizationModal.style.display === "block") {
+        // Handle arrow keys when visualization modal is open
+        this.handleVisualizationKeydown(e);
       }
     });
 
@@ -319,8 +351,10 @@ class WebCalculator {
     } else {
       // Regular expression evaluation
       try {
+        this.lastResult = varResult.result; // Store for visualization
+        this.lastExpression = input; // Store the expression for visualization
         const output = this.formatResult(varResult.result);
-        this.addToOutput("", output, false);
+        this.addToOutput("", output, false, varResult.result, input);
         this.finishEntry(output);
       } catch (error) {
         let errorMessage;
@@ -533,7 +567,7 @@ class WebCalculator {
     }
   }
 
-  addToOutput(input = null, output = null, isError = false) {
+  addToOutput(input = null, output = null, isError = false, result = null, expression = null) {
     const entry = document.createElement("div");
     entry.className = "output-entry";
 
@@ -561,14 +595,31 @@ class WebCalculator {
       outputLine.className = isError ? "error-line" : "output-line";
 
       if (!isError) {
-        outputLine.innerHTML = `${this.escapeHtml(output)}<span class="inject-icon" title="Inject value">→</span>`;
+        let icons = `<span class="inject-icon" title="Inject value">→</span>`;
+        
+        // Add visualization icon for intervals
+        if (result && (result instanceof RationalInterval || result.constructor.name === 'RationalInterval')) {
+          icons += `<span class="viz-icon" title="Visualize interval">📊</span>`;
+        }
+        
+        outputLine.innerHTML = `${this.escapeHtml(output)}${icons}`;
+
+        // Store expression with this output for visualization
+        if (expression) {
+          outputLine.dataset.expression = expression;
+        }
 
         // Add click handler for inject
         outputLine.addEventListener("click", (e) => {
-          if (
-            e.target.classList.contains("inject-icon") ||
-            e.currentTarget === outputLine
-          ) {
+          if (e.target.classList.contains("inject-icon")) {
+            e.stopPropagation();
+            const value = this.extractValue(output);
+            this.injectValue(value);
+          } else if (e.target.classList.contains("viz-icon")) {
+            e.stopPropagation();
+            const storedExpression = outputLine.dataset.expression || "";
+            this.showVisualization(result, storedExpression);
+          } else if (e.currentTarget === outputLine && !e.target.classList.contains("viz-icon")) {
             e.stopPropagation();
             const value = this.extractValue(output);
             this.injectValue(value);
@@ -634,6 +685,7 @@ class WebCalculator {
       setTimeout(() => this.inputElement.focus(), 100);
     }
   }
+
 
   clearHistory() {
     this.outputHistoryElement.innerHTML = "";
@@ -1008,6 +1060,340 @@ class WebCalculator {
 
   hideCommandPanel() {
     this.commandPanel.classList.remove("show");
+  }
+
+  showVisualization(result, expression = "") {
+    // Clear previous visualization
+    this.visualizationContainer.innerHTML = "";
+    
+    if (this.currentVisualization) {
+      this.currentVisualization.destroy();
+      this.currentVisualization = null;
+    }
+
+    if (result instanceof RationalInterval) {
+      // Check if this is an operation
+      const isOperation = expression.includes('+') || expression.includes('-') || 
+                         expression.includes('*') || expression.includes('/');
+      
+      if (isOperation) {
+        // Parse the expression tree
+        const operationTree = this.parseOperationExpression(expression);
+        
+        if (operationTree && operationTree.type === 'operation') {
+          // Complex multi-step operation - use MultiStepVisualization
+          this.currentVisualization = new MultiStepVisualization(this.visualizationContainer, {
+            width: this.visualizationContainer.clientWidth || Math.min(window.innerWidth - 100, 900)
+          });
+          
+          this.currentVisualization.visualizeExpressionTree(operationTree, result);
+          this.updateVisualizationStepSize(); // Apply current step size
+        } else {
+          // Fallback to simple visualization
+          this.currentVisualization = new IntervalVisualization(this.visualizationContainer, {
+            width: this.visualizationContainer.clientWidth || Math.min(window.innerWidth - 100, 800),
+            height: 200
+          });
+          
+          // Use expression as label if it's simple, otherwise use "Interval"
+          const label = expression && expression.length <= 20 ? expression : "Interval";
+          this.currentVisualization.addInterval(result, {
+            label: label,
+            color: "#2563eb",
+            draggable: true
+          });
+          this.updateVisualizationStepSize(); // Apply current step size
+        }
+      } else {
+        // Simple interval visualization
+        this.currentVisualization = new IntervalVisualization(this.visualizationContainer, {
+          width: this.visualizationContainer.clientWidth || Math.min(window.innerWidth - 100, 800),
+          height: 200
+        });
+        
+        // Use expression as label if it's simple, otherwise use "Interval"
+        const label = expression && expression.length <= 20 ? expression : "Interval";
+        this.currentVisualization.addInterval(result, {
+          label: label,
+          color: "#2563eb",
+          draggable: true
+        });
+        this.updateVisualizationStepSize(); // Apply current step size
+      }
+      
+      // Listen for interval changes
+      this.visualizationContainer.addEventListener('intervalChange', (e) => {
+        // Update the save button to reflect changes
+        this.saveComputationBtn.textContent = "Save Modified Interval";
+        this.saveComputationBtn.classList.add("modified");
+      });
+    }
+
+    // Show modal
+    this.visualizationModal.style.display = "block";
+    document.body.style.overflow = "hidden";
+  }
+
+  hideVisualization() {
+    this.visualizationModal.style.display = "none";
+    document.body.style.overflow = "auto";
+    
+    if (this.currentVisualization) {
+      this.currentVisualization.destroy();
+      this.currentVisualization = null;
+    }
+    
+    // Reset save button
+    this.saveComputationBtn.textContent = "Save to Calculator";
+    this.saveComputationBtn.classList.remove("modified");
+    
+    // Reset step size to default
+    this.stepSizeInput.value = "10";
+    
+    // Delay focus to ensure modal is fully hidden (except on mobile)
+    if (!this.isMobile()) {
+      setTimeout(() => this.inputElement.focus(), 100);
+    }
+  }
+  
+  handleStepSizeKeydown(e) {
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const currentValue = parseInt(this.stepSizeInput.value) || 10;
+      this.stepSizeInput.value = Math.max(1, currentValue + 1);
+      this.updateVisualizationStepSize();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const currentValue = parseInt(this.stepSizeInput.value) || 10;
+      this.stepSizeInput.value = Math.max(1, currentValue - 1);
+      this.updateVisualizationStepSize();
+    }
+  }
+  
+  handleVisualizationKeydown(e) {
+    // Handle up/down for step size everywhere except input fields
+    // Left/right only handled by selected intervals
+    if (e.target.tagName.toLowerCase() === 'input') {
+      return; // Let input handle its own keys
+    }
+    
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const currentValue = parseInt(this.stepSizeInput.value) || 10;
+      this.stepSizeInput.value = Math.max(1, currentValue + 1);
+      this.updateVisualizationStepSize();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const currentValue = parseInt(this.stepSizeInput.value) || 10;
+      this.stepSizeInput.value = Math.max(1, currentValue - 1);
+      this.updateVisualizationStepSize();
+    }
+    // Let selected intervals handle left/right arrows
+  }
+  
+  updateVisualizationStepSize() {
+    const n = parseInt(this.stepSizeInput.value) || 10;
+    const stepSize = new Rational(1, n); // 1/n
+    
+    if (this.currentVisualization) {
+      if (this.currentVisualization.setDragStepSize) {
+        // Single visualization
+        this.currentVisualization.setDragStepSize(stepSize);
+      } else if (this.currentVisualization.stages) {
+        // Multi-step visualization - update all stage visualizations
+        this.currentVisualization.stages.forEach(stage => {
+          if (stage.visualization && stage.visualization.setDragStepSize) {
+            stage.visualization.setDragStepSize(stepSize);
+          }
+        });
+      }
+    }
+  }
+
+
+  exportVisualizationSVG() {
+    if (this.currentVisualization) {
+      const svgData = this.currentVisualization.exportSVG();
+      const blob = new Blob([svgData], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'interval_visualization.svg';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  exportVisualizationHTML() {
+    if (this.currentVisualization && this.currentVisualization.exportHTML) {
+      const htmlData = this.currentVisualization.exportHTML();
+      const blob = new Blob([htmlData], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'interval_visualization.html';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  saveVisualizationToCalculator() {
+    if (!this.currentVisualization) return;
+    
+    let interval = null;
+    
+    if (this.currentVisualization instanceof MultiStepVisualization) {
+      // For multi-step visualization, get the result from the last stage
+      if (this.currentVisualization.stages.length > 0) {
+        const lastStage = this.currentVisualization.stages[this.currentVisualization.stages.length - 1];
+        if (lastStage.type === 'operation' && lastStage.result) {
+          interval = lastStage.result;
+        }
+      }
+    } else if (this.currentVisualization.intervals && this.currentVisualization.intervals.length > 0) {
+      // For simple visualizations, get the first/result interval
+      const intervalData = this.currentVisualization.intervals[0];
+      interval = intervalData.interval;
+    }
+    
+    if (interval) {
+      // Format the interval and inject it
+      const value = `${interval.low.toString()}:${interval.high.toString()}`;
+      this.injectValue(value);
+      
+      // Hide visualization
+      this.hideVisualization();
+    }
+  }
+
+  parseOperationExpression(expression) {
+    // Parse expression into an operation tree for multi-step visualization
+    return this.parseExpressionTree(expression);
+  }
+  
+  parseExpressionTree(expr) {
+    // Remove outer parentheses if they wrap the whole expression
+    expr = expr.trim();
+    if (expr.startsWith('(') && expr.endsWith(')')) {
+      let depth = 0;
+      let valid = true;
+      for (let i = 0; i < expr.length - 1; i++) {
+        if (expr[i] === '(') depth++;
+        else if (expr[i] === ')') depth--;
+        if (depth === 0) {
+          valid = false;
+          break;
+        }
+      }
+      if (valid) expr = expr.slice(1, -1).trim();
+    }
+    
+    // Check if this might be an interval - if it contains ':', be more careful with operators
+    const hasColon = expr.includes(':');
+    
+    // Find operators by precedence (+ and - have lower precedence than * and /)
+    const operators = [
+      { symbols: ['+', '-'], precedence: 1 },
+      { symbols: ['*', '/'], precedence: 2 }
+    ];
+    
+    for (const opGroup of operators) {
+      let parenDepth = 0;
+      // Scan from right to left to handle left-associativity
+      for (let i = expr.length - 1; i >= 0; i--) {
+        if (expr[i] === ')') parenDepth++;
+        else if (expr[i] === '(') parenDepth--;
+        else if (parenDepth === 0 && opGroup.symbols.includes(expr[i])) {
+          const leftExpr = expr.substring(0, i).trim();
+          const rightExpr = expr.substring(i + 1).trim();
+          const operator = expr[i];
+          
+          // Skip if this is a negative sign at the beginning of the expression
+          // or if the left expression would be empty or only whitespace
+          if (operator === '-' && (leftExpr === '' || leftExpr.trim() === '')) {
+            continue;
+          }
+          
+          // Also skip if this minus follows an operator (indicating negative number)
+          if (operator === '-' && i > 0) {
+            // Look backwards for the previous non-whitespace character
+            let prevChar = '';
+            for (let j = i - 1; j >= 0; j--) {
+              if (expr[j] !== ' ') {
+                prevChar = expr[j];
+                break;
+              }
+            }
+            if (['+', '-', '*', '/', '(', ':'].includes(prevChar)) {
+              continue;
+            }
+          }
+          
+          // Special check for intervals: if we have a colon and this is a division,
+          // check if this division might be part of interval notation
+          if (hasColon && operator === '/') {
+            // Check if the colon is in the right side (like "5/3:2")
+            if (rightExpr.includes(':')) {
+              continue;
+            }
+            // Check if the colon is in the left side (like "1/2:3/4" where we found the second /)
+            if (leftExpr.includes(':')) {
+              continue;
+            }
+            // Also try parsing the whole expression as an interval
+            try {
+              Parser.parse(expr);
+              // If it parses successfully as an interval, skip this division
+              continue;
+            } catch (e) {
+              // If it doesn't parse as an interval, proceed with division
+            }
+          }
+          
+          // Recursively parse sub-expressions
+          const leftTree = this.parseExpressionTree(leftExpr);
+          const rightTree = this.parseExpressionTree(rightExpr);
+          
+          const operationMap = {
+            '+': 'add',
+            '-': 'subtract',
+            '*': 'multiply',
+            '/': 'divide'
+          };
+          
+          return {
+            type: 'operation',
+            operator: operator,
+            operation: operationMap[operator],
+            left: leftTree,
+            right: rightTree
+          };
+        }
+      }
+    }
+    
+    // No operators found, this is a leaf node (number or interval)
+    try {
+      const value = Parser.parse(expr);
+      const interval = value instanceof RationalInterval ? value : 
+                      RationalInterval.point(value instanceof Integer ? value.toRational() : value);
+      
+      return {
+        type: 'value',
+        value: interval,
+        expression: expr,
+        isInput: true // Mark as input so it can be draggable
+      };
+    } catch (e) {
+      console.error("Failed to parse value:", expr, e);
+      return null;
+    }
   }
 }
 

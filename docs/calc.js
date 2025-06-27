@@ -2769,7 +2769,7 @@ class Parser {
         }
       }
     }
-    if (expr[0] === "-" && !expr.includes("[")) {
+    if (expr[0] === "-" && !expr.includes("[") && !expr.includes(":")) {
       const factorResult = Parser.#parseFactor(expr.substring(1), options);
       let negatedValue;
       if (options.typeAware && factorResult.value instanceof Integer) {
@@ -3217,7 +3217,7 @@ class Parser {
       if (colonIndex > 0) {
         const beforeColon = expr.substring(0, colonIndex);
         const afterColonStart = expr.substring(colonIndex + 1);
-        if (/^-?[\d.#]+$/.test(beforeColon) && /^-?[\d.#]/.test(afterColonStart)) {
+        if (/^-?[\d.#]+$/.test(beforeColon) && /^-?[\d.#]/.test(afterColonStart) && (beforeColon.includes("#") || afterColonStart.includes("#"))) {
           try {
             const possibleInterval = parseRepeatingDecimal(expr);
             if (possibleInterval instanceof RationalInterval) {
@@ -4467,6 +4467,1015 @@ class VariableManager {
   }
 }
 
+// src/IntervalVisualization.js
+class IntervalVisualization {
+  constructor(container, options = {}) {
+    this.container = container;
+    this.width = options.width || 800;
+    this.height = options.height || 250;
+    this.margin = options.margin || { top: 60, right: 60, bottom: 80, left: 60 };
+    this.plotWidth = this.width - this.margin.left - this.margin.right;
+    this.plotHeight = this.height - this.margin.top - this.margin.bottom;
+    this.intervals = [];
+    this.range = { min: new Rational(-10), max: new Rational(10) };
+    this.autoRange = true;
+    this.dragStepSize = new Rational(1, 10);
+    this.selectedIntervalId = null;
+    this.selectedEndpoint = null;
+    this.selectableElements = [];
+    this.recentlyDragged = false;
+    this.colors = ["#2563eb", "#dc2626", "#059669", "#d97706", "#7c3aed"];
+    this.colorIndex = 0;
+    this.initializeSVG();
+  }
+  initializeSVG() {
+    this.svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    this.svg.setAttribute("width", this.width);
+    this.svg.setAttribute("height", this.height);
+    this.svg.setAttribute("viewBox", `0 0 ${this.width} ${this.height}`);
+    this.svg.style.border = "1px solid #e5e7eb";
+    this.svg.style.borderRadius = "8px";
+    this.svg.style.background = "white";
+    this.svg.style.minWidth = `${this.width}px`;
+    this.svg.style.display = "block";
+    this.plotGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    this.plotGroup.setAttribute("transform", `translate(${this.margin.left}, ${this.margin.top})`);
+    this.svg.appendChild(this.plotGroup);
+    this.axisGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    this.plotGroup.appendChild(this.axisGroup);
+    this.intervalsGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    this.plotGroup.appendChild(this.intervalsGroup);
+    this.tooltip = document.createElement("div");
+    this.tooltip.style.position = "absolute";
+    this.tooltip.style.background = "rgba(0, 0, 0, 0.8)";
+    this.tooltip.style.color = "white";
+    this.tooltip.style.padding = "8px 12px";
+    this.tooltip.style.borderRadius = "4px";
+    this.tooltip.style.fontSize = "12px";
+    this.tooltip.style.pointerEvents = "none";
+    this.tooltip.style.opacity = "0";
+    this.tooltip.style.transition = "opacity 0.2s";
+    this.tooltip.style.zIndex = "1000";
+    document.body.appendChild(this.tooltip);
+    this.container.appendChild(this.svg);
+    this.renderAxis();
+  }
+  xScale(value) {
+    const range = this.range.max.subtract(this.range.min);
+    const position = value.subtract(this.range.min);
+    return position.toDecimal() / range.toDecimal() * this.plotWidth;
+  }
+  updateRange() {
+    if (!this.autoRange || this.intervals.length === 0)
+      return;
+    let min = null;
+    let max = null;
+    for (const intervalData of this.intervals) {
+      const interval = intervalData.interval;
+      if (min === null || interval.low.lessThan(min)) {
+        min = interval.low;
+      }
+      if (max === null || interval.high.greaterThan(max)) {
+        max = interval.high;
+      }
+    }
+    if (min !== null && max !== null) {
+      const range = max.subtract(min);
+      const padding = range.multiply(new Rational(1, 20));
+      const minPadding = new Rational(1, 2);
+      const actualPadding = padding.lessThan(minPadding) ? minPadding : padding;
+      this.range.min = min.subtract(actualPadding);
+      this.range.max = max.add(actualPadding);
+    }
+  }
+  renderAxis() {
+    this.axisGroup.innerHTML = "";
+    const axisLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    axisLine.setAttribute("x1", 0);
+    axisLine.setAttribute("y1", this.plotHeight / 2);
+    axisLine.setAttribute("x2", this.plotWidth);
+    axisLine.setAttribute("y2", this.plotHeight / 2);
+    axisLine.setAttribute("stroke", "#374151");
+    axisLine.setAttribute("stroke-width", "2");
+    this.axisGroup.appendChild(axisLine);
+    this.generateTicks();
+  }
+  generateTicks() {
+    const range = this.range.max.subtract(this.range.min);
+    const rangeDecimal = parseFloat(range.toDecimal());
+    let tickSpacing;
+    if (rangeDecimal <= 2) {
+      tickSpacing = new Rational(1, 4);
+    } else if (rangeDecimal <= 10) {
+      tickSpacing = new Rational(1);
+    } else if (rangeDecimal <= 50) {
+      tickSpacing = new Rational(5);
+    } else {
+      tickSpacing = new Rational(10);
+    }
+    const minDivided = this.range.min.divide(tickSpacing);
+    const firstTickMultiplier = new Rational(Math.ceil(parseFloat(minDivided.toDecimal())));
+    const firstTick = firstTickMultiplier.multiply(tickSpacing);
+    let currentTick = firstTick;
+    while (currentTick.lessThanOrEqual(this.range.max)) {
+      const x = this.xScale(currentTick);
+      const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      tick.setAttribute("x1", x);
+      tick.setAttribute("y1", this.plotHeight / 2 - 8);
+      tick.setAttribute("x2", x);
+      tick.setAttribute("y2", this.plotHeight / 2 + 8);
+      tick.setAttribute("stroke", "#374151");
+      tick.setAttribute("stroke-width", "1");
+      this.axisGroup.appendChild(tick);
+      const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      label.setAttribute("x", x);
+      label.setAttribute("y", this.plotHeight / 2 + 25);
+      label.setAttribute("text-anchor", "middle");
+      label.setAttribute("font-size", "12");
+      label.setAttribute("font-family", "monospace");
+      label.setAttribute("fill", "#374151");
+      const labelText = this.formatTickLabel(currentTick);
+      label.textContent = labelText;
+      this.axisGroup.appendChild(label);
+      currentTick = currentTick.add(tickSpacing);
+    }
+  }
+  formatTickLabel(rational) {
+    const decimal = rational.toDecimal();
+    if (decimal.length <= 4 && !decimal.includes("...")) {
+      return decimal;
+    } else {
+      return rational.toString();
+    }
+  }
+  addInterval(interval, options = {}) {
+    let color = options.color || this.colors[this.colorIndex % this.colors.length];
+    if (!options.draggable && !options.isResult) {
+      color = this.makePaleColor(color);
+    }
+    const intervalData = {
+      interval,
+      color,
+      label: options.label || `Interval ${this.intervals.length + 1}`,
+      id: options.id || `interval_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      draggable: options.draggable !== false,
+      isResult: options.isResult || false
+    };
+    this.intervals.push(intervalData);
+    this.colorIndex++;
+    this.updateRange();
+    this.renderAxis();
+    this.renderIntervals();
+    return intervalData.id;
+  }
+  removeInterval(id) {
+    this.intervals = this.intervals.filter((interval) => interval.id !== id);
+    this.updateRange();
+    this.renderAxis();
+    this.renderIntervals();
+  }
+  clearIntervals() {
+    this.intervals = [];
+    this.colorIndex = 0;
+    this.updateRange();
+    this.renderAxis();
+    this.renderIntervals();
+  }
+  renderIntervals() {
+    const wasSelected = this.selectedIntervalId;
+    const wasSelectedEndpoint = this.selectedEndpoint;
+    this.intervalsGroup.innerHTML = "";
+    this.selectableElements = [];
+    this.intervals.forEach((intervalData, index) => {
+      this.renderInterval(intervalData, index);
+    });
+    if (!wasSelected && this.selectableElements.length > 0) {
+      const firstInputElement = this.selectableElements.find((sel) => sel.endpointType === "left" && this.intervals.find((iv) => iv.id === sel.intervalId)?.draggable);
+      if (firstInputElement) {
+        setTimeout(() => {
+          this.selectElement(firstInputElement.intervalId, firstInputElement.endpointType);
+        }, 0);
+      }
+    } else if (wasSelected && wasSelectedEndpoint) {
+      setTimeout(() => {
+        this.selectElement(wasSelected, wasSelectedEndpoint);
+      }, 0);
+    }
+  }
+  renderInterval(intervalData, index) {
+    const { interval, color, label, id, draggable, isResult } = intervalData;
+    const operandIndex = this.intervals.filter((iv, i) => i < index && !iv.isResult).length;
+    const resultIndex = this.intervals.filter((iv, i) => i < index && iv.isResult).length;
+    const y = isResult ? this.plotHeight / 2 + 45 + resultIndex * 30 : this.plotHeight / 2 - 15 - operandIndex * 30;
+    const intervalGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    intervalGroup.setAttribute("data-interval-id", id);
+    const x1 = this.xScale(interval.low);
+    const x2 = this.xScale(interval.high);
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", x1);
+    line.setAttribute("y1", y);
+    line.setAttribute("x2", x2);
+    line.setAttribute("y2", y);
+    line.setAttribute("stroke", color);
+    line.setAttribute("stroke-width", "4");
+    line.setAttribute("stroke-linecap", "round");
+    if (draggable) {
+      line.style.cursor = "move";
+    }
+    intervalGroup.appendChild(line);
+    const leftPoint = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    leftPoint.setAttribute("cx", x1);
+    leftPoint.setAttribute("cy", y);
+    leftPoint.setAttribute("r", "6");
+    leftPoint.setAttribute("fill", color);
+    leftPoint.setAttribute("stroke", "white");
+    leftPoint.setAttribute("stroke-width", "2");
+    if (draggable) {
+      leftPoint.style.cursor = "ew-resize";
+      leftPoint.setAttribute("data-endpoint", "low");
+    }
+    intervalGroup.appendChild(leftPoint);
+    const rightPoint = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    rightPoint.setAttribute("cx", x2);
+    rightPoint.setAttribute("cy", y);
+    rightPoint.setAttribute("r", "6");
+    rightPoint.setAttribute("fill", color);
+    rightPoint.setAttribute("stroke", "white");
+    rightPoint.setAttribute("stroke-width", "2");
+    if (draggable) {
+      rightPoint.style.cursor = "ew-resize";
+      rightPoint.setAttribute("data-endpoint", "high");
+    }
+    intervalGroup.appendChild(rightPoint);
+    const labelText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    labelText.setAttribute("x", (x1 + x2) / 2);
+    labelText.setAttribute("y", isResult ? y + 25 : y - 15);
+    labelText.setAttribute("text-anchor", "middle");
+    labelText.setAttribute("font-size", "12");
+    labelText.setAttribute("font-family", "monospace");
+    labelText.setAttribute("fill", color);
+    labelText.setAttribute("font-weight", "bold");
+    labelText.setAttribute("class", "interval-label");
+    labelText.textContent = label;
+    intervalGroup.appendChild(labelText);
+    this.addTooltipHandlers(intervalGroup, intervalData);
+    if (draggable) {
+      this.addInteractionHandlers(intervalGroup, intervalData);
+    }
+    this.intervalsGroup.appendChild(intervalGroup);
+  }
+  updateIntervalLabel(intervalData) {
+    const labelElement = this.svg.querySelector(`g[data-interval-id="${intervalData.id}"] .interval-label`);
+    if (labelElement) {
+      const originalLabel = intervalData.label.split(" [")[0];
+      labelElement.textContent = `${originalLabel} [${intervalData.interval.low.toString()}:${intervalData.interval.high.toString()}]`;
+    }
+  }
+  addTooltipHandlers(element, intervalData) {
+    const showTooltip = (e) => {
+      const { interval, label } = intervalData;
+      const content = `${label}<br/>Range: [${interval.low.toString()}, ${interval.high.toString()}]<br/>Width: ${interval.high.subtract(interval.low).toString()}`;
+      this.tooltip.innerHTML = content;
+      this.tooltip.style.opacity = "1";
+      this.tooltip.style.left = e.pageX + 10 + "px";
+      this.tooltip.style.top = e.pageY - 10 + "px";
+    };
+    const hideTooltip = () => {
+      this.tooltip.style.opacity = "0";
+    };
+    element.addEventListener("mouseenter", showTooltip);
+    element.addEventListener("mouseleave", hideTooltip);
+    element.addEventListener("mousemove", showTooltip);
+  }
+  addInteractionHandlers(intervalGroup, intervalData) {
+    const line = intervalGroup.querySelector("line");
+    const leftPoint = intervalGroup.querySelector('[data-endpoint="low"]');
+    const rightPoint = intervalGroup.querySelector('[data-endpoint="high"]');
+    this.setupElementInteraction(leftPoint, intervalData, "left");
+    this.setupElementInteraction(line, intervalData, "interval");
+    this.setupElementInteraction(rightPoint, intervalData, "right");
+  }
+  setupElementInteraction(element, intervalData, endpointType) {
+    if (!element)
+      return;
+    element.setAttribute("tabindex", "0");
+    element.style.outline = "none";
+    element.dataset.intervalId = intervalData.id;
+    element.dataset.endpointType = endpointType;
+    this.selectableElements.push({
+      element,
+      intervalId: intervalData.id,
+      endpointType
+    });
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartMouseX = 0;
+    let hasDragged = false;
+    let initialLow = null;
+    let initialHigh = null;
+    element.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      dragStartMouseX = e.clientX;
+      hasDragged = false;
+      e.preventDefault();
+      if (endpointType === "interval") {
+        initialLow = intervalData.interval.low;
+        initialHigh = intervalData.interval.high;
+      } else if (endpointType === "left") {
+        const rect = this.svg.getBoundingClientRect();
+        dragStartX = this.xScale(intervalData.interval.low) + this.margin.left + rect.left;
+      } else if (endpointType === "right") {
+        const rect = this.svg.getBoundingClientRect();
+        dragStartX = this.xScale(intervalData.interval.high) + this.margin.left + rect.left;
+      }
+      this.selectElement(intervalData.id, endpointType);
+    });
+    const handleMouseMove = (e) => {
+      if (!isDragging)
+        return;
+      const dragDistance = Math.abs(e.clientX - dragStartMouseX);
+      if (dragDistance > 3) {
+        hasDragged = true;
+        if (endpointType === "interval") {
+          this.performIntervalDrag(e, intervalData, dragStartMouseX, initialLow, initialHigh);
+        } else {
+          this.performEndpointDrag(e, intervalData, endpointType);
+        }
+      }
+    };
+    const handleMouseUp = (e) => {
+      if (isDragging) {
+        isDragging = false;
+        if (hasDragged) {
+          this.adjustRangeAfterDrag(intervalData);
+        }
+        initialLow = null;
+        initialHigh = null;
+        if (!hasDragged) {}
+      }
+    };
+    element.addEventListener("focus", () => {
+      this.selectElement(intervalData.id, endpointType);
+    });
+    element.addEventListener("keydown", (e) => {
+      if (this.selectedIntervalId === intervalData.id && this.selectedEndpoint === endpointType) {
+        this.handleEndpointKeydown(e, intervalData.id, endpointType);
+      }
+    });
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  }
+  performIntervalDrag(e, intervalData, dragStartMouseX, initialLow, initialHigh) {
+    const totalDragDistance = e.clientX - dragStartMouseX;
+    const range = this.range.max.subtract(this.range.min);
+    const dragValueNumerator = totalDragDistance;
+    const dragValueDenominator = this.plotWidth;
+    const pixelRatio = new Rational(dragValueNumerator, dragValueDenominator);
+    const dragValue = range.multiply(pixelRatio);
+    const quantizedDragValue = this.quantizeValue(dragValue);
+    const newLow = initialLow.add(quantizedDragValue);
+    const newHigh = initialHigh.add(quantizedDragValue);
+    intervalData.interval = new RationalInterval(newLow, newHigh);
+    this.updateIntervalAfterChange(intervalData, this.intervals.length === 1);
+  }
+  adjustRangeAfterDrag(intervalData) {
+    const interval = intervalData.interval;
+    const currentRange = this.range.max.subtract(this.range.min);
+    const leftPosition = this.xScale(interval.low);
+    const rightPosition = this.xScale(interval.high);
+    const margin = this.plotWidth * 0.1;
+    if (leftPosition < margin || rightPosition > this.plotWidth - margin || leftPosition < 0 || rightPosition > this.plotWidth) {
+      if (this.intervals.length === 1) {
+        const intervalCenter = interval.low.add(interval.high).divide(new Rational(2));
+        const halfRange = currentRange.divide(new Rational(2));
+        this.range.min = intervalCenter.subtract(halfRange);
+        this.range.max = intervalCenter.add(halfRange);
+      } else {
+        this.updateRange();
+      }
+      this.renderAxis();
+      this.renderIntervals();
+    }
+  }
+  performEndpointDrag(e, intervalData, endpointType) {
+    const rect = this.svg.getBoundingClientRect();
+    const x = e.clientX - rect.left - this.margin.left;
+    const newRange = this.range.max.subtract(this.range.min);
+    const positionRatio = Math.max(0, Math.min(1, x / this.plotWidth));
+    const position = new Rational(positionRatio.toString());
+    const rawValue = this.range.min.add(newRange.multiply(position));
+    const newValue = this.quantizeValue(rawValue);
+    if (endpointType === "left") {
+      if (newValue.lessThanOrEqual(intervalData.interval.high)) {
+        intervalData.interval = new RationalInterval(newValue, intervalData.interval.high);
+      }
+    } else if (endpointType === "right") {
+      if (newValue.greaterThanOrEqual(intervalData.interval.low)) {
+        intervalData.interval = new RationalInterval(intervalData.interval.low, newValue);
+      }
+    }
+    this.updateIntervalAfterChange(intervalData, this.intervals.length === 1);
+  }
+  selectElement(intervalId, endpointType) {
+    this.clearSelection();
+    this.selectedIntervalId = intervalId;
+    this.selectedEndpoint = endpointType;
+    const element = this.findSelectableElement(intervalId, endpointType);
+    if (element) {
+      if (endpointType === "left" || endpointType === "right") {
+        element.style.filter = "drop-shadow(0 0 8px rgba(37, 99, 235, 0.9))";
+        element.style.strokeWidth = "3";
+      } else {
+        const intervalGroup = element.closest("g[data-interval-id]");
+        if (intervalGroup) {
+          intervalGroup.style.filter = "drop-shadow(0 0 5px rgba(37, 99, 235, 0.7))";
+        }
+      }
+      element.focus();
+    }
+  }
+  clearSelection() {
+    if (this.selectedIntervalId && this.selectedEndpoint) {
+      const element = this.findSelectableElement(this.selectedIntervalId, this.selectedEndpoint);
+      if (element) {
+        if (this.selectedEndpoint === "left" || this.selectedEndpoint === "right") {
+          element.style.filter = "none";
+          element.style.strokeWidth = "2";
+        } else {
+          const intervalGroup = element.closest("g[data-interval-id]");
+          if (intervalGroup) {
+            intervalGroup.style.filter = "none";
+          }
+        }
+      }
+    }
+  }
+  findSelectableElement(intervalId, endpointType) {
+    return this.selectableElements.find((sel) => sel.intervalId === intervalId && sel.endpointType === endpointType)?.element;
+  }
+  handleEndpointKeydown(e, intervalId, endpointType) {
+    const intervalData = this.intervals.find((iv) => iv.id === intervalId);
+    if (!intervalData || !intervalData.draggable)
+      return;
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      e.stopPropagation();
+      const stepSize = this.dragStepSize;
+      const direction = e.key === "ArrowLeft" ? -1 : 1;
+      const stepValue = stepSize.multiply(new Rational(direction));
+      if (endpointType === "left") {
+        const newLow = intervalData.interval.low.add(stepValue);
+        if (newLow.lessThanOrEqual(intervalData.interval.high)) {
+          intervalData.interval = new RationalInterval(newLow, intervalData.interval.high);
+          this.updateIntervalAfterChange(intervalData);
+        }
+      } else if (endpointType === "right") {
+        const newHigh = intervalData.interval.high.add(stepValue);
+        if (newHigh.greaterThanOrEqual(intervalData.interval.low)) {
+          intervalData.interval = new RationalInterval(intervalData.interval.low, newHigh);
+          this.updateIntervalAfterChange(intervalData);
+        }
+      } else if (endpointType === "interval") {
+        const newLow = intervalData.interval.low.add(stepValue);
+        const newHigh = intervalData.interval.high.add(stepValue);
+        intervalData.interval = new RationalInterval(newLow, newHigh);
+        this.updateIntervalAfterChange(intervalData);
+      }
+    } else if (e.key === "Tab") {
+      this.handleTabNavigation(e, intervalId, endpointType);
+    }
+  }
+  handleTabNavigation(e, intervalId, endpointType) {
+    const currentIndex = this.selectableElements.findIndex((sel) => sel.intervalId === intervalId && sel.endpointType === endpointType);
+    if (currentIndex === -1)
+      return;
+    let targetIndex;
+    if (e.shiftKey) {
+      targetIndex = currentIndex > 0 ? currentIndex - 1 : this.selectableElements.length - 1;
+    } else {
+      targetIndex = currentIndex < this.selectableElements.length - 1 ? currentIndex + 1 : 0;
+    }
+    const targetElement = this.selectableElements[targetIndex];
+    if (targetElement) {
+      e.preventDefault();
+      this.selectElement(targetElement.intervalId, targetElement.endpointType);
+    }
+  }
+  makePaleColor(color) {
+    const colorMap = {
+      "#2563eb": "#93c5fd",
+      "#dc2626": "#fca5a5",
+      "#059669": "#86efac",
+      "#d97706": "#fcd34d",
+      "#7c3aed": "#c4b5fd"
+    };
+    return colorMap[color] || color;
+  }
+  formatRationalAsMixed(rational) {
+    if (rational.toMixed) {
+      try {
+        return rational.toMixed();
+      } catch (e) {
+        return rational.toString();
+      }
+    } else {
+      try {
+        const numeratorStr = rational.toString();
+        if (numeratorStr.includes("/")) {
+          const [num, den] = numeratorStr.split("/");
+          const numerator = BigInt(num);
+          const denominator = BigInt(den);
+          if (denominator === 1n) {
+            return numerator.toString();
+          }
+          const wholePart = numerator / denominator;
+          const remainder = numerator % denominator;
+          if (wholePart === 0n) {
+            return `${remainder}/${denominator}`;
+          } else if (remainder === 0n) {
+            return wholePart.toString();
+          } else {
+            const absRemainder = remainder < 0n ? -remainder : remainder;
+            return `${wholePart}..${absRemainder}/${denominator}`;
+          }
+        } else {
+          return numeratorStr;
+        }
+      } catch (e) {
+        return rational.toString();
+      }
+    }
+  }
+  quantizeValue(value) {
+    const divided = value.divide(this.dragStepSize);
+    const rounded = new Rational(Math.round(parseFloat(divided.toDecimal())));
+    return rounded.multiply(this.dragStepSize);
+  }
+  setDragStepSize(stepSize) {
+    this.dragStepSize = stepSize;
+  }
+  handleIntervalKeydown(e, intervalData) {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      const stepSize = this.dragStepSize;
+      const newLow = intervalData.interval.low.subtract(stepSize);
+      const newHigh = intervalData.interval.high.subtract(stepSize);
+      intervalData.interval = new RationalInterval(newLow, newHigh);
+      this.updateIntervalAfterChange(intervalData);
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      const stepSize = this.dragStepSize;
+      const newLow = intervalData.interval.low.add(stepSize);
+      const newHigh = intervalData.interval.high.add(stepSize);
+      intervalData.interval = new RationalInterval(newLow, newHigh);
+      this.updateIntervalAfterChange(intervalData);
+    }
+  }
+  updateIntervalAfterChange(intervalData, skipRangeUpdate = false) {
+    const originalLabel = intervalData.label.split(" [")[0];
+    intervalData.label = `${originalLabel} [${this.formatRationalAsMixed(intervalData.interval.low)}:${this.formatRationalAsMixed(intervalData.interval.high)}]`;
+    const wasSelected = this.selectedIntervalId === intervalData.id;
+    const wasSelectedEndpoint = this.selectedEndpoint;
+    if (!skipRangeUpdate) {
+      this.updateRange();
+    }
+    this.renderAxis();
+    const intervalElement = this.svg.querySelector(`g[data-interval-id="${intervalData.id}"]`);
+    if (intervalElement) {
+      this.selectableElements = this.selectableElements.filter((sel) => sel.intervalId !== intervalData.id);
+      intervalElement.remove();
+      const index = this.intervals.findIndex((iv) => iv.id === intervalData.id);
+      this.renderInterval(intervalData, index);
+      if (wasSelected && wasSelectedEndpoint) {
+        requestAnimationFrame(() => {
+          this.selectElement(intervalData.id, wasSelectedEndpoint);
+        });
+      }
+    } else {
+      this.renderIntervals();
+    }
+    this.dispatchEvent("intervalChange", {
+      id: intervalData.id,
+      interval: intervalData.interval
+    });
+  }
+  dispatchEvent(eventName, detail) {
+    const event = new CustomEvent(eventName, { detail });
+    this.container.dispatchEvent(event);
+  }
+  setRange(min, max) {
+    this.range.min = min;
+    this.range.max = max;
+    this.autoRange = false;
+    this.renderAxis();
+    this.renderIntervals();
+  }
+  enableAutoRange() {
+    this.autoRange = true;
+    this.updateRange();
+    this.renderAxis();
+    this.renderIntervals();
+  }
+  exportSVG() {
+    const svgClone = this.svg.cloneNode(true);
+    svgClone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    svgClone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+    svgClone.setAttribute("version", "1.1");
+    const leftExtent = 0;
+    const rightExtent = this.width;
+    const topExtent = 0;
+    const bottomExtent = this.height;
+    const padding = 60;
+    const exportWidth = rightExtent - leftExtent + padding * 2;
+    const exportHeight = bottomExtent - topExtent + padding * 2;
+    svgClone.setAttribute("width", exportWidth);
+    svgClone.setAttribute("height", exportHeight);
+    svgClone.setAttribute("viewBox", `${leftExtent - padding} ${topExtent - padding} ${exportWidth} ${exportHeight}`);
+    const styleElement = document.createElementNS("http://www.w3.org/2000/svg", "style");
+    styleElement.textContent = `
+      <![CDATA[
+      text { 
+        font-family: "SF Mono", "Monaco", "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+        font-size: 12px;
+        fill: #374151;
+      }
+      line { 
+        stroke-linecap: round; 
+      }
+      circle {
+        stroke-width: 2;
+      }
+      .tooltip { 
+        display: none; 
+      }
+      ]]>
+    `;
+    svgClone.insertBefore(styleElement, svgClone.firstChild);
+    const xmlDeclaration = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>';
+    return xmlDeclaration + `
+` + svgClone.outerHTML;
+  }
+  destroy() {
+    if (this.tooltip && this.tooltip.parentNode) {
+      this.tooltip.parentNode.removeChild(this.tooltip);
+    }
+    if (this.svg && this.svg.parentNode) {
+      this.svg.parentNode.removeChild(this.svg);
+    }
+  }
+}
+class MultiStepVisualization {
+  constructor(container, options = {}) {
+    this.container = container;
+    this.width = options.width || 900;
+    this.stages = [];
+    this.inputIntervals = new Map;
+    this.mainDiv = document.createElement("div");
+    this.mainDiv.style.width = "100%";
+    this.mainDiv.style.height = "100%";
+    this.mainDiv.style.overflowY = "auto";
+    this.mainDiv.style.overflowX = "auto";
+    this.stagesDiv = document.createElement("div");
+    this.mainDiv.appendChild(this.stagesDiv);
+    this.container.appendChild(this.mainDiv);
+  }
+  visualizeExpressionTree(tree, finalResult) {
+    this.stages.forEach((stage) => stage.visualization && stage.visualization.destroy());
+    this.stages = [];
+    this.inputIntervals.clear();
+    this.stagesDiv.innerHTML = "";
+    this.evaluateTree(tree, 0);
+    this.stages.forEach((stage, index) => {
+      const stageDiv = document.createElement("div");
+      stageDiv.style.marginBottom = "20px";
+      stageDiv.style.padding = "15px";
+      stageDiv.style.background = "#f9fafb";
+      stageDiv.style.borderRadius = "8px";
+      const label = document.createElement("div");
+      label.style.marginBottom = "10px";
+      label.style.fontWeight = "bold";
+      label.style.color = "#374151";
+      label.textContent = stage.isFinal ? `Final Result` : `Step ${index + 1}: ${stage.expression}`;
+      stageDiv.appendChild(label);
+      const vizContainer = document.createElement("div");
+      stageDiv.appendChild(vizContainer);
+      this.stagesDiv.appendChild(stageDiv);
+      setTimeout(() => {
+        const containerWidth = vizContainer.offsetWidth || vizContainer.clientWidth || 800;
+        const viz = new IntervalVisualization(vizContainer, {
+          width: Math.max(containerWidth - 40, 800),
+          height: 220
+        });
+        stage.visualization = viz;
+        if (stage.type === "operation") {
+          const id1 = viz.addInterval(stage.leftValue, {
+            label: `${stage.leftLabel} [${viz.formatRationalAsMixed(stage.leftValue.low)}:${viz.formatRationalAsMixed(stage.leftValue.high)}]`,
+            color: "#2563eb",
+            draggable: stage.leftDraggable
+          });
+          const id2 = viz.addInterval(stage.rightValue, {
+            label: `${stage.rightLabel} [${viz.formatRationalAsMixed(stage.rightValue.low)}:${viz.formatRationalAsMixed(stage.rightValue.high)}]`,
+            color: "#dc2626",
+            draggable: stage.rightDraggable
+          });
+          const resultId = viz.addInterval(stage.result, {
+            label: `= ${viz.formatRationalAsMixed(stage.result.low)}:${viz.formatRationalAsMixed(stage.result.high)}`,
+            color: "#7c3aed",
+            draggable: false,
+            isResult: true
+          });
+          const operatorBg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          operatorBg.setAttribute("cx", viz.margin.left - 30);
+          operatorBg.setAttribute("cy", viz.plotHeight / 2 + viz.margin.top);
+          operatorBg.setAttribute("r", "18");
+          operatorBg.setAttribute("fill", "white");
+          operatorBg.setAttribute("stroke", "#374151");
+          operatorBg.setAttribute("stroke-width", "2");
+          viz.svg.appendChild(operatorBg);
+          const operatorText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          operatorText.setAttribute("x", viz.margin.left - 30);
+          operatorText.setAttribute("y", viz.plotHeight / 2 + viz.margin.top + 6);
+          operatorText.setAttribute("text-anchor", "middle");
+          operatorText.setAttribute("font-size", "20");
+          operatorText.setAttribute("font-family", "monospace");
+          operatorText.setAttribute("font-weight", "bold");
+          operatorText.setAttribute("fill", "#374151");
+          operatorText.textContent = stage.operator;
+          viz.svg.appendChild(operatorText);
+          if (stage.leftDraggable || stage.rightDraggable) {
+            vizContainer.addEventListener("intervalChange", (e) => {
+              this.handleIntervalChange(e.detail, stage, viz, index);
+            });
+          }
+          stage.leftId = id1;
+          stage.rightId = id2;
+          stage.resultId = resultId;
+        } else {
+          viz.addInterval(stage.value, {
+            label: stage.expression,
+            color: "#2563eb",
+            draggable: false
+          });
+        }
+      }, 0);
+    });
+  }
+  evaluateTree(node, depth) {
+    if (!node)
+      return null;
+    if (node.type === "value") {
+      if (node.isInput) {
+        this.inputIntervals.set(node.expression, {
+          value: node.value,
+          nodes: []
+        });
+      }
+      return { value: node.value, stageIndex: -1, isInput: node.isInput, expression: node.expression };
+    } else if (node.type === "operation") {
+      let leftResult, rightResult;
+      if (node.left.type === "value") {
+        leftResult = {
+          value: node.left.value,
+          stageIndex: -1,
+          isInput: node.left.isInput,
+          expression: node.left.expression
+        };
+        if (node.left.isInput) {
+          this.inputIntervals.set(node.left.expression, {
+            value: node.left.value,
+            nodes: []
+          });
+        }
+      } else {
+        leftResult = this.evaluateTree(node.left, depth + 1);
+      }
+      if (node.right.type === "value") {
+        rightResult = {
+          value: node.right.value,
+          stageIndex: -1,
+          isInput: node.right.isInput,
+          expression: node.right.expression
+        };
+        if (node.right.isInput) {
+          this.inputIntervals.set(node.right.expression, {
+            value: node.right.value,
+            nodes: []
+          });
+        }
+      } else {
+        rightResult = this.evaluateTree(node.right, depth + 1);
+      }
+      let result;
+      switch (node.operation) {
+        case "add":
+          result = leftResult.value.add(rightResult.value);
+          break;
+        case "subtract":
+          result = leftResult.value.subtract(rightResult.value);
+          break;
+        case "multiply":
+          result = leftResult.value.multiply(rightResult.value);
+          break;
+        case "divide":
+          result = leftResult.value.divide(rightResult.value);
+          break;
+      }
+      const currentStageIndex = this.stages.length;
+      const stage = {
+        type: "operation",
+        expression: `${this.getNodeExpression(node.left)} ${node.operator} ${this.getNodeExpression(node.right)}`,
+        operator: node.operator,
+        leftValue: leftResult.value,
+        rightValue: rightResult.value,
+        leftLabel: this.getNodeExpression(node.left),
+        rightLabel: this.getNodeExpression(node.right),
+        leftDraggable: leftResult.isInput,
+        rightDraggable: rightResult.isInput,
+        result,
+        depth,
+        node,
+        leftDependsOnStage: leftResult.stageIndex,
+        rightDependsOnStage: rightResult.stageIndex,
+        leftIsInput: leftResult.isInput,
+        rightIsInput: rightResult.isInput
+      };
+      this.stages.push(stage);
+      return { value: result, stageIndex: currentStageIndex, isInput: false, expression: stage.expression };
+    }
+  }
+  getNodeExpression(node) {
+    if (node.type === "value") {
+      return node.expression;
+    } else {
+      return `(${this.getNodeExpression(node.left)} ${node.operator} ${this.getNodeExpression(node.right)})`;
+    }
+  }
+  handleIntervalChange(detail, changedStage, viz, stageIndex) {
+    if (detail.id === changedStage.leftId) {
+      changedStage.leftValue = detail.interval;
+    } else if (detail.id === changedStage.rightId) {
+      changedStage.rightValue = detail.interval;
+    }
+    changedStage.result = this.calculateStageResult(changedStage);
+    const resultInterval = viz.intervals.find((i) => i.id === changedStage.resultId);
+    if (resultInterval) {
+      resultInterval.interval = changedStage.result;
+      resultInterval.label = `= ${viz.formatRationalAsMixed(changedStage.result.low)}:${viz.formatRationalAsMixed(changedStage.result.high)}`;
+      viz.updateRange();
+      viz.renderAxis();
+      viz.renderIntervals();
+    }
+    this.updateDependentStages(stageIndex);
+  }
+  calculateStageResult(stage) {
+    switch (stage.operator) {
+      case "+":
+        return stage.leftValue.add(stage.rightValue);
+      case "-":
+        return stage.leftValue.subtract(stage.rightValue);
+      case "*":
+        return stage.leftValue.multiply(stage.rightValue);
+      case "/":
+        return stage.leftValue.divide(stage.rightValue);
+      default:
+        return stage.result;
+    }
+  }
+  updateDependentStages(fromIndex) {
+    const stageResults = new Map;
+    for (let i = 0;i < this.stages.length; i++) {
+      if (this.stages[i].type === "operation") {
+        stageResults.set(i, this.stages[i].result);
+      }
+    }
+    for (let i = fromIndex + 1;i < this.stages.length; i++) {
+      const stage = this.stages[i];
+      if (stage.type === "operation") {
+        let updated = false;
+        if (stage.leftDependsOnStage !== undefined && stage.leftDependsOnStage >= 0) {
+          const dependentResult = stageResults.get(stage.leftDependsOnStage);
+          if (dependentResult && !stage.leftValue.equals || stage.leftValue.equals && !stage.leftValue.equals(dependentResult)) {
+            stage.leftValue = dependentResult;
+            updated = true;
+            if (stage.visualization) {
+              const leftInterval = stage.visualization.intervals.find((iv) => iv.id === stage.leftId);
+              if (leftInterval) {
+                leftInterval.interval = dependentResult;
+                leftInterval.label = `${stage.leftLabel} [${stage.visualization.formatRationalAsMixed(dependentResult.low)}:${stage.visualization.formatRationalAsMixed(dependentResult.high)}]`;
+              }
+            }
+          }
+        }
+        if (stage.rightDependsOnStage !== undefined && stage.rightDependsOnStage >= 0) {
+          const dependentResult = stageResults.get(stage.rightDependsOnStage);
+          if (dependentResult && !stage.rightValue.equals || stage.rightValue.equals && !stage.rightValue.equals(dependentResult)) {
+            stage.rightValue = dependentResult;
+            updated = true;
+            if (stage.visualization) {
+              const rightInterval = stage.visualization.intervals.find((iv) => iv.id === stage.rightId);
+              if (rightInterval) {
+                rightInterval.interval = dependentResult;
+                rightInterval.label = `${stage.rightLabel} [${stage.visualization.formatRationalAsMixed(dependentResult.low)}:${stage.visualization.formatRationalAsMixed(dependentResult.high)}]`;
+              }
+            }
+          }
+        }
+        const newResult = this.calculateStageResult(stage);
+        stage.result = newResult;
+        stageResults.set(i, newResult);
+        if (stage.visualization) {
+          const resultInterval = stage.visualization.intervals.find((iv) => iv.id === stage.resultId);
+          if (resultInterval) {
+            resultInterval.interval = newResult;
+            resultInterval.label = `= ${stage.visualization.formatRationalAsMixed(newResult.low)}:${stage.visualization.formatRationalAsMixed(newResult.high)}`;
+          }
+          stage.visualization.updateRange();
+          stage.visualization.renderAxis();
+          stage.visualization.renderIntervals();
+        }
+      }
+    }
+  }
+  fitAllWindows() {
+    this.stages.forEach((stage) => {
+      if (stage.visualization) {
+        stage.visualization.enableAutoRange();
+      }
+    });
+  }
+  exportSVG() {
+    const stageHeight = 240;
+    const totalHeight = this.stages.length * stageHeight;
+    const totalWidth = this.width + 120;
+    let combinedSVG = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="${totalWidth}" height="${totalHeight}" viewBox="-60 -30 ${totalWidth} ${totalHeight}">
+<style>
+<![CDATA[
+text { 
+  font-family: "SF Mono", "Monaco", "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+  font-size: 12px;
+  fill: #374151;
+}
+line { 
+  stroke-linecap: round; 
+}
+circle {
+  stroke-width: 2;
+}
+]]>
+</style>`;
+    this.stages.forEach((stage, index) => {
+      if (stage.visualization) {
+        const stageSVG = stage.visualization.exportSVG();
+        const contentMatch = stageSVG.match(/<svg[^>]*>(.*)<\/svg>/s);
+        if (contentMatch) {
+          combinedSVG += `<g transform="translate(0, ${index * stageHeight})">${contentMatch[1]}</g>`;
+        }
+      }
+    });
+    combinedSVG += "</svg>";
+    return combinedSVG;
+  }
+  exportHTML() {
+    let html = `<!DOCTYPE html>
+<html>
+<head>
+    <title>Interval Calculation Steps</title>
+    <style>
+        body { font-family: monospace; margin: 20px; }
+        .stage { margin-bottom: 30px; padding: 20px; background: #f9fafb; border-radius: 8px; }
+        .stage-title { font-weight: bold; font-size: 1.2em; margin-bottom: 15px; color: #374151; }
+        .stage-content { border: 1px solid #e5e7eb; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Interval Calculation Visualization</h1>`;
+    this.stages.forEach((stage, index) => {
+      if (stage.visualization) {
+        const stageTitle = stage.isFinal ? "Final Result" : `Step ${index + 1}: ${stage.expression}`;
+        const stageSVG = stage.visualization.exportSVG();
+        html += `
+    <div class="stage">
+        <div class="stage-title">${stageTitle}</div>
+        <div class="stage-content">${stageSVG}</div>
+    </div>`;
+      }
+    });
+    html += `
+</body>
+</html>`;
+    return html;
+  }
+  destroy() {
+    this.stages.forEach((stage) => {
+      if (stage.visualization) {
+        stage.visualization.destroy();
+      }
+    });
+    this.stages = [];
+  }
+}
+
 // src/web-calc.js
 class WebCalculator {
   constructor() {
@@ -4482,6 +5491,8 @@ class WebCalculator {
     this.mobileInput = "";
     this.mobileKeypadSetup = false;
     this.variableManager = new VariableManager;
+    this.currentVisualization = null;
+    this.lastResult = null;
     this.initializeElements();
     this.setupEventListeners();
     this.displayWelcome();
@@ -4497,6 +5508,13 @@ class WebCalculator {
     this.mobileKeypad = document.getElementById("mobileKeypad");
     this.commandPanel = document.getElementById("commandPanel");
     this.closeCommandPanel = document.getElementById("closeCommandPanel");
+    this.visualizationModal = document.getElementById("visualizationModal");
+    this.visualizationContainer = document.getElementById("visualizationContainer");
+    this.closeVisualization = document.getElementById("closeVisualization");
+    this.exportSVGBtn = document.getElementById("exportSVGBtn");
+    this.exportHTMLBtn = document.getElementById("exportHTMLBtn");
+    this.saveComputationBtn = document.getElementById("saveComputationBtn");
+    this.stepSizeInput = document.getElementById("stepSizeInput");
   }
   setupEventListeners() {
     this.inputElement.addEventListener("keydown", (e) => this.handleKeyDown(e));
@@ -4509,9 +5527,23 @@ class WebCalculator {
         this.hideHelp();
       }
     });
+    this.closeVisualization.addEventListener("click", () => this.hideVisualization());
+    this.visualizationModal.addEventListener("click", (e) => {
+      if (e.target === this.visualizationModal) {
+        this.hideVisualization();
+      }
+    });
+    this.exportSVGBtn.addEventListener("click", () => this.exportVisualizationSVG());
+    this.exportHTMLBtn.addEventListener("click", () => this.exportVisualizationHTML());
+    this.saveComputationBtn.addEventListener("click", () => this.saveVisualizationToCalculator());
+    this.stepSizeInput.addEventListener("input", () => this.updateVisualizationStepSize());
+    this.stepSizeInput.addEventListener("keydown", (e) => this.handleStepSizeKeydown(e));
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         this.hideHelp();
+        this.hideVisualization();
+      } else if (this.visualizationModal.style.display === "block") {
+        this.handleVisualizationKeydown(e);
       }
     });
     if (!this.isMobile()) {
@@ -4723,8 +5755,10 @@ class WebCalculator {
       this.finishEntry(output);
     } else {
       try {
+        this.lastResult = varResult.result;
+        this.lastExpression = input;
         const output = this.formatResult(varResult.result);
-        this.addToOutput("", output, false);
+        this.addToOutput("", output, false, varResult.result, input);
         this.finishEntry(output);
       } catch (error) {
         let errorMessage;
@@ -4882,7 +5916,7 @@ class WebCalculator {
         return `${lowFraction}:${highFraction}`;
     }
   }
-  addToOutput(input = null, output = null, isError = false) {
+  addToOutput(input = null, output = null, isError = false, result = null, expression = null) {
     const entry = document.createElement("div");
     entry.className = "output-entry";
     if (input) {
@@ -4901,9 +5935,24 @@ class WebCalculator {
       const outputLine = document.createElement("div");
       outputLine.className = isError ? "error-line" : "output-line";
       if (!isError) {
-        outputLine.innerHTML = `${this.escapeHtml(output)}<span class="inject-icon" title="Inject value">→</span>`;
+        let icons = `<span class="inject-icon" title="Inject value">→</span>`;
+        if (result && (result instanceof RationalInterval || result.constructor.name === "RationalInterval")) {
+          icons += `<span class="viz-icon" title="Visualize interval">\uD83D\uDCCA</span>`;
+        }
+        outputLine.innerHTML = `${this.escapeHtml(output)}${icons}`;
+        if (expression) {
+          outputLine.dataset.expression = expression;
+        }
         outputLine.addEventListener("click", (e) => {
-          if (e.target.classList.contains("inject-icon") || e.currentTarget === outputLine) {
+          if (e.target.classList.contains("inject-icon")) {
+            e.stopPropagation();
+            const value = this.extractValue(output);
+            this.injectValue(value);
+          } else if (e.target.classList.contains("viz-icon")) {
+            e.stopPropagation();
+            const storedExpression = outputLine.dataset.expression || "";
+            this.showVisualization(result, storedExpression);
+          } else if (e.currentTarget === outputLine && !e.target.classList.contains("viz-icon")) {
             e.stopPropagation();
             const value = this.extractValue(output);
             this.injectValue(value);
@@ -5250,6 +6299,259 @@ class WebCalculator {
   }
   hideCommandPanel() {
     this.commandPanel.classList.remove("show");
+  }
+  showVisualization(result, expression = "") {
+    this.visualizationContainer.innerHTML = "";
+    if (this.currentVisualization) {
+      this.currentVisualization.destroy();
+      this.currentVisualization = null;
+    }
+    if (result instanceof RationalInterval) {
+      const isOperation = expression.includes("+") || expression.includes("-") || expression.includes("*") || expression.includes("/");
+      if (isOperation) {
+        const operationTree = this.parseOperationExpression(expression);
+        if (operationTree && operationTree.type === "operation") {
+          this.currentVisualization = new MultiStepVisualization(this.visualizationContainer, {
+            width: this.visualizationContainer.clientWidth || Math.min(window.innerWidth - 100, 900)
+          });
+          this.currentVisualization.visualizeExpressionTree(operationTree, result);
+          this.updateVisualizationStepSize();
+        } else {
+          this.currentVisualization = new IntervalVisualization(this.visualizationContainer, {
+            width: this.visualizationContainer.clientWidth || Math.min(window.innerWidth - 100, 800),
+            height: 200
+          });
+          const label = expression && expression.length <= 20 ? expression : "Interval";
+          this.currentVisualization.addInterval(result, {
+            label,
+            color: "#2563eb",
+            draggable: true
+          });
+          this.updateVisualizationStepSize();
+        }
+      } else {
+        this.currentVisualization = new IntervalVisualization(this.visualizationContainer, {
+          width: this.visualizationContainer.clientWidth || Math.min(window.innerWidth - 100, 800),
+          height: 200
+        });
+        const label = expression && expression.length <= 20 ? expression : "Interval";
+        this.currentVisualization.addInterval(result, {
+          label,
+          color: "#2563eb",
+          draggable: true
+        });
+        this.updateVisualizationStepSize();
+      }
+      this.visualizationContainer.addEventListener("intervalChange", (e) => {
+        this.saveComputationBtn.textContent = "Save Modified Interval";
+        this.saveComputationBtn.classList.add("modified");
+      });
+    }
+    this.visualizationModal.style.display = "block";
+    document.body.style.overflow = "hidden";
+  }
+  hideVisualization() {
+    this.visualizationModal.style.display = "none";
+    document.body.style.overflow = "auto";
+    if (this.currentVisualization) {
+      this.currentVisualization.destroy();
+      this.currentVisualization = null;
+    }
+    this.saveComputationBtn.textContent = "Save to Calculator";
+    this.saveComputationBtn.classList.remove("modified");
+    this.stepSizeInput.value = "10";
+    if (!this.isMobile()) {
+      setTimeout(() => this.inputElement.focus(), 100);
+    }
+  }
+  handleStepSizeKeydown(e) {
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const currentValue = parseInt(this.stepSizeInput.value) || 10;
+      this.stepSizeInput.value = Math.max(1, currentValue + 1);
+      this.updateVisualizationStepSize();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const currentValue = parseInt(this.stepSizeInput.value) || 10;
+      this.stepSizeInput.value = Math.max(1, currentValue - 1);
+      this.updateVisualizationStepSize();
+    }
+  }
+  handleVisualizationKeydown(e) {
+    if (e.target.tagName.toLowerCase() === "input") {
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const currentValue = parseInt(this.stepSizeInput.value) || 10;
+      this.stepSizeInput.value = Math.max(1, currentValue + 1);
+      this.updateVisualizationStepSize();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const currentValue = parseInt(this.stepSizeInput.value) || 10;
+      this.stepSizeInput.value = Math.max(1, currentValue - 1);
+      this.updateVisualizationStepSize();
+    }
+  }
+  updateVisualizationStepSize() {
+    const n = parseInt(this.stepSizeInput.value) || 10;
+    const stepSize = new Rational(1, n);
+    if (this.currentVisualization) {
+      if (this.currentVisualization.setDragStepSize) {
+        this.currentVisualization.setDragStepSize(stepSize);
+      } else if (this.currentVisualization.stages) {
+        this.currentVisualization.stages.forEach((stage) => {
+          if (stage.visualization && stage.visualization.setDragStepSize) {
+            stage.visualization.setDragStepSize(stepSize);
+          }
+        });
+      }
+    }
+  }
+  exportVisualizationSVG() {
+    if (this.currentVisualization) {
+      const svgData = this.currentVisualization.exportSVG();
+      const blob = new Blob([svgData], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "interval_visualization.svg";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  }
+  exportVisualizationHTML() {
+    if (this.currentVisualization && this.currentVisualization.exportHTML) {
+      const htmlData = this.currentVisualization.exportHTML();
+      const blob = new Blob([htmlData], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "interval_visualization.html";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  }
+  saveVisualizationToCalculator() {
+    if (!this.currentVisualization)
+      return;
+    let interval = null;
+    if (this.currentVisualization instanceof MultiStepVisualization) {
+      if (this.currentVisualization.stages.length > 0) {
+        const lastStage = this.currentVisualization.stages[this.currentVisualization.stages.length - 1];
+        if (lastStage.type === "operation" && lastStage.result) {
+          interval = lastStage.result;
+        }
+      }
+    } else if (this.currentVisualization.intervals && this.currentVisualization.intervals.length > 0) {
+      const intervalData = this.currentVisualization.intervals[0];
+      interval = intervalData.interval;
+    }
+    if (interval) {
+      const value = `${interval.low.toString()}:${interval.high.toString()}`;
+      this.injectValue(value);
+      this.hideVisualization();
+    }
+  }
+  parseOperationExpression(expression) {
+    return this.parseExpressionTree(expression);
+  }
+  parseExpressionTree(expr) {
+    expr = expr.trim();
+    if (expr.startsWith("(") && expr.endsWith(")")) {
+      let depth = 0;
+      let valid = true;
+      for (let i = 0;i < expr.length - 1; i++) {
+        if (expr[i] === "(")
+          depth++;
+        else if (expr[i] === ")")
+          depth--;
+        if (depth === 0) {
+          valid = false;
+          break;
+        }
+      }
+      if (valid)
+        expr = expr.slice(1, -1).trim();
+    }
+    const hasColon = expr.includes(":");
+    const operators = [
+      { symbols: ["+", "-"], precedence: 1 },
+      { symbols: ["*", "/"], precedence: 2 }
+    ];
+    for (const opGroup of operators) {
+      let parenDepth = 0;
+      for (let i = expr.length - 1;i >= 0; i--) {
+        if (expr[i] === ")")
+          parenDepth++;
+        else if (expr[i] === "(")
+          parenDepth--;
+        else if (parenDepth === 0 && opGroup.symbols.includes(expr[i])) {
+          const leftExpr = expr.substring(0, i).trim();
+          const rightExpr = expr.substring(i + 1).trim();
+          const operator = expr[i];
+          if (operator === "-" && (leftExpr === "" || leftExpr.trim() === "")) {
+            continue;
+          }
+          if (operator === "-" && i > 0) {
+            let prevChar = "";
+            for (let j = i - 1;j >= 0; j--) {
+              if (expr[j] !== " ") {
+                prevChar = expr[j];
+                break;
+              }
+            }
+            if (["+", "-", "*", "/", "(", ":"].includes(prevChar)) {
+              continue;
+            }
+          }
+          if (hasColon && operator === "/") {
+            if (rightExpr.includes(":")) {
+              continue;
+            }
+            if (leftExpr.includes(":")) {
+              continue;
+            }
+            try {
+              Parser.parse(expr);
+              continue;
+            } catch (e) {}
+          }
+          const leftTree = this.parseExpressionTree(leftExpr);
+          const rightTree = this.parseExpressionTree(rightExpr);
+          const operationMap = {
+            "+": "add",
+            "-": "subtract",
+            "*": "multiply",
+            "/": "divide"
+          };
+          return {
+            type: "operation",
+            operator,
+            operation: operationMap[operator],
+            left: leftTree,
+            right: rightTree
+          };
+        }
+      }
+    }
+    try {
+      const value = Parser.parse(expr);
+      const interval = value instanceof RationalInterval ? value : RationalInterval.point(value instanceof Integer ? value.toRational() : value);
+      return {
+        type: "value",
+        value: interval,
+        expression: expr,
+        isInput: true
+      };
+    } catch (e) {
+      console.error("Failed to parse value:", expr, e);
+      return null;
+    }
   }
 }
 if (typeof document !== "undefined") {

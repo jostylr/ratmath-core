@@ -110,6 +110,28 @@
     </div>
   </div>
 
+  <!-- Visualization Modal -->
+  <div id="visualizationModal" class="modal">
+    <div class="modal-content visualization-modal">
+      <div class="modal-header">
+        <h2>Interval Visualization</h2>
+        <span class="close" id="closeVisualization">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div id="visualizationContainer" class="visualization-container"></div>
+        <div class="visualization-controls">
+          <div class="step-size-control">
+            <label for="stepSizeInput">Drag Step: 1/</label>
+            <input type="number" id="stepSizeInput" class="step-size-input" value="10" min="1" step="1">
+          </div>
+          <button id="exportSVGBtn" class="viz-btn">Export SVG</button>
+          <button id="exportHTMLBtn" class="viz-btn">Export HTML</button>
+          <button id="saveComputationBtn" class="viz-btn primary">Save to Calculator</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Help Modal -->
   <div id="helpModal" class="modal">
     <div class="modal-content">
@@ -188,6 +210,18 @@
             <li><code>SCIPREC &lt;n&gt;</code> - Set scientific notation precision to n digits (default: 10)</li>
             <li><code>SCIPERIOD</code> - Toggle period info display in scientific notation</li>
             <li><code>CLEAR</code> - Clear calculation history</li>
+          </ul>
+        </div>
+
+        <div class="help-section">
+          <h3>VISUALIZATION:</h3>
+          <ul>
+            <li><code>📊</code> - Click visualization icon next to interval results to open interactive viewer</li>
+            <li><code>Tab</code> - Navigate between interval endpoints and whole intervals</li>
+            <li><code>Click</code> - Select interval endpoints or drag whole intervals</li>
+            <li><code>←/→</code> - Move selected elements by current step size</li>
+            <li><code>↑/↓</code> - Adjust drag step size (1/2, 1/3, 1/4, 1/5, 1/8, 1/10, etc.)</li>
+            <li><code>Drag</code> - Move endpoints individually or whole intervals together</li>
           </ul>
         </div>
 

@@ -1409,8 +1409,8 @@ export class Parser {
       }
     }
 
-    // Check for negation (but only if it's not part of uncertainty notation)
-    if (expr[0] === "-" && !expr.includes("[")) {
+    // Check for negation (but only if it's not part of uncertainty notation or interval notation)
+    if (expr[0] === "-" && !expr.includes("[") && !expr.includes(":")) {
       const factorResult = Parser.#parseFactor(expr.substring(1), options);
 
       // Negate the value - type-aware for new parsing, backward compatible for old
@@ -2171,9 +2171,11 @@ export class Parser {
 
         // Only try repeating decimal parsing if both parts look like they could be repeating decimals
         // (contain only digits, decimal points, # symbols, and optional minus sign)
+        // AND at least one part actually contains a # symbol for repeating decimals
         if (
           /^-?[\d.#]+$/.test(beforeColon) &&
-          /^-?[\d.#]/.test(afterColonStart)
+          /^-?[\d.#]/.test(afterColonStart) &&
+          (beforeColon.includes('#') || afterColonStart.includes('#'))
         ) {
           try {
             // Try to parse as repeating decimal interval
@@ -2321,6 +2323,7 @@ export class Parser {
         // Fall through to regular parsing
       }
     }
+
 
     // Parse the first rational number
     const firstResult = Parser.#parseRational(expr, options);

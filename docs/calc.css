@@ -425,6 +425,13 @@ header p {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
+/* Override for visualization modal */
+#visualizationModal .modal-content {
+    max-width: 95vw !important;
+    width: 95% !important;
+    max-height: 90vh !important;
+}
+
 .modal-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -440,6 +447,7 @@ header p {
     font-size: 1.5rem;
     font-weight: 300;
 }
+
 
 .close {
     color: white;
@@ -731,10 +739,121 @@ header p {
     user-select: none;
 }
 
+/* Visualization Modal Styles */
+.visualization-modal .modal-content {
+    max-width: 95vw;
+    width: 95%;
+    max-height: 90vh;
+}
+
+.visualization-container {
+    min-height: 300px;
+    max-height: 60vh;
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+    margin-bottom: 1rem;
+    overflow: auto; /* Enable scrolling */
+    display: block; /* Change from flex to allow scrolling */
+}
+
+.visualization-controls {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.step-size-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #374151;
+}
+
+.step-size-input {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    background: white;
+    width: 60px;
+    text-align: center;
+}
+
+.viz-btn {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.viz-btn:hover {
+    background: #e5e7eb;
+    transform: translateY(-1px);
+}
+
+.viz-btn.primary {
+    background: #2563eb;
+    color: white;
+    border-color: #2563eb;
+}
+
+.viz-btn.primary:hover {
+    background: #1d4ed8;
+}
+
+.viz-icon {
+    min-width: 20px;
+    height: 20px;
+    opacity: 0.6;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+    margin-left: 8px;
+    display: inline-block;
+    vertical-align: middle;
+    font-size: 16px;
+}
+
+.viz-icon:hover {
+    opacity: 1;
+}
+
 /* Ensure proper touch targets on mobile */
 @media (pointer: coarse) {
     .keypad-btn,
     .command-btn {
         min-height: 44px;
+    }
+}
+
+@media (max-width: 768px) {
+    .visualization-modal .modal-content {
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        max-height: none;
+        border-radius: 0;
+    }
+    
+    .visualization-container {
+        min-height: 250px;
+    }
+    
+    .visualization-controls {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .viz-btn {
+        width: 100%;
+        padding: 0.75rem;
     }
 }
