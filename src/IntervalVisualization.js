@@ -429,6 +429,9 @@ export class IntervalVisualization {
       hasDragged = false;
       e.preventDefault();
       
+      // Hide tooltip when starting to drag
+      this.tooltip.style.opacity = "0";
+      
       // Store initial interval values for smooth dragging
       if (endpointType === 'interval') {
         initialLow = intervalData.interval.low;
@@ -448,6 +451,9 @@ export class IntervalVisualization {
     // Mouse move - drag if we're in drag mode
     const handleMouseMove = (e) => {
       if (!isDragging) return;
+      
+      // Keep tooltip hidden during drag
+      this.tooltip.style.opacity = "0";
       
       // If we moved more than a few pixels, it's a drag
       const dragDistance = Math.abs(e.clientX - dragStartMouseX);
