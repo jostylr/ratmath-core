@@ -66,24 +66,13 @@
                         <input
                             type="text"
                             id="expressionInput"
-                            placeholder="e.g., x^2, x^3, x-1.414"
+                            placeholder="e.g., x^2, x^3, 5*x-3"
                         />
                         <div class="info-item" style="margin-top: 0.5rem">
                             <label>Result:</label>
                             <span id="expressionResult"
                                 >Enter an expression above</span
                             >
-                        </div>
-                        <div
-                            class="expression-examples"
-                            style="
-                                margin-top: 0.5rem;
-                                font-size: 0.8rem;
-                                color: #666;
-                            "
-                        >
-                            <strong>Examples:</strong> x^2 (for √2), x^3-2 (for
-                            ∛2), x-1.414
                         </div>
                     </div>
 
@@ -128,6 +117,41 @@
                             placeholder="e.g., 3/4, 0.75, 1..2/3"
                         />
                         <button id="jumpBtn" class="nav-btn">Go</button>
+
+                        <div class="constant-buttons">
+                            <label>Mathematical constants ≈</label>
+                            <div class="constant-button-row">
+                                <button
+                                    id="sqrt2Btn"
+                                    class="constant-btn"
+                                    title="Jump to √2 approximation"
+                                >
+                                    √2
+                                </button>
+                                <button
+                                    id="eBtn"
+                                    class="constant-btn"
+                                    title="Jump to e approximation"
+                                >
+                                    e
+                                </button>
+                                <button
+                                    id="piBtn"
+                                    class="constant-btn"
+                                    title="Jump to π approximation"
+                                >
+                                    π
+                                </button>
+                                <button
+                                    id="phiBtn"
+                                    class="constant-btn"
+                                    title="Jump to golden ratio φ approximation"
+                                >
+                                    φ
+                                </button>
+                            </div>
+                        </div>
+
                         <button
                             id="helpBtn"
                             class="nav-btn"
@@ -155,8 +179,13 @@
                 <!-- Info Panel -->
                 <div class="info-panel">
                     <div class="continued-fraction">
-                        <h3>Continued Fraction 
-                            <button id="notationToggle" class="notation-toggle" title="Toggle between RatMath and standard notation">
+                        <h3>
+                            Continued Fraction
+                            <button
+                                id="notationToggle"
+                                class="notation-toggle"
+                                title="Toggle between RatMath and standard notation"
+                            >
                                 Show Standard
                             </button>
                         </h3>

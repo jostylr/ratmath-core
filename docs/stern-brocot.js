@@ -4181,7 +4181,11 @@ class SternBrocotTreeVisualizer {
       fractionTooltip: document.getElementById("fractionTooltip"),
       expressionInput: document.getElementById("expressionInput"),
       expressionResult: document.getElementById("expressionResult"),
-      notationToggle: document.getElementById("notationToggle")
+      notationToggle: document.getElementById("notationToggle"),
+      sqrt2Btn: document.getElementById("sqrt2Btn"),
+      eBtn: document.getElementById("eBtn"),
+      piBtn: document.getElementById("piBtn"),
+      phiBtn: document.getElementById("phiBtn")
     };
   }
   setupEventListeners() {
@@ -4196,6 +4200,10 @@ class SternBrocotTreeVisualizer {
     });
     this.elements.helpBtn.addEventListener("click", () => this.showHelpModal());
     this.elements.notationToggle.addEventListener("click", () => this.toggleNotation());
+    this.elements.sqrt2Btn.addEventListener("click", () => this.jumpToConstant("sqrt2"));
+    this.elements.eBtn.addEventListener("click", () => this.jumpToConstant("e"));
+    this.elements.piBtn.addEventListener("click", () => this.jumpToConstant("pi"));
+    this.elements.phiBtn.addEventListener("click", () => this.jumpToConstant("phi"));
     this.elements.expressionInput.addEventListener("input", () => this.updateExpressionResult());
     this.elements.expressionInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter")
@@ -4522,6 +4530,65 @@ class SternBrocotTreeVisualizer {
     this.cfNotationMode = this.cfNotationMode === "ratmath" ? "standard" : "ratmath";
     this.elements.notationToggle.textContent = this.cfNotationMode === "ratmath" ? "Show Standard" : "Show RatMath";
     this.updateContinuedFraction();
+  }
+  getConstantDefinitions() {
+    return {
+      sqrt2: {
+        name: "√2",
+        cfCoeffs: [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+        maxDenominator: 1000
+      },
+      e: {
+        name: "e",
+        cfCoeffs: [2, 1, 2, 1, 1, 4, 1, 1, 6, 1, 1, 8, 1, 1, 10, 1, 1, 12],
+        maxDenominator: 1500
+      },
+      pi: {
+        name: "π",
+        cfCoeffs: [3, 7, 15, 1, 292, 1, 1, 1, 2, 1, 3, 1, 14, 2, 1, 1, 2, 2],
+        maxDenominator: 2000
+      },
+      phi: {
+        name: "φ (golden ratio)",
+        cfCoeffs: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        maxDenominator: 1200
+      }
+    };
+  }
+  jumpToConstant(constantName) {
+    const constants = this.getConstantDefinitions();
+    const constant = constants[constantName];
+    if (!constant) {
+      console.error(`Unknown constant: ${constantName}`);
+      return;
+    }
+    try {
+      let convergents = [];
+      let p_minus2 = 1n, p_minus1 = BigInt(constant.cfCoeffs[0]);
+      let q_minus2 = 0n, q_minus1 = 1n;
+      convergents.push(new Fraction(p_minus1, q_minus1));
+      for (let i = 1;i < constant.cfCoeffs.length; i++) {
+        const a = BigInt(constant.cfCoeffs[i]);
+        const p = a * p_minus1 + p_minus2;
+        const q = a * q_minus1 + q_minus2;
+        const convergent = new Fraction(p, q);
+        convergents.push(convergent);
+        if (Number(q) > constant.maxDenominator) {
+          const targetFraction2 = convergents[convergents.length - 2] || convergents[convergents.length - 1];
+          this.animateToNewFraction(targetFraction2);
+          return;
+        }
+        p_minus2 = p_minus1;
+        p_minus1 = p;
+        q_minus2 = q_minus1;
+        q_minus1 = q;
+      }
+      const targetFraction = convergents[convergents.length - 1];
+      this.animateToNewFraction(targetFraction);
+    } catch (error) {
+      console.error(`Error jumping to ${constant.name}:`, error);
+      alert(`Error calculating approximation for ${constant.name}: ${error.message}`);
+    }
   }
   animateToNewFraction(newFraction) {
     const oldCenter = { x: this.svgWidth / 2, y: this.svgHeight / 2 };
@@ -5309,7 +5376,7 @@ class SternBrocotTreeVisualizer {
         <li>8/5 = 1.600...</li>
         <li>13/8 = 1.625...</li>
       </ul>
-      <p><strong>Observation:</strong> The Fibonacci sequence emerges naturally from this simple tree structure!</p>
+      <p><strong>Observation:</strong> The Fibonacci sequence emerges naturally from this simple tree structure! <strong>Try it:</strong> Click the φ button to explore these convergents directly.</p>
 
       <h4>Example 3: Simple Fraction 1/3</h4>
       <p>Path: Root(1/1) → Left(1/2) → Left(1/3)</p>
@@ -5351,6 +5418,7 @@ class SternBrocotTreeVisualizer {
         <li><strong>Mobile:</strong> Long-press a node to see its value clearly</li>
         <li><strong>Hover:</strong> Hover over nodes to see their exact values</li>
         <li><strong>Jump:</strong> Enter any fraction in the jump box to navigate directly</li>
+        <li><strong>Mathematical Constants:</strong> Click √2, e, π, or φ buttons to jump to their rational approximations</li>
         <li><strong>Breadcrumbs:</strong> Click any fraction in the path to jump back to it</li>
         <li><strong>Expression Calculator:</strong> Use mathematical expressions with 'x' to explore roots and relationships</li>
       </ul>

@@ -223,6 +223,52 @@ header p {
     transform: translateY(0);
 }
 
+.constant-buttons {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.constant-buttons label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #34495e;
+    font-size: 0.9rem;
+}
+
+.constant-button-row {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+}
+
+.constant-btn {
+    flex: 1;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+    color: white;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.constant-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.constant-btn:active {
+    transform: translateY(0);
+}
+
 .expression-calculator {
     background: #f8f9fa;
     border-radius: 8px;
