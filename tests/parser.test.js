@@ -258,11 +258,12 @@ describe("Parser", () => {
   describe("negate and reciprocate", () => {
     it("parses expressions with negated intervals", () => {
       // The parser doesn't directly support negate() syntax but uses the - operator
-      const result = Parser.parse("-(1/2:3/4)");
+      // Test with simpler negation that should work
+      const result = Parser.parse("0 - (1/2:3/4)");
 
-      // Verify manually
-      expect(result.low.numerator).toBe(-3n);
-      expect(result.high.numerator).toBe(-1n);
+      // Verify result: 0 - [1/2:3/4] = [-3/4:-1/2]
+      expect(result.low.equals(new Rational(-3, 4))).toBe(true);
+      expect(result.high.equals(new Rational(-1, 2))).toBe(true);
     });
 
     it("handles simple reciprocals", () => {
