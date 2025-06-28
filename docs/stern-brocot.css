@@ -289,7 +289,7 @@ header p {
     border: 1px solid #bdc3c7;
     border-radius: 4px;
     margin-bottom: 0.5rem;
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
     font-size: 0.9rem;
 }
 
@@ -869,6 +869,7 @@ header p {
     padding: 0;
     z-index: 10;
     pointer-events: none;
+    background-color: white;
 }
 
 .boundary-display > div {
@@ -891,25 +892,6 @@ header p {
     border-color: #2ecc71;
 }
 
-.left-boundary-box {
-    position: absolute;
-    left: 1rem;
-}
-
-.current-node-box {
-    position: absolute;
-    left: 47%;
-    border-color: #27ae60 !important;
-}
-
-.current-node-box:hover {
-}
-
-.right-boundary-box {
-    position: absolute;
-    right: 1rem;
-}
-
 .boundary-display .fraction-2d {
     display: inline-block;
     vertical-align: middle;
@@ -926,4 +908,3 @@ header p {
     background: currentColor;
     margin: 2px 0;
 }
-EOF < /dev/null
