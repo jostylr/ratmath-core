@@ -428,7 +428,7 @@ header p {
 .tree-node text {
     fill: black;
     font-family: inherit;
-    font-size: 14px;
+    /*font-size: 14px;*/
     text-anchor: middle;
     dominant-baseline: central;
     pointer-events: none;
