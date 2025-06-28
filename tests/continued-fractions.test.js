@@ -372,11 +372,15 @@ describe("Continued Fractions - Stern-Brocot Tree Support", () => {
   });
 
   test("should compute Stern-Brocot depth", () => {
-    const fraction = new Fraction(1n, 1n); // Root
+    const rootFraction = new Fraction(0n, 1n); // Root is now 0/1
+    const rootDepth = rootFraction.sternBrocotDepth();
+    expect(typeof rootDepth).toBe("number");
+    expect(rootDepth).toBe(0); // Root is at depth 0
+    
+    const fraction = new Fraction(1n, 1n); // This is now at depth 1 (one step from root)
     const depth = fraction.sternBrocotDepth();
-
     expect(typeof depth).toBe("number");
-    expect(depth).toBe(0); // Root is at depth 0
+    expect(depth).toBe(1); // 1/1 is now at depth 1
   });
 
   test("should find Stern-Brocot ancestors", () => {
@@ -384,9 +388,9 @@ describe("Continued Fractions - Stern-Brocot Tree Support", () => {
     const ancestors = fraction.sternBrocotAncestors();
 
     expect(ancestors).toBeInstanceOf(Array);
-    expect(ancestors[ancestors.length - 1].equals(new Fraction(1n, 1n))).toBe(
+    expect(ancestors[ancestors.length - 1].equals(new Fraction(0n, 1n))).toBe(
       true,
-    ); // Root
+    ); // Root is now 0/1
   });
 });
 

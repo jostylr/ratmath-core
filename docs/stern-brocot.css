@@ -866,7 +866,7 @@ header p {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 2rem;
+    padding: 0;
     z-index: 10;
     pointer-events: none;
 }
@@ -892,19 +892,22 @@ header p {
 }
 
 .left-boundary-box {
-    margin-right: auto;
+    position: absolute;
+    left: 1rem;
 }
 
 .current-node-box {
     position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(46, 204, 113, 0.95) \!important;
-    border-color: #27ae60 \!important;
+    left: 47%;
+    border-color: #27ae60 !important;
+}
+
+.current-node-box:hover {
 }
 
 .right-boundary-box {
-    margin-left: auto;
+    position: absolute;
+    right: 1rem;
 }
 
 .boundary-display .fraction-2d {
