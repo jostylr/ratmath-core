@@ -3828,21 +3828,20 @@ class Fraction {
   }
   mediant(other) {
     if (this.isInfinite && other.isInfinite) {
+      if (this.#numerator === -1n && other.numerator === 1n) {
+        return new Fraction(0n, 1n);
+      } else if (this.#numerator === 1n && other.numerator === -1n) {
+        return new Fraction(0n, 1n);
+      }
       throw new Error("Cannot compute mediant of two infinite fractions");
     }
-    if (this.isInfinite) {
-      if (this.#numerator > 0n) {
-        return new Fraction(other.numerator + 1n, other.denominator);
-      } else {
-        return new Fraction(other.numerator - 1n, other.denominator);
+    if (this.isInfinite || other.isInfinite) {
+      const newNum2 = this.#numerator + other.numerator;
+      const newDen2 = this.#denominator + other.denominator;
+      if (newNum2 === 0n && newDen2 === 0n) {
+        throw new Error("Mediant would result in 0/0");
       }
-    }
-    if (other.isInfinite) {
-      if (other.numerator > 0n) {
-        return new Fraction(this.#numerator + 1n, this.#denominator);
-      } else {
-        return new Fraction(this.#numerator - 1n, this.#denominator);
-      }
+      return new Fraction(newNum2, newDen2);
     }
     const newNum = this.#numerator + other.numerator;
     const newDen = this.#denominator + other.denominator;
@@ -3852,19 +3851,14 @@ class Fraction {
     if (this.isInfinite) {
       throw new Error("Cannot find Farey parents of infinite fraction");
     }
-    if (this.#numerator === 0n) {
-      const left = new Fraction(-1n, 1n);
-      const right = new Fraction(1n, 1n);
-      return { left, right };
-    }
-    if (this.#numerator === this.#denominator) {
-      const left = new Fraction(0n, 1n);
+    if (this.#numerator === 0n && this.#denominator === 1n) {
+      const left = new Fraction(-1n, 0n, { allowInfinite: true });
       const right = new Fraction(1n, 0n, { allowInfinite: true });
       return { left, right };
     }
-    let leftBound = new Fraction(0n, 1n);
+    let leftBound = new Fraction(-1n, 0n, { allowInfinite: true });
     let rightBound = new Fraction(1n, 0n, { allowInfinite: true });
-    let current = new Fraction(1n, 1n);
+    let current = new Fraction(0n, 1n);
     while (!current.equals(this)) {
       if (this.lessThan(current)) {
         rightBound = current;
@@ -3935,7 +3929,7 @@ class Fraction {
     if (this.isInfinite) {
       throw new Error("Infinite fractions don't have parents in Stern-Brocot tree");
     }
-    if (this.numerator === 1n && this.denominator === 1n) {
+    if (this.numerator === 0n && this.denominator === 1n) {
       return null;
     }
     const path = this.sternBrocotPath();
@@ -3962,9 +3956,12 @@ class Fraction {
       throw new Error("Infinite fractions don't have tree paths");
     }
     const reduced = this.reduce();
-    let left = new Fraction(0, 1);
+    if (reduced.numerator === 0n && reduced.denominator === 1n) {
+      return [];
+    }
+    let left = new Fraction(-1, 0, { allowInfinite: true });
     let right = new Fraction(1, 0, { allowInfinite: true });
-    let current = new Fraction(1, 1);
+    let current = new Fraction(0, 1);
     const path = [];
     while (!current.equals(reduced)) {
       if (reduced.lessThan(current)) {
@@ -3983,9 +3980,9 @@ class Fraction {
     return path;
   }
   static fromSternBrocotPath(path) {
-    let left = new Fraction(0, 1);
+    let left = new Fraction(-1, 0, { allowInfinite: true });
     let right = new Fraction(1, 0, { allowInfinite: true });
-    let current = new Fraction(1, 1);
+    let current = new Fraction(0, 1);
     for (const direction of path) {
       if (direction === "L") {
         right = current;
@@ -4015,7 +4012,7 @@ class Fraction {
     if (this.isInfinite) {
       return Infinity;
     }
-    if (this.numerator === 1n && this.denominator === 1n) {
+    if (this.numerator === 0n && this.denominator === 1n) {
       return 0;
     }
     return this.sternBrocotPath().length;

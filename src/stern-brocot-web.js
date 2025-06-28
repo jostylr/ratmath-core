@@ -96,18 +96,34 @@ class SternBrocotTreeVisualizer {
     this.elements.helpBtn.addEventListener("click", () => this.showHelpModal());
 
     // Notation toggle button
-    this.elements.notationToggle.addEventListener("click", () => this.toggleNotation());
+    this.elements.notationToggle.addEventListener("click", () =>
+      this.toggleNotation(),
+    );
 
     // Mathematical constant buttons
-    this.elements.sqrt2Btn.addEventListener("click", () => this.jumpToConstant("sqrt2"));
-    this.elements.eBtn.addEventListener("click", () => this.jumpToConstant("e"));
-    this.elements.piBtn.addEventListener("click", () => this.jumpToConstant("pi"));
-    this.elements.phiBtn.addEventListener("click", () => this.jumpToConstant("phi"));
+    this.elements.sqrt2Btn.addEventListener("click", () =>
+      this.jumpToConstant("sqrt2"),
+    );
+    this.elements.eBtn.addEventListener("click", () =>
+      this.jumpToConstant("e"),
+    );
+    this.elements.piBtn.addEventListener("click", () =>
+      this.jumpToConstant("pi"),
+    );
+    this.elements.phiBtn.addEventListener("click", () =>
+      this.jumpToConstant("phi"),
+    );
 
     // Boundary display click handlers
-    this.elements.leftBoundaryBox.addEventListener("click", () => this.handleBoundaryClick('left'));
-    this.elements.currentNodeBox.addEventListener("click", () => this.handleBoundaryClick('current'));
-    this.elements.rightBoundaryBox.addEventListener("click", () => this.handleBoundaryClick('right'));
+    this.elements.leftBoundaryBox.addEventListener("click", () =>
+      this.handleBoundaryClick("left"),
+    );
+    this.elements.currentNodeBox.addEventListener("click", () =>
+      this.handleBoundaryClick("current"),
+    );
+    this.elements.rightBoundaryBox.addEventListener("click", () =>
+      this.handleBoundaryClick("right"),
+    );
 
     // Expression calculator
     this.elements.expressionInput.addEventListener("input", () =>
@@ -313,7 +329,7 @@ class SternBrocotTreeVisualizer {
       // Display as 1/0 or -1/0 instead of infinity symbol
       const elements = [];
       const lineHeight = fontSize < 16 ? fontSize * 0.6 : fontSize * 0.5;
-      
+
       // Numerator (1 or -1)
       const numerator = document.createElementNS(
         "http://www.w3.org/2000/svg",
@@ -328,10 +344,13 @@ class SternBrocotTreeVisualizer {
       numerator.setAttribute("font-weight", "bold");
       numerator.textContent = fraction.numerator > 0 ? "1" : "-1";
       elements.push(numerator);
-      
+
       // Fraction bar
       const maxWidth = fontSize * 0.8;
-      const bar = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      const bar = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "line",
+      );
       bar.setAttribute("x1", x - maxWidth / 2);
       bar.setAttribute("y1", y);
       bar.setAttribute("x2", x + maxWidth / 2);
@@ -339,7 +358,7 @@ class SternBrocotTreeVisualizer {
       bar.setAttribute("stroke", "black");
       bar.setAttribute("stroke-width", "2");
       elements.push(bar);
-      
+
       // Denominator (0)
       const denominator = document.createElementNS(
         "http://www.w3.org/2000/svg",
@@ -354,7 +373,7 @@ class SternBrocotTreeVisualizer {
       denominator.setAttribute("font-weight", "bold");
       denominator.textContent = "0";
       elements.push(denominator);
-      
+
       return elements;
     }
 
@@ -541,9 +560,17 @@ class SternBrocotTreeVisualizer {
     );
 
     // Format numerator and denominator display properly for infinite fractions
-    const leftNum = left.isInfinite ? (left.numerator > 0 ? "1" : "-1") : left.numerator.toString();
+    const leftNum = left.isInfinite
+      ? left.numerator > 0
+        ? "1"
+        : "-1"
+      : left.numerator.toString();
     const leftDen = left.isInfinite ? "0" : left.denominator.toString();
-    const rightNum = right.isInfinite ? (right.numerator > 0 ? "1" : "-1") : right.numerator.toString();
+    const rightNum = right.isInfinite
+      ? right.numerator > 0
+        ? "1"
+        : "-1"
+      : right.numerator.toString();
     const rightDen = right.isInfinite ? "0" : right.denominator.toString();
 
     const numeratorSum = left.numerator + right.numerator;
@@ -638,8 +665,10 @@ class SternBrocotTreeVisualizer {
   }
 
   toggleNotation() {
-    this.cfNotationMode = this.cfNotationMode === "ratmath" ? "standard" : "ratmath";
-    this.elements.notationToggle.textContent = this.cfNotationMode === "ratmath" ? "Show Standard" : "Show RatMath";
+    this.cfNotationMode =
+      this.cfNotationMode === "ratmath" ? "standard" : "ratmath";
+    this.elements.notationToggle.textContent =
+      this.cfNotationMode === "ratmath" ? "Show Standard" : "Show RatMath";
     this.updateContinuedFraction();
   }
 
@@ -651,34 +680,34 @@ class SternBrocotTreeVisualizer {
         name: "√2",
         // √2 = [1; 2, 2, 2, 2, ...] (infinite repeating 2s)
         cfCoeffs: [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
-        maxDenominator: 1000
+        maxDenominator: 1000,
       },
       e: {
         name: "e",
         // e = [2; 1, 2, 1, 1, 4, 1, 1, 6, 1, 1, 8, 1, 1, 10, ...]
         cfCoeffs: [2, 1, 2, 1, 1, 4, 1, 1, 6, 1, 1, 8, 1, 1, 10, 1, 1, 12],
-        maxDenominator: 1500
+        maxDenominator: 1500,
       },
       pi: {
         name: "π",
         // π = [3; 7, 15, 1, 292, 1, 1, 1, 2, 1, 3, 1, ...] (irregular pattern)
         cfCoeffs: [3, 7, 15, 1, 292, 1, 1, 1, 2, 1, 3, 1, 14, 2, 1, 1, 2, 2],
-        maxDenominator: 2000
+        maxDenominator: 2000,
       },
       phi: {
         name: "φ (golden ratio)",
         // φ = [1; 1, 1, 1, 1, 1, 1, 1, 1, 1, ...] (infinite repeating 1s)
         // This gives the famous Fibonacci convergents: 1/1, 2/1, 3/2, 5/3, 8/5, 13/8, 21/13, ...
         cfCoeffs: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        maxDenominator: 1200
-      }
+        maxDenominator: 1200,
+      },
     };
   }
 
   jumpToConstant(constantName) {
     const constants = this.getConstantDefinitions();
     const constant = constants[constantName];
-    
+
     if (!constant) {
       console.error(`Unknown constant: ${constantName}`);
       return;
@@ -687,41 +716,46 @@ class SternBrocotTreeVisualizer {
     try {
       // Build continued fraction convergents until we exceed the denominator limit
       let convergents = [];
-      let p_minus2 = 1n, p_minus1 = BigInt(constant.cfCoeffs[0]);
-      let q_minus2 = 0n, q_minus1 = 1n;
-      
+      let p_minus2 = 1n,
+        p_minus1 = BigInt(constant.cfCoeffs[0]);
+      let q_minus2 = 0n,
+        q_minus1 = 1n;
+
       convergents.push(new Fraction(p_minus1, q_minus1));
-      
+
       for (let i = 1; i < constant.cfCoeffs.length; i++) {
         const a = BigInt(constant.cfCoeffs[i]);
         const p = a * p_minus1 + p_minus2;
         const q = a * q_minus1 + q_minus2;
-        
+
         const convergent = new Fraction(p, q);
         convergents.push(convergent);
-        
+
         // Check if this convergent exceeds our denominator limit
         if (Number(q) > constant.maxDenominator) {
           // Use the previous convergent (the last one under the limit)
-          const targetFraction = convergents[convergents.length - 2] || convergents[convergents.length - 1];
+          const targetFraction =
+            convergents[convergents.length - 2] ||
+            convergents[convergents.length - 1];
           this.animateToNewFraction(targetFraction);
           return;
         }
-        
+
         // Update for next iteration
         p_minus2 = p_minus1;
         p_minus1 = p;
         q_minus2 = q_minus1;
         q_minus1 = q;
       }
-      
+
       // If we've processed all coefficients without exceeding the limit, use the last convergent
       const targetFraction = convergents[convergents.length - 1];
       this.animateToNewFraction(targetFraction);
-      
     } catch (error) {
       console.error(`Error jumping to ${constant.name}:`, error);
-      alert(`Error calculating approximation for ${constant.name}: ${error.message}`);
+      alert(
+        `Error calculating approximation for ${constant.name}: ${error.message}`,
+      );
     }
   }
 
@@ -793,11 +827,11 @@ class SternBrocotTreeVisualizer {
   handleKeyPress(e) {
     // Don't interfere with arrow keys when user is typing in input fields
     const activeElement = document.activeElement;
-    const isInputFocused = activeElement && (
-      activeElement.tagName === 'INPUT' || 
-      activeElement.tagName === 'TEXTAREA' || 
-      activeElement.contentEditable === 'true'
-    );
+    const isInputFocused =
+      activeElement &&
+      (activeElement.tagName === "INPUT" ||
+        activeElement.tagName === "TEXTAREA" ||
+        activeElement.contentEditable === "true");
 
     switch (e.key) {
       case "ArrowUp":
@@ -1355,6 +1389,17 @@ class SternBrocotTreeVisualizer {
   renderNodes(treeData) {
     const center = { x: this.svgWidth / 2, y: this.svgHeight / 2 };
 
+    // Get actual SVG container size for responsive scaling
+    const svgRect = this.svg.getBoundingClientRect();
+    const actualWidth = svgRect.width;
+    const actualHeight = svgRect.height;
+
+    // Calculate scaling factor based on a reference size (800px width)
+    const referenceWidth = 800;
+    const responsiveScale = referenceWidth / actualWidth;
+    //const heightScale = Math.max(0.7, Math.min(1.5, actualHeight / 600));
+    //const responsiveScale = Math.min(widthScale, heightScale);
+
     treeData.forEach((nodeData) => {
       const { fraction, x, y, type, size } = nodeData;
 
@@ -1367,8 +1412,9 @@ class SternBrocotTreeVisualizer {
       nodeGroup.dataset.fraction = fraction.toString();
 
       // Calculate rectangle dimensions based on text content
-      // Increased minimum font size for better mobile readability
-      const fontSize = Math.max(16, Math.min(24, size / 2.0));
+      // Scale font size based on container size to maintain readability
+      const baseFontSize = 15; //Math.max(16, Math.min(24, size / 2.0));
+      const fontSize = baseFontSize * responsiveScale;
       const lineHeight = fontSize < 16 ? fontSize * 0.6 : fontSize * 0.5;
 
       // Estimate text dimensions
@@ -1435,10 +1481,25 @@ class SternBrocotTreeVisualizer {
     const center = { x: this.svgWidth / 2, y: this.svgHeight / 2 };
     const nodeMap = new Map();
 
+    // Get actual SVG container size for responsive scaling
+    const svgRect = this.svg.getBoundingClientRect();
+    const actualWidth = svgRect.width;
+    const actualHeight = svgRect.height;
+
+    // Calculate scaling factor based on a reference size (800px width)
+    const referenceWidth = 800;
+    const widthScale = Math.max(
+      0.7,
+      Math.min(1.5, actualWidth / referenceWidth),
+    );
+    const heightScale = Math.max(0.7, Math.min(1.5, actualHeight / 600));
+    const responsiveScale = Math.min(widthScale, heightScale);
+
     // Calculate rectangle positions for each node first
     treeData.forEach((node) => {
       const { fraction, x, y, size } = node;
-      const fontSize = Math.max(14, Math.min(20, size / 2.2));
+      const baseFontSize = Math.max(14, Math.min(20, size / 2.2));
+      const fontSize = baseFontSize * responsiveScale;
       const lineHeight = fontSize < 16 ? fontSize * 0.6 : fontSize * 0.5;
 
       const numStr = fraction.numerator.toString();
@@ -1793,41 +1854,41 @@ class SternBrocotTreeVisualizer {
 
   updateBoundaryDisplay() {
     const parents = this.currentFraction.fareyParents();
-    
+
     // Update left boundary
     this.elements.leftBoundaryDisplay.innerHTML = this.formatFraction(
       parents.left,
       "fraction",
-      true
+      true,
     );
-    
+
     // Update current node
     this.elements.currentNodeDisplay.innerHTML = this.formatFraction(
       this.currentFraction,
       "fraction",
-      true
+      true,
     );
-    
+
     // Update right boundary
     this.elements.rightBoundaryDisplay.innerHTML = this.formatFraction(
       parents.right,
       "fraction",
-      true
+      true,
     );
   }
 
   handleBoundaryClick(boundary) {
-    if (boundary === 'left' || boundary === 'right') {
+    if (boundary === "left" || boundary === "right") {
       const parents = this.currentFraction.fareyParents();
-      const targetFraction = boundary === 'left' ? parents.left : parents.right;
-      
+      const targetFraction = boundary === "left" ? parents.left : parents.right;
+
       // If clicking on an infinite fraction (1/0 or -1/0), go to root
       if (targetFraction.isInfinite) {
         this.reset();
       } else {
         this.animateToNewFraction(targetFraction);
       }
-    } else if (boundary === 'current') {
+    } else if (boundary === "current") {
       // Clicking current node does nothing special, maybe center the view
       this.scrollOffset = { x: 0, y: 0 };
       this.updateTreeTransform();
@@ -1886,7 +1947,7 @@ class SternBrocotTreeVisualizer {
         <li>RR: whole number part is at least 0</li>
         <li>The full path navigates to 3/5 through mediants</li>
       </ul>
-      
+
       <h4>Example 4: Golden Ratio φ ≈ 1.618</h4>
       <p>The golden ratio φ = (1+√5)/2 has the continued fraction [1; 1, 1, 1, 1, ...]. Starting from 0/1, its path begins with RR (giving 1/1), then continues with alternating L and R.</p>
       <p><strong>Try it:</strong> Click the φ button to explore the golden ratio approximations.</p>
