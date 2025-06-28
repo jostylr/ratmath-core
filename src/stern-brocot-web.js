@@ -1423,9 +1423,13 @@ class SternBrocotTreeVisualizer {
       const maxWidth = Math.max(numStr.length, denStr.length) * fontSize * 0.7;
       const textHeight = lineHeight * 2; // Space for numerator and denominator
 
-      // Rectangle dimensions with increased padding
-      const rectWidth = Math.max(maxWidth + 24, 50); // Increased padding and minimum width
-      const rectHeight = textHeight + 18; // Increased padding above and below
+      // Rectangle dimensions with responsive padding
+      const basePadding = 24;
+      const baseMinWidth = 50;
+      const baseHeightPadding = 18;
+      
+      const rectWidth = Math.max(maxWidth + basePadding * responsiveScale, baseMinWidth * responsiveScale);
+      const rectHeight = textHeight + baseHeightPadding * responsiveScale;
 
       // Position rectangle to expand away from center
       let rectX = x - rectWidth / 2;
@@ -1488,12 +1492,9 @@ class SternBrocotTreeVisualizer {
 
     // Calculate scaling factor based on a reference size (800px width)
     const referenceWidth = 800;
-    const widthScale = Math.max(
-      0.7,
-      Math.min(1.5, actualWidth / referenceWidth),
-    );
-    const heightScale = Math.max(0.7, Math.min(1.5, actualHeight / 600));
-    const responsiveScale = Math.min(widthScale, heightScale);
+    const responsiveScale = referenceWidth / actualWidth;
+    //const heightScale = Math.max(0.7, Math.min(1.5, actualHeight / 600));
+    //const responsiveScale = Math.min(widthScale, heightScale);
 
     // Calculate rectangle positions for each node first
     treeData.forEach((node) => {
@@ -1507,8 +1508,13 @@ class SternBrocotTreeVisualizer {
       const maxWidth = Math.max(numStr.length, denStr.length) * fontSize * 0.7;
       const textHeight = lineHeight * 2;
 
-      const rectWidth = Math.max(maxWidth + 24, 50);
-      const rectHeight = textHeight + 18;
+      // Rectangle dimensions with responsive padding
+      const basePadding = 24;
+      const baseMinWidth = 50;
+      const baseHeightPadding = 18;
+      
+      const rectWidth = Math.max(maxWidth + basePadding * responsiveScale, baseMinWidth * responsiveScale);
+      const rectHeight = textHeight + baseHeightPadding * responsiveScale;
 
       // Calculate rectangle position (same logic as renderNodes)
       let rectX = x - rectWidth / 2;

@@ -5081,7 +5081,6 @@ class SternBrocotTreeVisualizer {
     const actualHeight = svgRect.height;
     const referenceWidth = 800;
     const responsiveScale = referenceWidth / actualWidth;
-    console.log(responsiveScale);
     treeData.forEach((nodeData) => {
       const { fraction, x, y, type, size } = nodeData;
       const nodeGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -5094,8 +5093,11 @@ class SternBrocotTreeVisualizer {
       const denStr = fraction.denominator.toString();
       const maxWidth = Math.max(numStr.length, denStr.length) * fontSize * 0.7;
       const textHeight = lineHeight * 2;
-      const rectWidth = Math.max(maxWidth + 24, 50);
-      const rectHeight = textHeight + 18;
+      const basePadding = 24;
+      const baseMinWidth = 50;
+      const baseHeightPadding = 18;
+      const rectWidth = Math.max(maxWidth + basePadding * responsiveScale, baseMinWidth * responsiveScale);
+      const rectHeight = textHeight + baseHeightPadding * responsiveScale;
       let rectX = x - rectWidth / 2;
       let rectY = y - rectHeight / 2;
       if (x < center.x) {
@@ -5133,9 +5135,7 @@ class SternBrocotTreeVisualizer {
     const actualWidth = svgRect.width;
     const actualHeight = svgRect.height;
     const referenceWidth = 800;
-    const widthScale = Math.max(0.7, Math.min(1.5, actualWidth / referenceWidth));
-    const heightScale = Math.max(0.7, Math.min(1.5, actualHeight / 600));
-    const responsiveScale = Math.min(widthScale, heightScale);
+    const responsiveScale = referenceWidth / actualWidth;
     treeData.forEach((node) => {
       const { fraction, x, y, size } = node;
       const baseFontSize = Math.max(14, Math.min(20, size / 2.2));
@@ -5145,8 +5145,11 @@ class SternBrocotTreeVisualizer {
       const denStr = fraction.denominator.toString();
       const maxWidth = Math.max(numStr.length, denStr.length) * fontSize * 0.7;
       const textHeight = lineHeight * 2;
-      const rectWidth = Math.max(maxWidth + 24, 50);
-      const rectHeight = textHeight + 18;
+      const basePadding = 24;
+      const baseMinWidth = 50;
+      const baseHeightPadding = 18;
+      const rectWidth = Math.max(maxWidth + basePadding * responsiveScale, baseMinWidth * responsiveScale);
+      const rectHeight = textHeight + baseHeightPadding * responsiveScale;
       let rectX = x - rectWidth / 2;
       let rectY = y - rectHeight / 2;
       if (x < center.x) {
