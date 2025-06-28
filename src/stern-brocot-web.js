@@ -9,7 +9,7 @@ import { Fraction, Parser } from "../index.js";
 
 class SternBrocotTreeVisualizer {
   constructor() {
-    this.currentFraction = new Fraction(1, 1); // Start at root
+    this.currentFraction = new Fraction(0, 1); // Start at root 0/1
     this.displayMode = "fraction";
     this.cfNotationMode = "ratmath"; // Default to RatMath notation
     this.svg = document.getElementById("treeSvg");
@@ -61,6 +61,13 @@ class SternBrocotTreeVisualizer {
       eBtn: document.getElementById("eBtn"),
       piBtn: document.getElementById("piBtn"),
       phiBtn: document.getElementById("phiBtn"),
+      // Boundary display elements
+      leftBoundaryBox: document.getElementById("leftBoundaryBox"),
+      currentNodeBox: document.getElementById("currentNodeBox"),
+      rightBoundaryBox: document.getElementById("rightBoundaryBox"),
+      leftBoundaryDisplay: document.getElementById("leftBoundaryDisplay"),
+      currentNodeDisplay: document.getElementById("currentNodeDisplay"),
+      rightBoundaryDisplay: document.getElementById("rightBoundaryDisplay"),
     };
   }
 
@@ -96,6 +103,11 @@ class SternBrocotTreeVisualizer {
     this.elements.eBtn.addEventListener("click", () => this.jumpToConstant("e"));
     this.elements.piBtn.addEventListener("click", () => this.jumpToConstant("pi"));
     this.elements.phiBtn.addEventListener("click", () => this.jumpToConstant("phi"));
+
+    // Boundary display click handlers
+    this.elements.leftBoundaryBox.addEventListener("click", () => this.handleBoundaryClick('left'));
+    this.elements.currentNodeBox.addEventListener("click", () => this.handleBoundaryClick('current'));
+    this.elements.rightBoundaryBox.addEventListener("click", () => this.handleBoundaryClick('right'));
 
     // Expression calculator
     this.elements.expressionInput.addEventListener("input", () =>
@@ -222,7 +234,16 @@ class SternBrocotTreeVisualizer {
     const displayMode = mode || this.displayMode;
 
     if (fraction.isInfinite) {
-      return fraction.numerator > 0 ? "+∞" : "-∞";
+      // Show as 1/0 or -1/0 for infinite fractions
+      if (use2D) {
+        return `<div class="fraction-2d">
+            <div class="numerator">${fraction.numerator > 0 ? "1" : "-1"}</div>
+            <div class="fraction-bar"></div>
+            <div class="denominator">0</div>
+        </div>`;
+      } else {
+        return fraction.numerator > 0 ? "1/0" : "-1/0";
+      }
     }
 
     //if use2D is false then check if length is too long then switch it
@@ -289,19 +310,52 @@ class SternBrocotTreeVisualizer {
 
   createSVG2DFraction(fraction, x, y, fontSize) {
     if (fraction.isInfinite) {
-      const text = document.createElementNS(
+      // Display as 1/0 or -1/0 instead of infinity symbol
+      const elements = [];
+      const lineHeight = fontSize < 16 ? fontSize * 0.6 : fontSize * 0.5;
+      
+      // Numerator (1 or -1)
+      const numerator = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "text",
       );
-      text.setAttribute("x", x);
-      text.setAttribute("y", y);
-      text.setAttribute("font-size", fontSize);
-      text.setAttribute("text-anchor", "middle");
-      text.setAttribute("dominant-baseline", "central");
-      text.setAttribute("fill", "black");
-      text.setAttribute("font-weight", "bold");
-      text.textContent = fraction.numerator > 0 ? "+∞" : "-∞";
-      return [text];
+      numerator.setAttribute("x", x);
+      numerator.setAttribute("y", y - lineHeight);
+      numerator.setAttribute("font-size", fontSize);
+      numerator.setAttribute("text-anchor", "middle");
+      numerator.setAttribute("dominant-baseline", "central");
+      numerator.setAttribute("fill", "black");
+      numerator.setAttribute("font-weight", "bold");
+      numerator.textContent = fraction.numerator > 0 ? "1" : "-1";
+      elements.push(numerator);
+      
+      // Fraction bar
+      const maxWidth = fontSize * 0.8;
+      const bar = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      bar.setAttribute("x1", x - maxWidth / 2);
+      bar.setAttribute("y1", y);
+      bar.setAttribute("x2", x + maxWidth / 2);
+      bar.setAttribute("y2", y);
+      bar.setAttribute("stroke", "black");
+      bar.setAttribute("stroke-width", "2");
+      elements.push(bar);
+      
+      // Denominator (0)
+      const denominator = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "text",
+      );
+      denominator.setAttribute("x", x);
+      denominator.setAttribute("y", y + lineHeight);
+      denominator.setAttribute("font-size", fontSize);
+      denominator.setAttribute("text-anchor", "middle");
+      denominator.setAttribute("dominant-baseline", "central");
+      denominator.setAttribute("fill", "black");
+      denominator.setAttribute("font-weight", "bold");
+      denominator.textContent = "0";
+      elements.push(denominator);
+      
+      return elements;
     }
 
     const elements = [];
@@ -372,6 +426,9 @@ class SternBrocotTreeVisualizer {
     this.elements.currentDepth.textContent =
       depth === Infinity ? "∞" : depth.toString();
 
+    // Update boundary display
+    this.updateBoundaryDisplay();
+
     // Update decimal value with repeating decimal format
     try {
       const rational = this.currentFraction.toRational();
@@ -438,9 +495,9 @@ class SternBrocotTreeVisualizer {
     let breadcrumbHtml = "";
 
     // Add root with click navigation
-    const rootFraction = new Fraction(1, 1);
+    const rootFraction = new Fraction(0, 1);
     const rootDisplay = this.formatFraction(rootFraction, "fraction", false);
-    breadcrumbHtml += `<span class="breadcrumb clickable-breadcrumb" onclick="sternBrocotApp.navigateToFraction('1', '1')" title="Click to navigate to root">${rootDisplay} (Root)</span>`;
+    breadcrumbHtml += `<span class="breadcrumb clickable-breadcrumb" onclick="sternBrocotApp.navigateToFraction('0', '1')" title="Click to navigate to root">${rootDisplay} (Root)</span>`;
 
     // Add each step in the path with appropriate formatting and click navigation
     for (let i = 0; i < path.length; i++) {
@@ -472,12 +529,7 @@ class SternBrocotTreeVisualizer {
     const left = parents.left;
     const right = parents.right;
 
-    if (left.isInfinite || right.isInfinite) {
-      this.elements.mediantCalculation.textContent =
-        "Mediant calculation not applicable for infinite boundaries";
-      return;
-    }
-
+    // Always show mediant calculation, even with infinite boundaries
     const mediant = left.mediant(right);
     const leftStr = this.formatFraction(left, "fraction", true);
     const rightStr = this.formatFraction(right, "fraction", true);
@@ -488,6 +540,12 @@ class SternBrocotTreeVisualizer {
       true,
     );
 
+    // Format numerator and denominator display properly for infinite fractions
+    const leftNum = left.isInfinite ? (left.numerator > 0 ? "1" : "-1") : left.numerator.toString();
+    const leftDen = left.isInfinite ? "0" : left.denominator.toString();
+    const rightNum = right.isInfinite ? (right.numerator > 0 ? "1" : "-1") : right.numerator.toString();
+    const rightDen = right.isInfinite ? "0" : right.denominator.toString();
+
     const numeratorSum = left.numerator + right.numerator;
     const denominatorSum = left.denominator + right.denominator;
 
@@ -495,9 +553,9 @@ class SternBrocotTreeVisualizer {
             <strong>Mediant calculation:</strong><br>
             ${leftStr} ⊕ ${rightStr} =
             <div class="fraction-2d" style="display: inline-block; margin: 0 0.5rem;">
-                <div class="numerator">${left.numerator}+${right.numerator}</div>
+                <div class="numerator">${leftNum}+${rightNum}</div>
                 <div class="fraction-bar"></div>
-                <div class="denominator">${left.denominator}+${right.denominator}</div>
+                <div class="denominator">${leftDen}+${rightDen}</div>
             </div>
             =
             <div class="fraction-2d" style="display: inline-block; margin: 0 0.5rem;">
@@ -576,7 +634,7 @@ class SternBrocotTreeVisualizer {
   }
 
   reset() {
-    this.animateToNewFraction(new Fraction(1, 1));
+    this.animateToNewFraction(new Fraction(0, 1));
   }
 
   toggleNotation() {
@@ -700,6 +758,13 @@ class SternBrocotTreeVisualizer {
     if (!input) return;
 
     try {
+      // Check if input contains /0 - if so, go to root
+      if (input.includes("/0")) {
+        this.elements.jumpInput.value = "";
+        this.reset();
+        return;
+      }
+
       // Parse the input using the RatMath parser
       const result = Parser.parse(input);
       let fraction;
@@ -717,11 +782,6 @@ class SternBrocotTreeVisualizer {
 
       // Ensure the fraction is in lowest terms
       fraction = fraction.reduce();
-
-      // Check if it's a valid positive fraction
-      if (fraction.numerator <= 0 || fraction.denominator <= 0) {
-        throw new Error("Only positive fractions are supported");
-      }
 
       this.elements.jumpInput.value = "";
       this.animateToNewFraction(fraction);
@@ -1731,44 +1791,105 @@ class SternBrocotTreeVisualizer {
     }
   }
 
+  updateBoundaryDisplay() {
+    const parents = this.currentFraction.fareyParents();
+    
+    // Update left boundary
+    this.elements.leftBoundaryDisplay.innerHTML = this.formatFraction(
+      parents.left,
+      "fraction",
+      true
+    );
+    
+    // Update current node
+    this.elements.currentNodeDisplay.innerHTML = this.formatFraction(
+      this.currentFraction,
+      "fraction",
+      true
+    );
+    
+    // Update right boundary
+    this.elements.rightBoundaryDisplay.innerHTML = this.formatFraction(
+      parents.right,
+      "fraction",
+      true
+    );
+  }
+
+  handleBoundaryClick(boundary) {
+    if (boundary === 'left' || boundary === 'right') {
+      const parents = this.currentFraction.fareyParents();
+      const targetFraction = boundary === 'left' ? parents.left : parents.right;
+      
+      // If clicking on an infinite fraction (1/0 or -1/0), go to root
+      if (targetFraction.isInfinite) {
+        this.reset();
+      } else {
+        this.animateToNewFraction(targetFraction);
+      }
+    } else if (boundary === 'current') {
+      // Clicking current node does nothing special, maybe center the view
+      this.scrollOffset = { x: 0, y: 0 };
+      this.updateTreeTransform();
+    }
+  }
+
   showHelpModal() {
     this.elements.helpContent.innerHTML = `
       <h3>What is the Stern-Brocot Tree?</h3>
-      <p>The Stern-Brocot tree is a beautiful mathematical structure that organizes all positive rational numbers (fractions) in a binary tree format. Every positive fraction appears exactly once in the tree, and it's built using a simple but elegant process called the <strong>mediant operation</strong>.</p>
+      <p>The Stern-Brocot tree is a beautiful mathematical structure that organizes all rational numbers (fractions) in a binary tree format. Every rational number appears exactly once in the tree, and it's built using a simple but elegant process called the <strong>mediant operation</strong>.</p>
 
       <h3>How is the Tree Constructed?</h3>
-      <p>The tree starts with boundaries 0/1 and 1/0 (representing 0 and infinity), and the root is their mediant: (0+1)/(1+0) = 1/1. Each subsequent fraction is the mediant of its "ancestors" in the tree.</p>
+      <p>The tree starts with boundaries -1/0 and 1/0 (representing negative and positive infinity), and the root is their mediant: (-1+1)/(0+0) = 0/1. Each subsequent fraction is the mediant of its boundaries in the tree.</p>
 
       <p><strong>Mediant Formula:</strong> For fractions a/b and c/d, their mediant is (a+c)/(b+d)</p>
 
+      <h3>Path Interpretation - Sign and Whole Number</h3>
+      <p>The path from the root 0/1 to any fraction has a special meaning:</p>
+      <ul>
+        <li><strong>First direction (L or R):</strong> Determines the sign of the number
+          <ul>
+            <li>L (Left) - Negative numbers</li>
+            <li>R (Right) - Positive numbers</li>
+          </ul>
+        </li>
+        <li><strong>Count before direction change:</strong> The number of consecutive L's or R's before the first direction change gives the whole number part
+          <ul>
+            <li>Example: RRR... means at least 3 for the whole number part</li>
+            <li>Example: LL... means at least -2 for the whole number part</li>
+          </ul>
+        </li>
+      </ul>
+
       <h3>Examples and Observations</h3>
 
-      <h4>Example 1: Finding 3/5</h4>
-      <p>Path: Root(1/1) → Left(1/2) → Right(2/3) → Left(3/5)</p>
+      <h4>Example 1: Finding 1/1</h4>
+      <p>Path from root 0/1: RR</p>
       <ul>
-        <li><strong>Step 1:</strong> Start at 1/1</li>
-        <li><strong>Step 2:</strong> Go left to 1/2 = mediant(0/1, 1/1)</li>
-        <li><strong>Step 3:</strong> Go right to 2/3 = mediant(1/2, 1/1)</li>
-        <li><strong>Step 4:</strong> Go left to 3/5 = mediant(1/2, 2/3)</li>
+        <li><strong>Step 1:</strong> Start at 0/1 (boundaries: -1/0 and 1/0)</li>
+        <li><strong>Step 2:</strong> Go right to 1/1 = mediant(0/1, 1/0)</li>
       </ul>
-      <p><strong>Observation:</strong> The path "LRL" gives us both the location and the construction method!</p>
+      <p><strong>Observation:</strong> The path "RR" tells us: R (positive) and RR (whole number part is 1)</p>
 
-      <h4>Example 2: Golden Ratio φ ≈ 1.618</h4>
-      <p>The golden ratio φ = (1+√5)/2 has the continued fraction [1; 1, 1, 1, 1, ...]. Its convergents in the tree follow the alternating path RLRLRL... and correspond to consecutive Fibonacci ratios:</p>
+      <h4>Example 2: Finding -1/1</h4>
+      <p>Path from root 0/1: LL</p>
       <ul>
-        <li>1/1 = 1.000...</li>
-        <li>2/1 = 2.000...</li>
-        <li>3/2 = 1.500...</li>
-        <li>5/3 = 1.666...</li>
-        <li>8/5 = 1.600...</li>
-        <li>13/8 = 1.625...</li>
+        <li><strong>Step 1:</strong> Start at 0/1 (boundaries: -1/0 and 1/0)</li>
+        <li><strong>Step 2:</strong> Go left to -1/1 = mediant(-1/0, 0/1)</li>
       </ul>
-      <p><strong>Observation:</strong> The Fibonacci sequence emerges naturally from this simple tree structure! <strong>Try it:</strong> Click the φ button to explore these convergents directly.</p>
+      <p><strong>Observation:</strong> The path "LL" tells us: L (negative) and LL (absolute whole number part is 1)</p>
 
-      <h4>Example 3: Simple Fraction 1/3</h4>
-      <p>Path: Root(1/1) → Left(1/2) → Left(1/3)</p>
-      <p>Continued fraction: [0; 3] meaning 0 + 1/3</p>
-      <p><strong>Observation:</strong> Unit fractions 1/n have very short paths in the tree.</p>
+      <h4>Example 3: Finding 3/5</h4>
+      <p>Path from root 0/1: RRLLLR</p>
+      <ul>
+        <li>First R: positive number</li>
+        <li>RR: whole number part is at least 0</li>
+        <li>The full path navigates to 3/5 through mediants</li>
+      </ul>
+      
+      <h4>Example 4: Golden Ratio φ ≈ 1.618</h4>
+      <p>The golden ratio φ = (1+√5)/2 has the continued fraction [1; 1, 1, 1, 1, ...]. Starting from 0/1, its path begins with RR (giving 1/1), then continues with alternating L and R.</p>
+      <p><strong>Try it:</strong> Click the φ button to explore the golden ratio approximations.</p>
 
       <h3>Connection to Continued Fractions</h3>
       <p>The Stern-Brocot tree and continued fractions are intimately connected:</p>

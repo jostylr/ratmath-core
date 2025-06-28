@@ -2,6 +2,13 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## Stern-Brocot Tree Root Change to 0/1
+**Model:** claude-opus-4-20250514  
+**Date:** 2025-06-28  
+Modified the Stern-Brocot tree implementation to start from 0/1 as the root instead of 1/1, with boundaries -1/0 and 1/0.
+
+The changes allow the tree to represent all rational numbers (not just positive ones) and provide a cleaner interpretation of paths where the first direction (L/R) determines the sign and the initial consecutive count determines the whole number part. Added a fixed position boundary display showing left boundary, current node, and right boundary at the top of the tree visualization. Mediant calculations now explicitly show fractions like 1/0 and -1/0. Jump input now recognizes /0 fractions and resets to the root. Updated all documentation to reflect the new structure.
+
 ## RatTree UI Improvements - Notation Toggle and Input Navigation
 
 **Model:** Claude Sonnet 4, **Date:** 2025-06-27

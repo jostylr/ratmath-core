@@ -479,26 +479,26 @@ export class Fraction {
   mediant(other) {
     // Handle infinite fractions for Stern-Brocot tree
     if (this.isInfinite && other.isInfinite) {
+      // Special case: mediant of -1/0 and 1/0 is 0/1
+      if (this.#numerator === -1n && other.numerator === 1n) {
+        return new Fraction(0n, 1n);
+      } else if (this.#numerator === 1n && other.numerator === -1n) {
+        return new Fraction(0n, 1n);
+      }
       throw new Error("Cannot compute mediant of two infinite fractions");
     }
     
-    if (this.isInfinite) {
-      // this is infinite, other is finite
-      // Mediant with positive infinity gives the finite fraction
-      if (this.#numerator > 0n) {
-        return new Fraction(other.numerator + 1n, other.denominator);
-      } else {
-        return new Fraction(other.numerator - 1n, other.denominator);
+    if (this.isInfinite || other.isInfinite) {
+      // One is infinite, other is finite - standard mediant calculation
+      const newNum = this.#numerator + other.numerator;
+      const newDen = this.#denominator + other.denominator;
+      
+      // Check if result would be 0/0 and handle it
+      if (newNum === 0n && newDen === 0n) {
+        throw new Error("Mediant would result in 0/0");
       }
-    }
-    
-    if (other.isInfinite) {
-      // other is infinite, this is finite
-      if (other.numerator > 0n) {
-        return new Fraction(this.#numerator + 1n, this.#denominator);
-      } else {
-        return new Fraction(this.#numerator - 1n, this.#denominator);
-      }
+      
+      return new Fraction(newNum, newDen);
     }
     
     // Both are finite - standard mediant
@@ -527,25 +527,18 @@ export class Fraction {
     }
 
     // Handle simple cases
-    if (this.#numerator === 0n) {
+    if (this.#numerator === 0n && this.#denominator === 1n) {
       // 0/1 has special Farey parents involving infinity
-      const left = new Fraction(-1n, 1n);
-      const right = new Fraction(1n, 1n);
-      return { left, right };
-    }
-    
-    if (this.#numerator === this.#denominator) {
-      // 1/1 has parents 0/1 and 1/0 (infinity)
-      const left = new Fraction(0n, 1n);
+      const left = new Fraction(-1n, 0n, { allowInfinite: true });
       const right = new Fraction(1n, 0n, { allowInfinite: true });
       return { left, right };
     }
-
+    
     // Use Stern-Brocot tree approach to find the actual Farey neighbors
     // Navigate the tree until we find this fraction, tracking the boundaries
-    let leftBound = new Fraction(0n, 1n);
+    let leftBound = new Fraction(-1n, 0n, { allowInfinite: true });
     let rightBound = new Fraction(1n, 0n, { allowInfinite: true });
-    let current = new Fraction(1n, 1n);
+    let current = new Fraction(0n, 1n);
     
     // Navigate to find the fraction
     while (!current.equals(this)) {
@@ -732,8 +725,8 @@ export class Fraction {
       throw new Error("Infinite fractions don't have parents in Stern-Brocot tree");
     }
 
-    // The root 1/1 has no parent
-    if (this.numerator === 1n && this.denominator === 1n) {
+    // The root 0/1 has no parent
+    if (this.numerator === 0n && this.denominator === 1n) {
       return null;
     }
 
@@ -775,13 +768,13 @@ export class Fraction {
   }
 
   /**
-   * Generates the Stern-Brocot tree path from root (1/1) to this fraction.
+   * Generates the Stern-Brocot tree path from root (0/1) to this fraction.
    * Returns an array of 'L' and 'R' directions.
    * 
    * @returns {Array<string>} Array of 'L'/'R' directions from root
    * @example
    * const frac = new Fraction(3, 5);
-   * const path = frac.sternBrocotPath(); // ['L', 'R', 'L'] or similar
+   * const path = frac.sternBrocotPath(); // ['R', 'R', 'L', 'L', 'R'] or similar
    */
   sternBrocotPath() {
     if (this.isInfinite) {
@@ -791,10 +784,15 @@ export class Fraction {
     // Ensure we're working with the reduced form
     const reduced = this.reduce();
 
-    // Start with tree boundaries: 0/1 (left) and 1/0 (right)
-    let left = new Fraction(0, 1);
+    // Special case for root 0/1
+    if (reduced.numerator === 0n && reduced.denominator === 1n) {
+      return [];
+    }
+
+    // Start with tree boundaries: -1/0 (left) and 1/0 (right) and root 0/1
+    let left = new Fraction(-1, 0, { allowInfinite: true });
     let right = new Fraction(1, 0, { allowInfinite: true });
-    let current = new Fraction(1, 1); // Root
+    let current = new Fraction(0, 1); // Root
     
     const path = [];
     
@@ -827,13 +825,13 @@ export class Fraction {
    * @param {Array<string>} path - Array of 'L'/'R' directions
    * @returns {Fraction} The fraction at the end of the path
    * @example
-   * const frac = Fraction.fromSternBrocotPath(['L', 'R']); // Some fraction
+   * const frac = Fraction.fromSternBrocotPath(['R', 'R']); // 1/1
    */
   static fromSternBrocotPath(path) {
-    // Start at root with tree boundaries
-    let left = new Fraction(0, 1);
+    // Start at root 0/1 with tree boundaries -1/0 and 1/0
+    let left = new Fraction(-1, 0, { allowInfinite: true });
     let right = new Fraction(1, 0, { allowInfinite: true });
-    let current = new Fraction(1, 1); // Root
+    let current = new Fraction(0, 1); // Root
     
     // Follow the path
     for (const direction of path) {
@@ -883,7 +881,7 @@ export class Fraction {
       return Infinity;
     }
     
-    if (this.numerator === 1n && this.denominator === 1n) {
+    if (this.numerator === 0n && this.denominator === 1n) {
       return 0; // Root
     }
     

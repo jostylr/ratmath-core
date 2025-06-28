@@ -855,3 +855,72 @@ header p {
     color: #e74c3c;
     margin-top: 0.25rem;
 }
+
+/* Boundary display - fixed position at top of tree container */
+.boundary-display {
+    position: absolute;
+    top: 1rem;
+    left: 0;
+    right: 0;
+    height: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 2rem;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.boundary-display > div {
+    background: rgba(52, 73, 94, 0.95);
+    border: 2px solid #3498db;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    color: #ecf0f1;
+    font-weight: bold;
+    text-align: center;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.boundary-display > div:hover {
+    transform: scale(1.05);
+    background: rgba(52, 73, 94, 1);
+    border-color: #2ecc71;
+}
+
+.left-boundary-box {
+    margin-right: auto;
+}
+
+.current-node-box {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(46, 204, 113, 0.95) \!important;
+    border-color: #27ae60 \!important;
+}
+
+.right-boundary-box {
+    margin-left: auto;
+}
+
+.boundary-display .fraction-2d {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.boundary-display .fraction-2d .numerator,
+.boundary-display .fraction-2d .denominator {
+    text-align: center;
+    line-height: 1;
+}
+
+.boundary-display .fraction-2d .fraction-bar {
+    height: 2px;
+    background: currentColor;
+    margin: 2px 0;
+}
+EOF < /dev/null

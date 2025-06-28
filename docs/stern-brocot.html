@@ -103,7 +103,7 @@
                         <button
                             id="resetBtn"
                             class="nav-btn reset"
-                            title="Return to root 1/1"
+                            title="Return to root 0/1"
                         >
                             🏠 Reset
                         </button>
@@ -171,6 +171,18 @@
 
                 <!-- Tree Visualization -->
                 <div class="tree-container">
+                    <!-- Fixed position boundary display -->
+                    <div class="boundary-display">
+                        <div class="left-boundary-box" id="leftBoundaryBox">
+                            <span id="leftBoundaryDisplay">-1/0</span>
+                        </div>
+                        <div class="current-node-box" id="currentNodeBox">
+                            <span id="currentNodeDisplay">0/1</span>
+                        </div>
+                        <div class="right-boundary-box" id="rightBoundaryBox">
+                            <span id="rightBoundaryDisplay">1/0</span>
+                        </div>
+                    </div>
                     <svg id="treeSvg" viewBox="0 0 800 600">
                         <!-- Tree will be rendered here -->
                     </svg>
