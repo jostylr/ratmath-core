@@ -815,7 +815,8 @@ EXAMPLES:
   5!                → 120
   1:2 * 3:4         → 3:8 (interval arithmetic)
   0.#3              → 1/3
-  1.5[+-0.1]        → 1.4:1.6
+  1.5[+-1]        → 1.49:1.51
+  1.5[+10,-0.1]        → 1.499:1.6
   1.2[3,6]          → 1.23:1.26 (decimal concatenation)
   12[15,18]         → 1215:1218 (integer concatenation)
 
