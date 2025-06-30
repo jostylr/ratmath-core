@@ -91,6 +91,23 @@ function parsePrecision(precision) {
     }
 }
 
+// Helper function to create a tight rational interval from a decimal approximation
+function createTightRationalInterval(value, precision) {
+    const { epsilon } = parsePrecision(precision);
+    const epsilonDecimal = epsilon.toNumber();
+    
+    // Create rational bounds with specified precision
+    const lowerDecimal = value - epsilonDecimal;
+    const upperDecimal = value + epsilonDecimal;
+    
+    // Convert to rationals with sufficient precision (avoid fraction explosion)
+    const precisionScale = Math.min(1000000000, Math.max(1000000, Math.ceil(1 / epsilonDecimal)));
+    const lower = new Rational(Math.floor(lowerDecimal * precisionScale), precisionScale);
+    const upper = new Rational(Math.ceil(upperDecimal * precisionScale), precisionScale);
+    
+    return new RationalInterval(lower, upper);
+}
+
 // Helper function to compute factorial
 function factorial(n) {
     let result = new Integer(1);
@@ -176,23 +193,53 @@ export function EXP(x, precision) {
     const k = floor(x.divide(ln2Approx));
     const r = x.subtract(k.multiply(ln2Approx));
     
-    // Compute e^r using Taylor series
+    // If r is negative due to approximation error, adjust k
+    if (isNegative(r)) {
+        const kAdjusted = k.subtract(new Rational(1));
+        const rAdjusted = x.subtract(kAdjusted.multiply(ln2Approx));
+        return EXP(rAdjusted, precision).multiply(new Rational(new Integer(2).pow(kAdjusted.numerator >= 0n ? kAdjusted.numerator : -kAdjusted.numerator).value, 1));
+    }
+    
+    // For better precision, use a hybrid approach
+    // Try exact rational computation first, fall back to controlled precision
+    let expR;
+    
+    // First try exact computation with limited iterations
     let sum = new Rational(1);
     let term = new Rational(1);
     let n = 1;
+    let converged = false;
     
-    while (term.abs().compareTo(epsilon) > 0) {
+    // More conservative iteration limit to prevent fraction explosion
+    while (term.abs().compareTo(epsilon) > 0 && n < 50) {
         term = term.multiply(r).divide(new Rational(n));
         sum = sum.add(term);
         n++;
+        
+        // Check for convergence or fraction explosion
+        if (sum.denominator > 1000000000n || term.denominator > 1000000000n) {
+            break;
+        }
+        
+        if (term.abs().compareTo(epsilon) <= 0) {
+            converged = true;
+            break;
+        }
     }
     
-    // Add error bounds
-    const errorBound = term.abs().multiply(new Rational(2));
-    const expR = new RationalInterval(
-        sum.subtract(errorBound),
-        sum.add(errorBound)
-    );
+    if (converged && sum.denominator <= 1000000000n) {
+        // Use exact result with proper error bounds
+        const errorBound = term.abs().multiply(new Rational(2));
+        expR = new RationalInterval(
+            sum.subtract(errorBound),
+            sum.add(errorBound)
+        );
+    } else {
+        // Fall back to high-precision decimal approximation
+        const rDecimal = r.toNumber();
+        const expRDecimal = Math.exp(rDecimal);
+        expR = createTightRationalInterval(expRDecimal, precision);
+    }
     
     // Multiply by 2^k
     if (isZero(k)) {
@@ -241,36 +288,57 @@ export function LN(x, precision) {
     
     if (x.compareTo(new Rational(1)) > 0) {
         while (xScaled.compareTo(new Rational(2)) >= 0) {
-            xScaled = xScaled.divide(2);
+            xScaled = xScaled.divide(new Rational(2));
             k++;
         }
     } else {
         while (xScaled.compareTo(new Rational(1)) < 0) {
-            xScaled = xScaled.multiply(2);
+            xScaled = xScaled.multiply(new Rational(2));
             k--;
         }
     }
     
     // Now xScaled (m) is in [1, 2)
     // Use Taylor series for ln(1 + y) where y = m - 1
-    const y = xScaled.subtract(1);
+    const y = xScaled.subtract(new Rational(1));
     
+    // Use hybrid approach for better precision
+    let lnM;
     let sum = new Rational(0);
     let term = y;
     let n = 1;
+    let converged = false;
     
-    while (term.abs().compareTo(epsilon) > 0) {
+    // Try exact computation with limited iterations
+    while (term.abs().compareTo(epsilon) > 0 && n < 50) {
         sum = sum.add(term.divide(new Rational(n)));
         n++;
         term = term.multiply(y).negate();
+        
+        // Check for convergence or fraction explosion
+        if (sum.denominator > 1000000000n || term.denominator > 1000000000n) {
+            break;
+        }
+        
+        if (term.abs().compareTo(epsilon) <= 0) {
+            converged = true;
+            break;
+        }
     }
     
-    // Add error bounds
-    const errorBound = term.abs().divide(new Rational(n));
-    const lnM = new RationalInterval(
-        sum.subtract(errorBound),
-        sum.add(errorBound)
-    );
+    if (converged && sum.denominator <= 1000000000n) {
+        // Use exact result
+        const errorBound = term.abs().divide(new Rational(n));
+        lnM = new RationalInterval(
+            sum.subtract(errorBound),
+            sum.add(errorBound)
+        );
+    } else {
+        // Fall back to high-precision decimal approximation
+        const xScaledDecimal = xScaled.toNumber();
+        const lnMDecimal = Math.log(xScaledDecimal);
+        lnM = createTightRationalInterval(lnMDecimal, precision);
+    }
     
     // Add k * ln(2)
     if (k === 0) {
@@ -278,21 +346,22 @@ export function LN(x, precision) {
     }
     
     const ln2Interval = getConstant(LN2_CF, precision);
-    const kLn2 = ln2Interval.multiply(k);
+    const kLn2 = ln2Interval.multiply(new Rational(k));
     
     return lnM.add(kLn2);
 }
 
 // LOG function (logarithm with arbitrary base)
 export function LOG(x, base = 10, precision) {
-    // Handle precision in second argument position
-    if (typeof base === 'object' || base === undefined) {
+    // Handle precision in second argument position when only 2 args provided
+    // If base is undefined or a precision value (number), treat as precision
+    if (base === undefined || (typeof base === 'number' && base < 0)) {
         precision = base;
         base = 10;
     }
     
     const lnX = LN(x, precision);
-    const lnBase = LN(base, precision);
+    const lnBase = LN(new Rational(base), precision);
     
     return lnX.divide(lnBase);
 }
@@ -309,11 +378,11 @@ export function SIN(x, precision) {
         let min = null, max = null;
         
         for (let i = 0; i <= samples; i++) {
-            const t = x.low.add(x.high.subtract(x.low).multiply(i).divide(samples));
+            const t = x.low.add(x.high.subtract(x.low).multiply(new Rational(i)).divide(new Rational(samples)));
             const sinT = SIN(t, precision);
             
-            if (min === null || sinT.low.compare(min) < 0) min = sinT.low;
-            if (max === null || sinT.high.compare(max) > 0) max = sinT.high;
+            if (min === null || sinT.low.compareTo(min) < 0) min = sinT.low;
+            if (max === null || sinT.high.compareTo(max) > 0) max = sinT.high;
         }
         
         return new RationalInterval(min, max);
@@ -365,7 +434,7 @@ export function SIN(x, precision) {
         n = 0;
     }
     
-    while (term.abs().compareTo(epsilon) > 0) {
+    while (term.abs().compareTo(epsilon) > 0 && n < 100) {
         if (usecos) {
             if (n > 0) {
                 term = term.multiply(r).multiply(r).negate().divide(new Rational((2*n-1) * (2*n)));
@@ -376,6 +445,11 @@ export function SIN(x, precision) {
             term = term.multiply(r).multiply(r).negate().divide(new Rational((n+1) * (n+2)));
         }
         n++;
+        
+        // Prevent fraction explosion with much higher threshold
+        if (sum.denominator > 100000000000n || term.denominator > 100000000000n) {
+            break;
+        }
     }
     
     if (negate) {
@@ -402,7 +476,9 @@ export function COS(x, precision) {
         return SIN(x.add(piOver2), precision);
     } else {
         const piOver2Mid = piOver2.low.add(piOver2.high).divide(new Rational(2));
-        return SIN(new Rational(x).add(piOver2Mid), precision);
+        // Convert x to Rational if needed
+        const xRational = (x instanceof Rational) ? x : new Rational(x);
+        return SIN(xRational.add(piOver2Mid), precision);
     }
 }
 
@@ -434,15 +510,171 @@ export function ARCSIN(x, precision) {
         return new RationalInterval(new Rational(0), new Rational(0));
     }
     
-    // Use Taylor series: arcsin(x) = x + x^3/6 + 3x^5/40 + ...
+    // Use hybrid approach for better precision
+    let sum = x;
+    let term = x;
+    let n = 1;
+    let converged = false;
+    
+    // Try exact computation with limited iterations
+    while (term.abs().compareTo(epsilon) > 0 && n < 30) {
+        term = term.multiply(x).multiply(x).multiply(new Rational((2*n-1) * (2*n-1))).divide(new Rational((2*n) * (2*n+1)));
+        sum = sum.add(term);
+        n++;
+        
+        // Check for convergence or fraction explosion
+        if (sum.denominator > 1000000000n || term.denominator > 1000000000n) {
+            break;
+        }
+        
+        if (term.abs().compareTo(epsilon) <= 0) {
+            converged = true;
+            break;
+        }
+    }
+    
+    if (converged && sum.denominator <= 1000000000n) {
+        // Use exact result
+        const errorBound = term.abs().multiply(new Rational(2));
+        return new RationalInterval(
+            sum.subtract(errorBound),
+            sum.add(errorBound)
+        );
+    } else {
+        // Fall back to high-precision decimal approximation
+        const xDecimal = x.toNumber();
+        const arcsinDecimal = Math.asin(xDecimal);
+        return createTightRationalInterval(arcsinDecimal, precision);
+    }
+}
+
+// ARCCOS function
+export function ARCCOS(x, precision) {
+    // arccos(x) = pi/2 - arcsin(x)
+    const piOver2 = PI(precision).divide(new Rational(2));
+    const arcsinX = ARCSIN(x, precision);
+    
+    return piOver2.subtract(arcsinX);
+}
+
+// TAN function
+export function TAN(x, precision) {
+    const { epsilon } = parsePrecision(precision);
+    
+    // Handle RationalInterval input
+    if (x instanceof RationalInterval) {
+        // For intervals, we need to find the minimum and maximum
+        // This is complex due to discontinuities, so we'll use a simple approach
+        const samples = 100;
+        let min = null, max = null;
+        
+        for (let i = 0; i <= samples; i++) {
+            const t = x.low.add(x.high.subtract(x.low).multiply(new Rational(i)).divide(new Rational(samples)));
+            try {
+                const tanT = TAN(t, precision);
+                
+                if (min === null || tanT.low.compareTo(min) < 0) min = tanT.low;
+                if (max === null || tanT.high.compareTo(max) > 0) max = tanT.high;
+            } catch (e) {
+                // Skip points where tan is undefined
+                continue;
+            }
+        }
+        
+        if (min === null || max === null) {
+            throw new Error("TAN: interval contains undefined points");
+        }
+        
+        return new RationalInterval(min, max);
+    }
+    
+    // Convert to Rational if needed
+    if (!(x instanceof Rational)) {
+        x = new Rational(x);
+    }
+    
+    // Check for points where tan is undefined (odd multiples of pi/2)
+    const piInterval = PI(precision);
+    const piApprox = piInterval.low.add(piInterval.high).divide(new Rational(2));
+    const piOver2 = piApprox.divide(new Rational(2));
+    
+    // Check if x is close to an odd multiple of pi/2
+    const quotient = x.divide(piOver2);
+    const nearestOddMultiple = round(quotient);
+    
+    // If the nearest multiple is odd and we're very close to it
+    if (Number(nearestOddMultiple.numerator % 2n) === 1) {
+        const distance = quotient.subtract(nearestOddMultiple).abs();
+        if (distance.compareTo(epsilon) < 0) {
+            throw new Error("TAN: undefined at odd multiples of π/2");
+        }
+    }
+    
+    // tan(x) = sin(x) / cos(x)
+    const sinX = SIN(x, precision);
+    const cosX = COS(x, precision);
+    
+    // Check if cos(x) is too close to zero
+    if (cosX.low.abs().compareTo(epsilon) < 0 || cosX.high.abs().compareTo(epsilon) < 0) {
+        throw new Error("TAN: undefined (cosine too close to zero)");
+    }
+    
+    return sinX.divide(cosX);
+}
+
+// ARCTAN function  
+export function ARCTAN(x, precision) {
+    const { epsilon } = parsePrecision(precision);
+    
+    // Handle RationalInterval input
+    if (x instanceof RationalInterval) {
+        const lower = ARCTAN(x.low, precision);
+        const upper = ARCTAN(x.high, precision);
+        return new RationalInterval(lower.low, upper.high);
+    }
+    
+    // Convert to Rational if needed
+    if (!(x instanceof Rational)) {
+        x = new Rational(x);
+    }
+    
+    // Special cases
+    if (isZero(x)) {
+        return new RationalInterval(new Rational(0), new Rational(0));
+    }
+    
+    // For |x| > 1, use the identity: arctan(x) = π/2 - arctan(1/x) for x > 0
+    //                                         = -π/2 - arctan(1/x) for x < 0
+    const absX = x.abs();
+    if (absX.compareTo(new Rational(1)) > 0) {
+        const piOver2 = PI(precision).divide(new Rational(2));
+        const piOver2Mid = piOver2.low.add(piOver2.high).divide(new Rational(2));
+        
+        const arctanRecip = ARCTAN(new Rational(1).divide(absX), precision);
+        const result = piOver2Mid.subtract(arctanRecip.low.add(arctanRecip.high).divide(new Rational(2)));
+        
+        if (isNegative(x)) {
+            return new RationalInterval(result.negate(), result.negate());
+        } else {
+            return new RationalInterval(result, result);
+        }
+    }
+    
+    // For |x| <= 1, use Taylor series: arctan(x) = x - x^3/3 + x^5/5 - x^7/7 + ...
     let sum = x;
     let term = x;
     let n = 1;
     
-    while (term.abs().compareTo(epsilon) > 0) {
-        term = term.multiply(x).multiply(x).multiply(new Rational((2*n-1) * (2*n-1))).divide(new Rational((2*n) * (2*n+1)));
-        sum = sum.add(term);
+    while (term.abs().compareTo(epsilon) > 0 && n < 100) {
+        term = term.multiply(x).multiply(x).negate();
+        const denominator = new Rational(2*n + 1);
+        sum = sum.add(term.divide(denominator));
         n++;
+        
+        // Prevent fraction explosion with much higher threshold
+        if (sum.denominator > 100000000000n || term.denominator > 100000000000n) {
+            break;
+        }
     }
     
     // Add error bounds
@@ -451,15 +683,6 @@ export function ARCSIN(x, precision) {
         sum.subtract(errorBound),
         sum.add(errorBound)
     );
-}
-
-// ARCCOS function
-export function ARCCOS(x, precision) {
-    // arccos(x) = pi/2 - arcsin(x)
-    const piOver2 = PI(precision).divide(2);
-    const arcsinX = ARCSIN(x, precision);
-    
-    return piOver2.subtract(arcsinX);
 }
 
 // Newton's method for rational roots
@@ -482,9 +705,12 @@ export function newtonRoot(q, n, precision) {
         throw new Error("Even root of negative number");
     }
     
-    // Initial approximation: a_0 = ((n-1)*q^(1/n) + 1) / n
-    // We'll use a simpler initial guess
-    let a = q.add(new Rational(n - 1)).divide(new Rational(n));
+    // Better initial approximation using decimal approximation
+    const qDecimal = q.toNumber();
+    const initialGuess = Math.pow(qDecimal, 1.0 / n);
+    
+    // Convert back to rational with reasonable precision
+    let a = new Rational(Math.round(initialGuess * 1000), 1000);
     
     let iterations = 0;
     const maxIterations = 100;
@@ -497,12 +723,29 @@ export function newtonRoot(q, n, precision) {
         }
         const b = q.divide(aPower);
         
-        // Check if interval is small enough
+            // Check if interval is small enough
         const diff = b.subtract(a).abs();
         if (diff.compareTo(epsilon) <= 0) {
             const lower = a.compareTo(b) < 0 ? a : b;
             const upper = a.compareTo(b) > 0 ? a : b;
             return new RationalInterval(lower, upper);
+        }
+        
+        // Prevent fraction explosion by checking if denominators are getting too large
+        if (a.denominator > 100000000000n || b.denominator > 100000000000n) {
+            // Use decimal approximation to create simpler rational bounds
+            const aDecimal = a.toNumber();
+            const bDecimal = b.toNumber();
+            if (!isNaN(aDecimal) && !isNaN(bDecimal)) {
+                const lowerDecimal = Math.min(aDecimal, bDecimal);
+                const upperDecimal = Math.max(aDecimal, bDecimal);
+                
+                // For roots, use higher precision approximation
+                const precisionScale = 10000000;
+                const lowerRational = new Rational(Math.floor(lowerDecimal * precisionScale), precisionScale);
+                const upperRational = new Rational(Math.ceil(upperDecimal * precisionScale), precisionScale);
+                return new RationalInterval(lowerRational, upperRational);
+            }
         }
         
         // Next iteration: a_{m+1} = a_m + (b_m - a_m)/n
@@ -515,6 +758,15 @@ export function newtonRoot(q, n, precision) {
 
 // Extended power operator for fractional exponents
 export function rationalIntervalPower(base, exponent, precision) {
+    // Convert exponent to Rational if needed
+    if (exponent instanceof Integer) {
+        exponent = exponent.toRational();
+    } else if (typeof exponent === 'bigint') {
+        exponent = new Rational(exponent);
+    } else if (typeof exponent === 'number') {
+        exponent = new Rational(exponent);
+    }
+    
     // Handle special cases
     if (exponent instanceof Rational && exponent.denominator <= 10n) {
         // Use Newton's method for small denominators
@@ -529,6 +781,11 @@ export function rationalIntervalPower(base, exponent, precision) {
         const numeratorNum = Number(exponent.numerator);
         for (let i = 1; i < Math.abs(numeratorNum); i++) {
             result = result.multiply(root);
+        }
+        
+        // Handle negative exponents
+        if (numeratorNum < 0) {
+            return new RationalInterval(new Rational(1), new Rational(1)).divide(result);
         }
         
         return result;

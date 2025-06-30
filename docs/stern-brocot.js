@@ -1124,7 +1124,16 @@ class RationalInterval {
     }
   }
   mpow(exponent) {
-    const n = BigInt(exponent);
+    let n;
+    if (typeof exponent === "bigint") {
+      n = exponent;
+    } else if (typeof exponent === "number") {
+      n = BigInt(exponent);
+    } else if (typeof exponent === "string") {
+      n = BigInt(exponent);
+    } else {
+      n = BigInt(exponent);
+    }
     const zero = Rational.zero;
     if (n === 0n) {
       throw new Error("Multiplicative exponentiation requires at least one factor");
@@ -1960,7 +1969,518 @@ BaseSystem.BASE62 = new BaseSystem("0-9a-zA-Z", "Base 62");
 BaseSystem.BASE60 = new BaseSystem("0-9a-zA-X", "Base 60 (Sexagesimal)");
 BaseSystem.ROMAN = new BaseSystem("IVXLCDM", "Roman Numerals");
 
+// src/ratreal.js
+var LN2_CF = [0, 1, 2, 3, 1, 6, 3, 1, 1, 2, 1, 1, 6, 1, 6, 1, 1, 4, 1, 2, 4, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+var PI_CF = [3, 7, 15, 1, 292, 1, 1, 1, 2, 1, 3, 1, 14, 2, 1, 1, 2, 2, 2, 2, 1, 84, 2, 1, 1, 15, 3, 13, 1, 4, 2, 6, 6, 99, 1, 2, 2, 6, 3, 5, 1, 1, 6, 8, 1, 7, 1, 2, 3, 7, 1, 2, 1, 1, 12, 1, 1, 1, 3, 1, 1, 8, 1, 1, 2, 1, 6];
+var E_CF = [2, 1, 2, 1, 1, 4, 1, 1, 6, 1, 1, 8, 1, 1, 10, 1, 1, 12, 1, 1, 14, 1, 1, 16, 1, 1, 18, 1, 1, 20, 1, 1, 22, 1, 1, 24, 1, 1, 26, 1, 1, 28, 1, 1, 30, 1, 1, 32, 1, 1, 34, 1, 1, 36, 1, 1, 38, 1, 1, 40];
+function continuedFractionApproximation(coefficients, terms) {
+  if (terms === 0 || coefficients.length === 0) {
+    return new Rational(0);
+  }
+  let num = new Integer(1);
+  let den = new Integer(0);
+  for (let i = Math.min(terms, coefficients.length) - 1;i >= 0; i--) {
+    [num, den] = [den.add(num.multiply(new Integer(coefficients[i]))), num];
+  }
+  return new Rational(num.value, den.value);
+}
+function isZero(rational) {
+  return rational.numerator === 0n;
+}
+function isNegative(rational) {
+  return rational.numerator < 0n;
+}
+function floor(rational) {
+  if (rational.denominator === 1n) {
+    return new Rational(rational.numerator);
+  }
+  const quotient = rational.numerator / rational.denominator;
+  const remainder = rational.numerator % rational.denominator;
+  if (remainder === 0n || rational.numerator >= 0n) {
+    return new Rational(quotient);
+  } else {
+    return new Rational(quotient - 1n);
+  }
+}
+function round(rational) {
+  if (rational.denominator === 1n) {
+    return new Rational(rational.numerator);
+  }
+  const wholePart = floor(rational);
+  const fractionalPart = rational.subtract(wholePart);
+  const half = new Rational(1, 2);
+  if (fractionalPart.compareTo(half) >= 0) {
+    return wholePart.add(new Rational(1));
+  } else {
+    return wholePart;
+  }
+}
+function parsePrecision(precision) {
+  if (precision === undefined) {
+    return { epsilon: new Rational(1, 1e6), negative: true };
+  }
+  if (precision < 0) {
+    const denominator = new Integer(10).pow(-precision);
+    return { epsilon: new Rational(1, denominator.value), negative: true };
+  } else {
+    return { epsilon: new Rational(1, precision), negative: false };
+  }
+}
+function createTightRationalInterval(value, precision) {
+  const { epsilon } = parsePrecision(precision);
+  const epsilonDecimal = epsilon.toNumber();
+  const lowerDecimal = value - epsilonDecimal;
+  const upperDecimal = value + epsilonDecimal;
+  const precisionScale = Math.min(1e9, Math.max(1e6, Math.ceil(1 / epsilonDecimal)));
+  const lower = new Rational(Math.floor(lowerDecimal * precisionScale), precisionScale);
+  const upper = new Rational(Math.ceil(upperDecimal * precisionScale), precisionScale);
+  return new RationalInterval(lower, upper);
+}
+function getConstant(cfCoefficients, precision) {
+  const { epsilon } = parsePrecision(precision);
+  let terms = 2;
+  let prev = continuedFractionApproximation(cfCoefficients, terms - 1);
+  let curr = continuedFractionApproximation(cfCoefficients, terms);
+  while (terms < cfCoefficients.length && curr.subtract(prev).abs().compareTo(epsilon) > 0) {
+    terms++;
+    prev = curr;
+    curr = continuedFractionApproximation(cfCoefficients, terms);
+  }
+  const lower = prev.compareTo(curr) < 0 ? prev : curr;
+  const upper = prev.compareTo(curr) > 0 ? prev : curr;
+  return new RationalInterval(lower, upper);
+}
+var PI = (precision) => getConstant(PI_CF, precision);
+var E = (precision) => getConstant(E_CF, precision);
+function EXP(x, precision) {
+  if (x === undefined) {
+    return E(precision);
+  }
+  const { epsilon } = parsePrecision(precision);
+  if (x instanceof RationalInterval) {
+    const lower = EXP(x.low, precision);
+    const upper = EXP(x.high, precision);
+    return new RationalInterval(lower.low, upper.high);
+  }
+  if (!(x instanceof Rational)) {
+    x = new Rational(x);
+  }
+  if (isZero(x)) {
+    return new RationalInterval(new Rational(1), new Rational(1));
+  }
+  const ln2Interval = getConstant(LN2_CF, precision);
+  const ln2Approx = ln2Interval.low.add(ln2Interval.high).divide(new Rational(2));
+  const k = floor(x.divide(ln2Approx));
+  const r = x.subtract(k.multiply(ln2Approx));
+  if (isNegative(r)) {
+    const kAdjusted = k.subtract(new Rational(1));
+    const rAdjusted = x.subtract(kAdjusted.multiply(ln2Approx));
+    return EXP(rAdjusted, precision).multiply(new Rational(new Integer(2).pow(kAdjusted.numerator >= 0n ? kAdjusted.numerator : -kAdjusted.numerator).value, 1));
+  }
+  let expR;
+  let sum = new Rational(1);
+  let term = new Rational(1);
+  let n = 1;
+  let converged = false;
+  while (term.abs().compareTo(epsilon) > 0 && n < 50) {
+    term = term.multiply(r).divide(new Rational(n));
+    sum = sum.add(term);
+    n++;
+    if (sum.denominator > 1000000000n || term.denominator > 1000000000n) {
+      break;
+    }
+    if (term.abs().compareTo(epsilon) <= 0) {
+      converged = true;
+      break;
+    }
+  }
+  if (converged && sum.denominator <= 1000000000n) {
+    const errorBound = term.abs().multiply(new Rational(2));
+    expR = new RationalInterval(sum.subtract(errorBound), sum.add(errorBound));
+  } else {
+    const rDecimal = r.toNumber();
+    const expRDecimal = Math.exp(rDecimal);
+    expR = createTightRationalInterval(expRDecimal, precision);
+  }
+  if (isZero(k)) {
+    return expR;
+  }
+  const twoToK = new Rational(new Integer(2).pow(k.numerator >= 0n ? k.numerator : -k.numerator).value, 1);
+  if (isNegative(k)) {
+    return expR.divide(twoToK);
+  } else {
+    return expR.multiply(twoToK);
+  }
+}
+function LN(x, precision) {
+  const { epsilon } = parsePrecision(precision);
+  if (x instanceof RationalInterval) {
+    if (isNegative(x.low) || isZero(x.low)) {
+      throw new Error("LN: argument must be positive");
+    }
+    const lower = LN(x.low, precision);
+    const upper = LN(x.high, precision);
+    return new RationalInterval(lower.low, upper.high);
+  }
+  if (!(x instanceof Rational)) {
+    x = new Rational(x);
+  }
+  if (isNegative(x) || isZero(x)) {
+    throw new Error("LN: argument must be positive");
+  }
+  if (x.equals(new Rational(1))) {
+    return new RationalInterval(new Rational(0), new Rational(0));
+  }
+  let k = 0;
+  let xScaled = x;
+  if (x.compareTo(new Rational(1)) > 0) {
+    while (xScaled.compareTo(new Rational(2)) >= 0) {
+      xScaled = xScaled.divide(new Rational(2));
+      k++;
+    }
+  } else {
+    while (xScaled.compareTo(new Rational(1)) < 0) {
+      xScaled = xScaled.multiply(new Rational(2));
+      k--;
+    }
+  }
+  const y = xScaled.subtract(new Rational(1));
+  let lnM;
+  let sum = new Rational(0);
+  let term = y;
+  let n = 1;
+  let converged = false;
+  while (term.abs().compareTo(epsilon) > 0 && n < 50) {
+    sum = sum.add(term.divide(new Rational(n)));
+    n++;
+    term = term.multiply(y).negate();
+    if (sum.denominator > 1000000000n || term.denominator > 1000000000n) {
+      break;
+    }
+    if (term.abs().compareTo(epsilon) <= 0) {
+      converged = true;
+      break;
+    }
+  }
+  if (converged && sum.denominator <= 1000000000n) {
+    const errorBound = term.abs().divide(new Rational(n));
+    lnM = new RationalInterval(sum.subtract(errorBound), sum.add(errorBound));
+  } else {
+    const xScaledDecimal = xScaled.toNumber();
+    const lnMDecimal = Math.log(xScaledDecimal);
+    lnM = createTightRationalInterval(lnMDecimal, precision);
+  }
+  if (k === 0) {
+    return lnM;
+  }
+  const ln2Interval = getConstant(LN2_CF, precision);
+  const kLn2 = ln2Interval.multiply(new Rational(k));
+  return lnM.add(kLn2);
+}
+function LOG(x, base = 10, precision) {
+  if (base === undefined || typeof base === "number" && base < 0) {
+    precision = base;
+    base = 10;
+  }
+  const lnX = LN(x, precision);
+  const lnBase = LN(new Rational(base), precision);
+  return lnX.divide(lnBase);
+}
+function SIN(x, precision) {
+  const { epsilon } = parsePrecision(precision);
+  if (x instanceof RationalInterval) {
+    const samples = 100;
+    let min = null, max = null;
+    for (let i = 0;i <= samples; i++) {
+      const t = x.low.add(x.high.subtract(x.low).multiply(new Rational(i)).divide(new Rational(samples)));
+      const sinT = SIN(t, precision);
+      if (min === null || sinT.low.compareTo(min) < 0)
+        min = sinT.low;
+      if (max === null || sinT.high.compareTo(max) > 0)
+        max = sinT.high;
+    }
+    return new RationalInterval(min, max);
+  }
+  if (!(x instanceof Rational)) {
+    x = new Rational(x);
+  }
+  const piInterval = PI(precision);
+  const piApprox = piInterval.low.add(piInterval.high).divide(new Rational(2));
+  const piOver2 = piApprox.divide(new Rational(2));
+  const k = round(x.divide(piOver2));
+  const r = x.subtract(k.multiply(piOver2));
+  const kMod4 = Number(k.numerator % 4n);
+  let usecos = false;
+  let negate = false;
+  switch (kMod4) {
+    case 0:
+      break;
+    case 1:
+      usecos = true;
+      break;
+    case 2:
+      negate = true;
+      break;
+    case 3:
+      usecos = true;
+      negate = true;
+      break;
+  }
+  let sum = new Rational(0);
+  let term = r;
+  let n = 1;
+  if (usecos) {
+    sum = new Rational(1);
+    term = new Rational(1);
+    n = 0;
+  }
+  while (term.abs().compareTo(epsilon) > 0 && n < 100) {
+    if (usecos) {
+      if (n > 0) {
+        term = term.multiply(r).multiply(r).negate().divide(new Rational((2 * n - 1) * (2 * n)));
+        sum = sum.add(term);
+      }
+    } else {
+      sum = sum.add(term);
+      term = term.multiply(r).multiply(r).negate().divide(new Rational((n + 1) * (n + 2)));
+    }
+    n++;
+    if (sum.denominator > 100000000000n || term.denominator > 100000000000n) {
+      break;
+    }
+  }
+  if (negate) {
+    sum = sum.negate();
+  }
+  const errorBound = term.abs().multiply(new Rational(2));
+  return new RationalInterval(sum.subtract(errorBound), sum.add(errorBound));
+}
+function COS(x, precision) {
+  const { epsilon } = parsePrecision(precision);
+  const piInterval = PI(precision);
+  const piOver2 = piInterval.divide(new Rational(2));
+  if (x instanceof RationalInterval) {
+    return SIN(x.add(piOver2), precision);
+  } else {
+    const piOver2Mid = piOver2.low.add(piOver2.high).divide(new Rational(2));
+    const xRational = x instanceof Rational ? x : new Rational(x);
+    return SIN(xRational.add(piOver2Mid), precision);
+  }
+}
+function ARCSIN(x, precision) {
+  const { epsilon } = parsePrecision(precision);
+  if (x instanceof RationalInterval) {
+    if (x.low.compareTo(new Rational(-1)) < 0 || x.high.compareTo(new Rational(1)) > 0) {
+      throw new Error("ARCSIN: argument must be in [-1, 1]");
+    }
+    const lower = ARCSIN(x.low, precision);
+    const upper = ARCSIN(x.high, precision);
+    return new RationalInterval(lower.low, upper.high);
+  }
+  if (!(x instanceof Rational)) {
+    x = new Rational(x);
+  }
+  if (x.compareTo(new Rational(-1)) < 0 || x.compareTo(new Rational(1)) > 0) {
+    throw new Error("ARCSIN: argument must be in [-1, 1]");
+  }
+  if (isZero(x)) {
+    return new RationalInterval(new Rational(0), new Rational(0));
+  }
+  let sum = x;
+  let term = x;
+  let n = 1;
+  let converged = false;
+  while (term.abs().compareTo(epsilon) > 0 && n < 30) {
+    term = term.multiply(x).multiply(x).multiply(new Rational((2 * n - 1) * (2 * n - 1))).divide(new Rational(2 * n * (2 * n + 1)));
+    sum = sum.add(term);
+    n++;
+    if (sum.denominator > 1000000000n || term.denominator > 1000000000n) {
+      break;
+    }
+    if (term.abs().compareTo(epsilon) <= 0) {
+      converged = true;
+      break;
+    }
+  }
+  if (converged && sum.denominator <= 1000000000n) {
+    const errorBound = term.abs().multiply(new Rational(2));
+    return new RationalInterval(sum.subtract(errorBound), sum.add(errorBound));
+  } else {
+    const xDecimal = x.toNumber();
+    const arcsinDecimal = Math.asin(xDecimal);
+    return createTightRationalInterval(arcsinDecimal, precision);
+  }
+}
+function ARCCOS(x, precision) {
+  const piOver2 = PI(precision).divide(new Rational(2));
+  const arcsinX = ARCSIN(x, precision);
+  return piOver2.subtract(arcsinX);
+}
+function TAN(x, precision) {
+  const { epsilon } = parsePrecision(precision);
+  if (x instanceof RationalInterval) {
+    const samples = 100;
+    let min = null, max = null;
+    for (let i = 0;i <= samples; i++) {
+      const t = x.low.add(x.high.subtract(x.low).multiply(new Rational(i)).divide(new Rational(samples)));
+      try {
+        const tanT = TAN(t, precision);
+        if (min === null || tanT.low.compareTo(min) < 0)
+          min = tanT.low;
+        if (max === null || tanT.high.compareTo(max) > 0)
+          max = tanT.high;
+      } catch (e) {
+        continue;
+      }
+    }
+    if (min === null || max === null) {
+      throw new Error("TAN: interval contains undefined points");
+    }
+    return new RationalInterval(min, max);
+  }
+  if (!(x instanceof Rational)) {
+    x = new Rational(x);
+  }
+  const piInterval = PI(precision);
+  const piApprox = piInterval.low.add(piInterval.high).divide(new Rational(2));
+  const piOver2 = piApprox.divide(new Rational(2));
+  const quotient = x.divide(piOver2);
+  const nearestOddMultiple = round(quotient);
+  if (Number(nearestOddMultiple.numerator % 2n) === 1) {
+    const distance = quotient.subtract(nearestOddMultiple).abs();
+    if (distance.compareTo(epsilon) < 0) {
+      throw new Error("TAN: undefined at odd multiples of π/2");
+    }
+  }
+  const sinX = SIN(x, precision);
+  const cosX = COS(x, precision);
+  if (cosX.low.abs().compareTo(epsilon) < 0 || cosX.high.abs().compareTo(epsilon) < 0) {
+    throw new Error("TAN: undefined (cosine too close to zero)");
+  }
+  return sinX.divide(cosX);
+}
+function ARCTAN(x, precision) {
+  const { epsilon } = parsePrecision(precision);
+  if (x instanceof RationalInterval) {
+    const lower = ARCTAN(x.low, precision);
+    const upper = ARCTAN(x.high, precision);
+    return new RationalInterval(lower.low, upper.high);
+  }
+  if (!(x instanceof Rational)) {
+    x = new Rational(x);
+  }
+  if (isZero(x)) {
+    return new RationalInterval(new Rational(0), new Rational(0));
+  }
+  const absX = x.abs();
+  if (absX.compareTo(new Rational(1)) > 0) {
+    const piOver2 = PI(precision).divide(new Rational(2));
+    const piOver2Mid = piOver2.low.add(piOver2.high).divide(new Rational(2));
+    const arctanRecip = ARCTAN(new Rational(1).divide(absX), precision);
+    const result = piOver2Mid.subtract(arctanRecip.low.add(arctanRecip.high).divide(new Rational(2)));
+    if (isNegative(x)) {
+      return new RationalInterval(result.negate(), result.negate());
+    } else {
+      return new RationalInterval(result, result);
+    }
+  }
+  let sum = x;
+  let term = x;
+  let n = 1;
+  while (term.abs().compareTo(epsilon) > 0 && n < 100) {
+    term = term.multiply(x).multiply(x).negate();
+    const denominator = new Rational(2 * n + 1);
+    sum = sum.add(term.divide(denominator));
+    n++;
+    if (sum.denominator > 100000000000n || term.denominator > 100000000000n) {
+      break;
+    }
+  }
+  const errorBound = term.abs().multiply(new Rational(2));
+  return new RationalInterval(sum.subtract(errorBound), sum.add(errorBound));
+}
+function newtonRoot(q, n, precision) {
+  const { epsilon } = parsePrecision(precision);
+  if (!(q instanceof Rational)) {
+    q = new Rational(q);
+  }
+  if (n <= 0) {
+    throw new Error("Root degree must be positive");
+  }
+  if (n === 1) {
+    return new RationalInterval(q, q);
+  }
+  if (isNegative(q) && n % 2 === 0) {
+    throw new Error("Even root of negative number");
+  }
+  const qDecimal = q.toNumber();
+  const initialGuess = Math.pow(qDecimal, 1 / n);
+  let a = new Rational(Math.round(initialGuess * 1000), 1000);
+  let iterations = 0;
+  const maxIterations = 100;
+  while (iterations < maxIterations) {
+    let aPower = a;
+    for (let i = 1;i < n - 1; i++) {
+      aPower = aPower.multiply(a);
+    }
+    const b = q.divide(aPower);
+    const diff = b.subtract(a).abs();
+    if (diff.compareTo(epsilon) <= 0) {
+      const lower = a.compareTo(b) < 0 ? a : b;
+      const upper = a.compareTo(b) > 0 ? a : b;
+      return new RationalInterval(lower, upper);
+    }
+    if (a.denominator > 100000000000n || b.denominator > 100000000000n) {
+      const aDecimal = a.toNumber();
+      const bDecimal = b.toNumber();
+      if (!isNaN(aDecimal) && !isNaN(bDecimal)) {
+        const lowerDecimal = Math.min(aDecimal, bDecimal);
+        const upperDecimal = Math.max(aDecimal, bDecimal);
+        const precisionScale = 1e7;
+        const lowerRational = new Rational(Math.floor(lowerDecimal * precisionScale), precisionScale);
+        const upperRational = new Rational(Math.ceil(upperDecimal * precisionScale), precisionScale);
+        return new RationalInterval(lowerRational, upperRational);
+      }
+    }
+    a = a.add(b.subtract(a).divide(new Rational(n)));
+    iterations++;
+  }
+  throw new Error("Newton's method did not converge");
+}
+function rationalIntervalPower(base, exponent, precision) {
+  if (exponent instanceof Integer) {
+    exponent = exponent.toRational();
+  } else if (typeof exponent === "bigint") {
+    exponent = new Rational(exponent);
+  } else if (typeof exponent === "number") {
+    exponent = new Rational(exponent);
+  }
+  if (exponent instanceof Rational && exponent.denominator <= 10n) {
+    const root = newtonRoot(base, Number(exponent.denominator), precision);
+    if (exponent.numerator === 1n) {
+      return root;
+    }
+    let result = root;
+    const numeratorNum = Number(exponent.numerator);
+    for (let i = 1;i < Math.abs(numeratorNum); i++) {
+      result = result.multiply(root);
+    }
+    if (numeratorNum < 0) {
+      return new RationalInterval(new Rational(1), new Rational(1)).divide(result);
+    }
+    return result;
+  }
+  const lnBase = LN(base, precision);
+  const product = lnBase.multiply(exponent);
+  if (product instanceof RationalInterval) {
+    return EXP(product, precision);
+  } else {
+    return EXP(product, precision);
+  }
+}
+
 // src/parser.js
+var DEFAULT_PRECISION = -6;
 function parseDecimalUncertainty(str, allowIntegerRangeNotation = true) {
   const uncertaintyMatch = str.match(/^(-?\d*\.?\d*)\[([^\]]+)\]$/);
   if (!uncertaintyMatch) {
@@ -2155,12 +2675,12 @@ function parseRepeatingDecimal(str) {
   if (str.includes(":")) {
     return parseRepeatingDecimalInterval(str);
   }
-  const isNegative = str.startsWith("-");
-  if (isNegative) {
+  const isNegative2 = str.startsWith("-");
+  if (isNegative2) {
     str = str.substring(1);
   }
   if (!str.includes("#")) {
-    return parseNonRepeatingDecimal(str, isNegative);
+    return parseNonRepeatingDecimal(str, isNegative2);
   }
   const parts = str.split("#");
   if (parts.length !== 2) {
@@ -2190,7 +2710,7 @@ function parseRepeatingDecimal(str) {
         denominator2 = 10n ** BigInt(fractionalPart2.length);
       }
       const rational = new Rational(numerator2, denominator2);
-      return isNegative ? rational.negate() : rational;
+      return isNegative2 ? rational.negate() : rational;
     } catch (error) {
       throw new Error(`Invalid decimal format: ${error.message}`);
     }
@@ -2215,9 +2735,9 @@ function parseRepeatingDecimal(str) {
   const denominator = powerOfTenN * (powerOfTenM - 1n);
   const numerator = abc - ab;
   let result = new Rational(numerator, denominator);
-  return isNegative ? result.negate() : result;
+  return isNegative2 ? result.negate() : result;
 }
-function parseNonRepeatingDecimal(str, isNegative) {
+function parseNonRepeatingDecimal(str, isNegative2) {
   const decimalParts = str.split(".");
   if (decimalParts.length > 2) {
     throw new Error("Invalid decimal format - multiple decimal points");
@@ -2229,12 +2749,12 @@ function parseNonRepeatingDecimal(str, isNegative) {
   }
   if (!fractionalPart) {
     const rational = new Rational(integerPart);
-    return isNegative ? rational.negate() : rational;
+    return isNegative2 ? rational.negate() : rational;
   }
   const lastDigitPlace = 10n ** BigInt(fractionalPart.length + 1);
   const baseValue = BigInt(integerPart + fractionalPart);
   let lower, upper;
-  if (isNegative) {
+  if (isNegative2) {
     const lowerNumerator = -(baseValue * 10n + 5n);
     const upperNumerator = -(baseValue * 10n - 5n);
     lower = new Rational(lowerNumerator, lastDigitPlace);
@@ -2260,9 +2780,9 @@ function parseRepeatingDecimalInterval(str) {
   return new RationalInterval(leftEndpoint, rightEndpoint);
 }
 function parseBaseNotation(numberStr, baseSystem, options = {}) {
-  let isNegative = false;
+  let isNegative2 = false;
   if (numberStr.startsWith("-")) {
-    isNegative = true;
+    isNegative2 = true;
     numberStr = numberStr.substring(1);
   }
   let eNotationIndex = -1;
@@ -2331,7 +2851,7 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
       throw new Error("E notation can only be applied to simple numbers, not intervals");
     }
     let result = baseRational.multiply(powerOfBase);
-    if (isNegative) {
+    if (isNegative2) {
       result = result.negate();
     }
     return options.typeAware && result.denominator === 1n ? new Integer(result.numerator) : result;
@@ -2341,7 +2861,7 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
     if (parts.length !== 2) {
       throw new Error('Base notation intervals must have exactly two endpoints separated by ":"');
     }
-    const leftStr = isNegative ? "-" + parts[0].trim() : parts[0].trim();
+    const leftStr = isNegative2 ? "-" + parts[0].trim() : parts[0].trim();
     const leftValue = parseBaseNotation(leftStr, baseSystem, options);
     const rightValue = parseBaseNotation(parts[1].trim(), baseSystem, options);
     let leftRational, rightRational;
@@ -2379,7 +2899,7 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
     }
     const wholeDecimal = baseSystem.toDecimal(wholePart);
     let wholeRational = new Rational(wholeDecimal);
-    if (isNegative) {
+    if (isNegative2) {
       wholeRational = wholeRational.negate();
     }
     const fractionResult = parseBaseNotation(fractionPart, baseSystem, options);
@@ -2412,7 +2932,7 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
       throw new Error("Denominator cannot be zero");
     }
     let result = new Rational(numeratorDecimal, denominatorDecimal);
-    if (isNegative) {
+    if (isNegative2) {
       result = result.negate();
     }
     result._explicitFraction = true;
@@ -2443,7 +2963,7 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
     const denominator = baseBigInt ** BigInt(fractionalPart.length);
     const totalNumerator = integerDecimal * denominator + fractionalDecimal;
     let result = new Rational(totalNumerator, denominator);
-    if (isNegative) {
+    if (isNegative2) {
       result = result.negate();
     }
     return options.typeAware && result.denominator === 1n ? new Integer(result.numerator) : result;
@@ -2452,7 +2972,7 @@ function parseBaseNotation(numberStr, baseSystem, options = {}) {
     throw new Error(`String "${baseNumber}" contains characters not valid for ${baseSystem.name}`);
   }
   let decimalValue = baseSystem.toDecimal(baseNumber);
-  if (isNegative) {
+  if (isNegative2) {
     decimalValue = -decimalValue;
   }
   if (options.typeAware) {
@@ -2619,30 +3139,77 @@ class Parser {
         if (factorialResult3.remainingExpr.length > 0) {
           if (factorialResult3.remainingExpr[0] === "^") {
             const powerExpr = factorialResult3.remainingExpr.substring(1);
-            const powerResult = Parser.#parseExponent(powerExpr);
+            let powerResult;
+            let isIntegerExponent = false;
+            try {
+              powerResult = Parser.#parseExponent(powerExpr);
+              isIntegerExponent = true;
+            } catch (e) {
+              powerResult = Parser.#parseExponentExpression(powerExpr, options);
+              isIntegerExponent = false;
+            }
             const zero = new Rational(0);
-            if (factorialResult3.value.low && factorialResult3.value.high) {
-              if (factorialResult3.value.low.equals(zero) && factorialResult3.value.high.equals(zero) && powerResult.value === 0n) {
-                throw new Error("Zero cannot be raised to the power of zero");
-              }
-            } else if (factorialResult3.value instanceof Integer && factorialResult3.value.value === 0n && powerResult.value === 0n) {
-              throw new Error("Zero cannot be raised to the power of zero");
-            } else if (factorialResult3.value instanceof Rational && factorialResult3.value.numerator === 0n && powerResult.value === 0n) {
+            const isZeroBase = factorialResult3.value.low && factorialResult3.value.high ? factorialResult3.value.low.equals(zero) && factorialResult3.value.high.equals(zero) : factorialResult3.value instanceof Integer && factorialResult3.value.value === 0n || factorialResult3.value instanceof Rational && factorialResult3.value.numerator === 0n;
+            const isZeroExponent = isIntegerExponent ? powerResult.value === 0n : powerResult.value instanceof Rational && powerResult.value.numerator === 0n || powerResult.value instanceof Integer && powerResult.value.value === 0n;
+            if (isZeroBase && isZeroExponent) {
               throw new Error("Zero cannot be raised to the power of zero");
             }
+            let result2;
+            if (isIntegerExponent) {
+              result2 = factorialResult3.value.pow(powerResult.value);
+            } else {
+              const precision = options.precision || DEFAULT_PRECISION;
+              result2 = rationalIntervalPower(factorialResult3.value, powerResult.value, precision);
+            }
             return {
-              value: factorialResult3.value.pow(powerResult.value),
+              value: result2,
               remainingExpr: powerResult.remainingExpr
             };
           } else if (factorialResult3.remainingExpr.length > 1 && factorialResult3.remainingExpr[0] === "*" && factorialResult3.remainingExpr[1] === "*") {
             const powerExpr = factorialResult3.remainingExpr.substring(2);
-            const powerResult = Parser.#parseExponent(powerExpr);
-            let base = factorialResult3.value;
-            if (!(base instanceof RationalInterval)) {
-              base = RationalInterval.point(base instanceof Integer ? base.toRational() : base);
+            let powerResult;
+            let isIntegerExponent = false;
+            try {
+              powerResult = Parser.#parseExponent(powerExpr);
+              isIntegerExponent = true;
+            } catch (e) {
+              powerResult = Parser.#parseExponentExpression(powerExpr, options);
+              isIntegerExponent = false;
             }
-            const result2 = base.mpow(powerResult.value);
-            result2._skipPromotion = true;
+            const isZeroExponent = isIntegerExponent && powerResult.value === 0n || !isIntegerExponent && powerResult.value instanceof Integer && powerResult.value.value === 0n || !isIntegerExponent && powerResult.value instanceof Rational && powerResult.value.numerator === 0n;
+            if (isZeroExponent) {
+              throw new Error("Multiplicative exponentiation requires at least one factor");
+            }
+            let result2;
+            if (!isIntegerExponent && powerResult.value instanceof Rational && Number(powerResult.value.denominator) <= 10 && Number(powerResult.value.denominator) > 1) {
+              const precision = options.precision || DEFAULT_PRECISION;
+              const rootDegree = Number(powerResult.value.denominator);
+              const rootInterval = newtonRoot(factorialResult3.value, rootDegree, precision);
+              if (!powerResult.value.numerator === 1n) {
+                const numeratorPower = Number(powerResult.value.numerator);
+                result2 = rootInterval;
+                for (let i = 1;i < Math.abs(numeratorPower); i++) {
+                  result2 = result2.multiply(rootInterval);
+                }
+                if (numeratorPower < 0) {
+                  result2 = new RationalInterval(new Rational(1).divide(result2.upper), new Rational(1).divide(result2.lower));
+                }
+              } else {
+                result2 = rootInterval;
+              }
+            } else if (isIntegerExponent) {
+              let base = factorialResult3.value;
+              if (!(base instanceof RationalInterval)) {
+                base = RationalInterval.point(base instanceof Integer ? base.toRational() : base);
+              }
+              result2 = base.mpow(powerResult.value);
+            } else {
+              const precision = options.precision || DEFAULT_PRECISION;
+              result2 = rationalIntervalPower(factorialResult3.value, powerResult.value, precision);
+            }
+            if (result2._skipPromotion === undefined) {
+              result2._skipPromotion = true;
+            }
             return {
               value: result2,
               remainingExpr: powerResult.remainingExpr
@@ -2702,32 +3269,84 @@ class Parser {
       if (factorialResult2.remainingExpr.length > 0) {
         if (factorialResult2.remainingExpr[0] === "^") {
           const powerExpr = factorialResult2.remainingExpr.substring(1);
-          const powerResult = Parser.#parseExponent(powerExpr);
-          const zero = new Rational(0);
-          let isZero = false;
-          if (factorialResult2.value instanceof RationalInterval) {
-            isZero = factorialResult2.value.low.equals(zero) && factorialResult2.value.high.equals(zero);
-          } else if (factorialResult2.value instanceof Rational) {
-            isZero = factorialResult2.value.equals(zero);
-          } else if (factorialResult2.value instanceof Integer) {
-            isZero = factorialResult2.value.value === 0n;
+          let powerResult;
+          let isIntegerExponent = false;
+          try {
+            powerResult = Parser.#parseExponent(powerExpr);
+            isIntegerExponent = true;
+          } catch (e) {
+            powerResult = Parser.#parseExponentExpression(powerExpr, options);
+            isIntegerExponent = false;
           }
-          if (isZero && powerResult.value === 0n) {
+          const zero = new Rational(0);
+          let isZero2 = false;
+          if (factorialResult2.value instanceof RationalInterval) {
+            isZero2 = factorialResult2.value.low.equals(zero) && factorialResult2.value.high.equals(zero);
+          } else if (factorialResult2.value instanceof Rational) {
+            isZero2 = factorialResult2.value.equals(zero);
+          } else if (factorialResult2.value instanceof Integer) {
+            isZero2 = factorialResult2.value.value === 0n;
+          }
+          const isZeroExponent = isIntegerExponent ? powerResult.value === 0n : powerResult.value instanceof Rational && powerResult.value.numerator === 0n || powerResult.value instanceof Integer && powerResult.value.value === 0n;
+          if (isZero2 && isZeroExponent) {
             throw new Error("Zero cannot be raised to the power of zero");
           }
+          let result2;
+          if (isIntegerExponent) {
+            result2 = factorialResult2.value.pow(powerResult.value);
+          } else {
+            const precision = options.precision || DEFAULT_PRECISION;
+            result2 = rationalIntervalPower(factorialResult2.value, powerResult.value, precision);
+          }
           return {
-            value: factorialResult2.value.pow(powerResult.value),
+            value: result2,
             remainingExpr: powerResult.remainingExpr
           };
         } else if (factorialResult2.remainingExpr.length > 1 && factorialResult2.remainingExpr[0] === "*" && factorialResult2.remainingExpr[1] === "*") {
           const powerExpr = factorialResult2.remainingExpr.substring(2);
-          const powerResult = Parser.#parseExponent(powerExpr);
-          let base = factorialResult2.value;
-          if (!(base instanceof RationalInterval)) {
-            base = RationalInterval.point(base instanceof Integer ? base.toRational() : base);
+          let powerResult;
+          let isIntegerExponent = false;
+          try {
+            powerResult = Parser.#parseExponent(powerExpr);
+            isIntegerExponent = true;
+          } catch (e) {
+            powerResult = Parser.#parseExponentExpression(powerExpr, options);
+            isIntegerExponent = false;
           }
-          const result2 = base.mpow(powerResult.value);
-          result2._skipPromotion = true;
+          const isZeroExponent = isIntegerExponent && powerResult.value === 0n || !isIntegerExponent && powerResult.value instanceof Integer && powerResult.value.value === 0n || !isIntegerExponent && powerResult.value instanceof Rational && powerResult.value.numerator === 0n;
+          if (isZeroExponent) {
+            throw new Error("Multiplicative exponentiation requires at least one factor");
+          }
+          let result2;
+          if (!isIntegerExponent && powerResult.value instanceof Rational && Number(powerResult.value.denominator) <= 10 && Number(powerResult.value.denominator) > 1) {
+            const precision = options.precision || DEFAULT_PRECISION;
+            const rootDegree = Number(powerResult.value.denominator);
+            const rootInterval = newtonRoot(factorialResult2.value, rootDegree, precision);
+            if (!powerResult.value.numerator === 1n) {
+              const numeratorPower = Number(powerResult.value.numerator);
+              result2 = rootInterval;
+              for (let i = 1;i < Math.abs(numeratorPower); i++) {
+                result2 = result2.multiply(rootInterval);
+              }
+              if (numeratorPower < 0) {
+                result2 = new RationalInterval(new Rational(1).divide(result2.upper), new Rational(1).divide(result2.lower));
+              }
+            } else {
+              result2 = rootInterval;
+            }
+          } else if (isIntegerExponent) {
+            let base = factorialResult2.value;
+            if (!(base instanceof RationalInterval)) {
+              base = RationalInterval.point(base instanceof Integer ? base.toRational() : base);
+            }
+            result2 = base.mpow(powerResult.value);
+          } else {
+            const precision = options.precision || DEFAULT_PRECISION;
+            result2 = rationalIntervalPower(factorialResult2.value, powerResult.value, precision);
+          }
+          if (result2._skipPromotion === undefined) {
+            result2._skipPromotion = true;
+          }
           return {
             value: result2,
             remainingExpr: powerResult.remainingExpr
@@ -2735,6 +3354,254 @@ class Parser {
         }
       }
       return factorialResult2;
+    }
+    if (/^[A-Z]/.test(expr)) {
+      if (expr.startsWith("PI")) {
+        let precision = undefined;
+        let remainingExpr = expr.substring(2);
+        if (remainingExpr.startsWith("[")) {
+          const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
+          if (precisionMatch) {
+            precision = parseInt(precisionMatch[1], 10);
+            remainingExpr = remainingExpr.substring(precisionMatch[0].length);
+          }
+        }
+        const result = PI(precision);
+        result._explicitInterval = true;
+        return {
+          value: result,
+          remainingExpr
+        };
+      }
+      if (expr.startsWith("EXP")) {
+        let remainingExpr = expr.substring(3);
+        let precision = undefined;
+        if (remainingExpr.startsWith("[")) {
+          const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
+          if (precisionMatch) {
+            precision = parseInt(precisionMatch[1], 10);
+            remainingExpr = remainingExpr.substring(precisionMatch[0].length);
+          }
+        }
+        if (remainingExpr.startsWith("(")) {
+          const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
+          if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
+            throw new Error("Missing closing parenthesis for EXP function");
+          }
+          const result = EXP(argResult.value, precision);
+          result._explicitInterval = true;
+          return {
+            value: result,
+            remainingExpr: argResult.remainingExpr.substring(1)
+          };
+        } else {
+          const result = E(precision);
+          result._explicitInterval = true;
+          return {
+            value: result,
+            remainingExpr
+          };
+        }
+      }
+      if (expr.startsWith("LN")) {
+        let remainingExpr = expr.substring(2);
+        let precision = undefined;
+        if (remainingExpr.startsWith("[")) {
+          const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
+          if (precisionMatch) {
+            precision = parseInt(precisionMatch[1], 10);
+            remainingExpr = remainingExpr.substring(precisionMatch[0].length);
+          }
+        }
+        if (!remainingExpr.startsWith("(")) {
+          throw new Error("LN requires parentheses");
+        }
+        const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
+        if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
+          throw new Error("Missing closing parenthesis for LN function");
+        }
+        const result = LN(argResult.value, precision);
+        result._explicitInterval = true;
+        return {
+          value: result,
+          remainingExpr: argResult.remainingExpr.substring(1)
+        };
+      }
+      if (expr.startsWith("LOG")) {
+        let remainingExpr = expr.substring(3);
+        let precision = undefined;
+        if (remainingExpr.startsWith("[")) {
+          const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
+          if (precisionMatch) {
+            precision = parseInt(precisionMatch[1], 10);
+            remainingExpr = remainingExpr.substring(precisionMatch[0].length);
+          }
+        }
+        if (!remainingExpr.startsWith("(")) {
+          throw new Error("LOG requires parentheses");
+        }
+        const arg1Result = Parser.#parseExpression(remainingExpr.substring(1), options);
+        let base = 10;
+        let finalRemainingExpr = arg1Result.remainingExpr;
+        if (arg1Result.remainingExpr.startsWith(",")) {
+          const arg2Result = Parser.#parseExpression(arg1Result.remainingExpr.substring(1), options);
+          base = arg2Result.value;
+          finalRemainingExpr = arg2Result.remainingExpr;
+        }
+        if (finalRemainingExpr.length === 0 || finalRemainingExpr[0] !== ")") {
+          throw new Error("Missing closing parenthesis for LOG function");
+        }
+        const result = LOG(arg1Result.value, base, precision);
+        result._explicitInterval = true;
+        return {
+          value: result,
+          remainingExpr: finalRemainingExpr.substring(1)
+        };
+      }
+      if (expr.startsWith("SIN")) {
+        let remainingExpr = expr.substring(3);
+        let precision = undefined;
+        if (remainingExpr.startsWith("[")) {
+          const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
+          if (precisionMatch) {
+            precision = parseInt(precisionMatch[1], 10);
+            remainingExpr = remainingExpr.substring(precisionMatch[0].length);
+          }
+        }
+        if (!remainingExpr.startsWith("(")) {
+          throw new Error("SIN requires parentheses");
+        }
+        const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
+        if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
+          throw new Error("Missing closing parenthesis for SIN function");
+        }
+        const result = SIN(argResult.value, precision);
+        result._explicitInterval = true;
+        return {
+          value: result,
+          remainingExpr: argResult.remainingExpr.substring(1)
+        };
+      }
+      if (expr.startsWith("COS")) {
+        let remainingExpr = expr.substring(3);
+        let precision = undefined;
+        if (remainingExpr.startsWith("[")) {
+          const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
+          if (precisionMatch) {
+            precision = parseInt(precisionMatch[1], 10);
+            remainingExpr = remainingExpr.substring(precisionMatch[0].length);
+          }
+        }
+        if (!remainingExpr.startsWith("(")) {
+          throw new Error("COS requires parentheses");
+        }
+        const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
+        if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
+          throw new Error("Missing closing parenthesis for COS function");
+        }
+        const result = COS(argResult.value, precision);
+        result._explicitInterval = true;
+        return {
+          value: result,
+          remainingExpr: argResult.remainingExpr.substring(1)
+        };
+      }
+      if (expr.startsWith("ARCSIN")) {
+        let remainingExpr = expr.substring(6);
+        let precision = undefined;
+        if (remainingExpr.startsWith("[")) {
+          const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
+          if (precisionMatch) {
+            precision = parseInt(precisionMatch[1], 10);
+            remainingExpr = remainingExpr.substring(precisionMatch[0].length);
+          }
+        }
+        if (!remainingExpr.startsWith("(")) {
+          throw new Error("ARCSIN requires parentheses");
+        }
+        const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
+        if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
+          throw new Error("Missing closing parenthesis for ARCSIN function");
+        }
+        const result = ARCSIN(argResult.value, precision);
+        result._explicitInterval = true;
+        return {
+          value: result,
+          remainingExpr: argResult.remainingExpr.substring(1)
+        };
+      }
+      if (expr.startsWith("ARCCOS")) {
+        let remainingExpr = expr.substring(6);
+        let precision = undefined;
+        if (remainingExpr.startsWith("[")) {
+          const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
+          if (precisionMatch) {
+            precision = parseInt(precisionMatch[1], 10);
+            remainingExpr = remainingExpr.substring(precisionMatch[0].length);
+          }
+        }
+        if (!remainingExpr.startsWith("(")) {
+          throw new Error("ARCCOS requires parentheses");
+        }
+        const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
+        if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
+          throw new Error("Missing closing parenthesis for ARCCOS function");
+        }
+        const result = ARCCOS(argResult.value, precision);
+        result._explicitInterval = true;
+        return {
+          value: result,
+          remainingExpr: argResult.remainingExpr.substring(1)
+        };
+      }
+      if (expr.startsWith("TAN")) {
+        let remainingExpr = expr.substring(3);
+        let precision = undefined;
+        if (remainingExpr.startsWith("[")) {
+          const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
+          if (precisionMatch) {
+            precision = parseInt(precisionMatch[1], 10);
+            remainingExpr = remainingExpr.substring(precisionMatch[0].length);
+          }
+        }
+        if (!remainingExpr.startsWith("(")) {
+          throw new Error("TAN requires parentheses");
+        }
+        const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
+        if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
+          throw new Error("Missing closing parenthesis for TAN function");
+        }
+        const result = TAN(argResult.value, precision);
+        result._explicitInterval = true;
+        return {
+          value: result,
+          remainingExpr: argResult.remainingExpr.substring(1)
+        };
+      }
+      if (expr.startsWith("ARCTAN")) {
+        let remainingExpr = expr.substring(6);
+        let precision = undefined;
+        if (remainingExpr.startsWith("[")) {
+          const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
+          if (precisionMatch) {
+            precision = parseInt(precisionMatch[1], 10);
+            remainingExpr = remainingExpr.substring(precisionMatch[0].length);
+          }
+        }
+        if (!remainingExpr.startsWith("(")) {
+          throw new Error("ARCTAN requires parentheses");
+        }
+        const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
+        if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
+          throw new Error("Missing closing parenthesis for ARCTAN function");
+        }
+        const result = ARCTAN(argResult.value, precision);
+        result._explicitInterval = true;
+        return {
+          value: result,
+          remainingExpr: argResult.remainingExpr.substring(1)
+        };
+      }
     }
     if (expr.includes("[") && expr.includes("]")) {
       const baseMatch = expr.match(/^([-\w./:^]+(?::[-\w./:^]+)?)\[(\d+)\]/);
@@ -2843,18 +3710,27 @@ class Parser {
       if (factorialResult2.remainingExpr.length > 0) {
         if (factorialResult2.remainingExpr[0] === "^") {
           const powerExpr = factorialResult2.remainingExpr.substring(1);
-          const powerResult = Parser.#parseExponent(powerExpr);
-          if (factorialResult2.value instanceof Integer && factorialResult2.value.value === 0n && powerResult.value === 0n) {
-            throw new Error("Zero cannot be raised to the power of zero");
-          } else if (factorialResult2.value instanceof Rational && factorialResult2.value.numerator === 0n && powerResult.value === 0n) {
-            throw new Error("Zero cannot be raised to the power of zero");
-          } else if (factorialResult2.value.low && factorialResult2.value.high) {
-            const zero = new Rational(0);
-            if (factorialResult2.value.low.equals(zero) && factorialResult2.value.high.equals(zero) && powerResult.value === 0n) {
-              throw new Error("Zero cannot be raised to the power of zero");
-            }
+          let powerResult;
+          let isIntegerExponent = false;
+          try {
+            powerResult = Parser.#parseExponent(powerExpr);
+            isIntegerExponent = true;
+          } catch (e) {
+            powerResult = Parser.#parseExponentExpression(powerExpr, options);
+            isIntegerExponent = false;
           }
-          const result = factorialResult2.value.pow(powerResult.value);
+          const isZeroBase = factorialResult2.value instanceof Integer && factorialResult2.value.value === 0n || factorialResult2.value instanceof Rational && factorialResult2.value.numerator === 0n || factorialResult2.value.low && factorialResult2.value.high && factorialResult2.value.low.equals(new Rational(0)) && factorialResult2.value.high.equals(new Rational(0));
+          const isZeroExponent = isIntegerExponent ? powerResult.value === 0n : powerResult.value instanceof Rational && powerResult.value.numerator === 0n || powerResult.value instanceof Integer && powerResult.value.value === 0n;
+          if (isZeroBase && isZeroExponent) {
+            throw new Error("Zero cannot be raised to the power of zero");
+          }
+          let result;
+          if (isIntegerExponent) {
+            result = factorialResult2.value.pow(powerResult.value);
+          } else {
+            const precision = options.precision || DEFAULT_PRECISION;
+            result = rationalIntervalPower(factorialResult2.value, powerResult.value, precision);
+          }
           return {
             value: result,
             remainingExpr: powerResult.remainingExpr
@@ -2862,6 +3738,10 @@ class Parser {
         } else if (factorialResult2.remainingExpr.length > 1 && factorialResult2.remainingExpr[0] === "*" && factorialResult2.remainingExpr[1] === "*") {
           const powerExpr = factorialResult2.remainingExpr.substring(2);
           const powerResult = Parser.#parseExponent(powerExpr);
+          const isZeroExponent = powerResult.value === 0n;
+          if (isZeroExponent) {
+            throw new Error("Multiplicative exponentiation requires at least one factor");
+          }
           let base = factorialResult2.value;
           if (!(base instanceof RationalInterval)) {
             base = RationalInterval.point(base instanceof Integer ? base.toRational() : base);
@@ -2927,30 +3807,74 @@ class Parser {
     if (factorialResult.remainingExpr.length > 0) {
       if (factorialResult.remainingExpr[0] === "^") {
         const powerExpr = factorialResult.remainingExpr.substring(1);
-        const powerResult = Parser.#parseExponent(powerExpr);
-        if (factorialResult.value instanceof Integer && factorialResult.value.value === 0n && powerResult.value === 0n) {
-          throw new Error("Zero cannot be raised to the power of zero");
-        } else if (factorialResult.value instanceof Rational && factorialResult.value.numerator === 0n && powerResult.value === 0n) {
-          throw new Error("Zero cannot be raised to the power of zero");
-        } else if (factorialResult.value.low && factorialResult.value.high) {
-          const zero = new Rational(0);
-          if (factorialResult.value.low.equals(zero) && factorialResult.value.high.equals(zero) && powerResult.value === 0n) {
-            throw new Error("Zero cannot be raised to the power of zero");
+        let powerResult;
+        let isIntegerExponent = false;
+        if (powerExpr.startsWith("(")) {
+          powerResult = Parser.#parseExpression(powerExpr.substring(1), options);
+          if (powerResult.remainingExpr.length === 0 || powerResult.remainingExpr[0] !== ")") {
+            throw new Error("Missing closing parenthesis in exponent");
+          }
+          powerResult.remainingExpr = powerResult.remainingExpr.substring(1);
+          isIntegerExponent = false;
+        } else {
+          try {
+            powerResult = Parser.#parseExponent(powerExpr);
+            isIntegerExponent = true;
+          } catch (e) {
+            powerResult = Parser.#parseExponentExpression(powerExpr, options);
+            isIntegerExponent = false;
           }
         }
-        const result = factorialResult.value.pow(powerResult.value);
+        const isZeroBase = factorialResult.value instanceof Integer && factorialResult.value.value === 0n || factorialResult.value instanceof Rational && factorialResult.value.numerator === 0n || factorialResult.value.low && factorialResult.value.high && factorialResult.value.low.equals(new Rational(0)) && factorialResult.value.high.equals(new Rational(0));
+        const isZeroExponent = isIntegerExponent ? powerResult.value === 0n : powerResult.value instanceof Rational && powerResult.value.numerator === 0n || powerResult.value instanceof Integer && powerResult.value.value === 0n;
+        if (isZeroBase && isZeroExponent) {
+          throw new Error("Zero cannot be raised to the power of zero");
+        }
+        let result;
+        if (isIntegerExponent) {
+          result = factorialResult.value.pow(powerResult.value);
+        } else {
+          const precision = options.precision || DEFAULT_PRECISION;
+          result = rationalIntervalPower(factorialResult.value, powerResult.value, precision);
+          result._skipPromotion = true;
+        }
         return {
           value: result,
           remainingExpr: powerResult.remainingExpr
         };
       } else if (factorialResult.remainingExpr.length > 1 && factorialResult.remainingExpr[0] === "*" && factorialResult.remainingExpr[1] === "*") {
         const powerExpr = factorialResult.remainingExpr.substring(2);
-        const powerResult = Parser.#parseExponent(powerExpr);
-        let base = factorialResult.value;
-        if (!(base instanceof RationalInterval)) {
-          base = RationalInterval.point(base instanceof Integer ? base.toRational() : base);
+        let powerResult;
+        if (powerExpr.startsWith("(")) {
+          powerResult = Parser.#parseExpression(powerExpr.substring(1), options);
+          if (powerResult.remainingExpr.length === 0 || powerResult.remainingExpr[0] !== ")") {
+            throw new Error("Missing closing parenthesis in exponent");
+          }
+          powerResult.remainingExpr = powerResult.remainingExpr.substring(1);
+        } else {
+          try {
+            powerResult = Parser.#parseExponent(powerExpr);
+          } catch (e) {
+            powerResult = Parser.#parseExpression(powerExpr, options);
+          }
         }
-        const result = base.mpow(powerResult.value);
+        let base = factorialResult.value;
+        const isIntegerExponent = powerResult.value instanceof Integer || powerResult.value instanceof Rational && powerResult.value.denominator === 1n;
+        const isZeroExponent = powerResult.value instanceof Integer && powerResult.value.value === 0n || powerResult.value instanceof Rational && powerResult.value.numerator === 0n;
+        if (isZeroExponent) {
+          throw new Error("Multiplicative exponentiation requires at least one factor");
+        }
+        let result;
+        if (isIntegerExponent) {
+          if (!(base instanceof RationalInterval)) {
+            base = RationalInterval.point(base instanceof Integer ? base.toRational() : base);
+          }
+          const exponentBigInt = powerResult.value instanceof Integer ? powerResult.value.value : powerResult.value.numerator;
+          result = base.mpow(exponentBigInt);
+        } else {
+          const precision = options.precision || DEFAULT_PRECISION;
+          result = rationalIntervalPower(base, powerResult.value, precision);
+        }
         result._skipPromotion = true;
         return {
           value: result,
@@ -2962,9 +3886,9 @@ class Parser {
   }
   static #parseExponent(expr) {
     let i = 0;
-    let isNegative = false;
+    let isNegative2 = false;
     if (expr.length > 0 && expr[0] === "-") {
-      isNegative = true;
+      isNegative2 = true;
       i++;
     }
     let exponentStr = "";
@@ -2975,11 +3899,17 @@ class Parser {
     if (exponentStr.length === 0) {
       throw new Error("Invalid exponent");
     }
-    const exponent = isNegative ? -BigInt(exponentStr) : BigInt(exponentStr);
+    const exponent = isNegative2 ? -BigInt(exponentStr) : BigInt(exponentStr);
+    if (exponent === 0n) {
+      throw new Error("Multiplicative exponentiation requires at least one factor");
+    }
     return {
       value: exponent,
       remainingExpr: expr.substring(i)
     };
+  }
+  static #parseExponentExpression(expr, options) {
+    return Parser.#parseFactor(expr, options);
   }
   static #promoteType(value, options = {}) {
     if (!options.typeAware) {
@@ -3201,9 +4131,9 @@ class Parser {
               remainingExpr: expr.substring(endIndex)
             };
           } else {
-            const isNegative = decimalStr.startsWith("-");
-            const absDecimalStr = isNegative ? decimalStr.substring(1) : decimalStr;
-            const result = parseNonRepeatingDecimal(absDecimalStr, isNegative);
+            const isNegative2 = decimalStr.startsWith("-");
+            const absDecimalStr = isNegative2 ? decimalStr.substring(1) : decimalStr;
+            const result = parseNonRepeatingDecimal(absDecimalStr, isNegative2);
             return {
               value: result,
               remainingExpr: expr.substring(endIndex)
@@ -3522,11 +4452,11 @@ class Parser {
     let i = 0;
     let numeratorStr = "";
     let denominatorStr = "";
-    let isNegative = false;
+    let isNegative2 = false;
     let wholePart = 0n;
     let hasMixedForm = false;
     if (expr[i] === "-") {
-      isNegative = true;
+      isNegative2 = true;
       i++;
     }
     while (i < expr.length && /\d/.test(expr[i])) {
@@ -3538,8 +4468,8 @@ class Parser {
     }
     if (i + 1 < expr.length && expr[i] === "." && expr[i + 1] === ".") {
       hasMixedForm = true;
-      wholePart = isNegative ? -BigInt(numeratorStr) : BigInt(numeratorStr);
-      isNegative = false;
+      wholePart = isNegative2 ? -BigInt(numeratorStr) : BigInt(numeratorStr);
+      isNegative2 = false;
       i += 2;
       numeratorStr = "";
       while (i < expr.length && /\d/.test(expr[i])) {
@@ -3558,7 +4488,7 @@ class Parser {
         if (hasMixedForm) {
           throw new Error("Invalid mixed number format: missing denominator");
         }
-        const numerator2 = isNegative ? -BigInt(numeratorStr) : BigInt(numeratorStr);
+        const numerator2 = isNegative2 ? -BigInt(numeratorStr) : BigInt(numeratorStr);
         return {
           value: new Rational(numerator2, 1n),
           remainingExpr: expr.substring(i - 1)
@@ -3568,7 +4498,7 @@ class Parser {
         if (hasMixedForm) {
           throw new Error("Invalid mixed number format: missing denominator");
         }
-        const numerator2 = isNegative ? -BigInt(numeratorStr) : BigInt(numeratorStr);
+        const numerator2 = isNegative2 ? -BigInt(numeratorStr) : BigInt(numeratorStr);
         return {
           value: new Rational(numerator2, 1n),
           remainingExpr: expr.substring(i - 1)
@@ -3600,7 +4530,7 @@ class Parser {
       const sign = wholePart < 0n ? -1n : 1n;
       numerator = sign * ((wholePart.valueOf() < 0n ? -wholePart : wholePart) * denominator + numerator);
     } else {
-      numerator = isNegative ? -BigInt(numeratorStr) : BigInt(numeratorStr);
+      numerator = isNegative2 ? -BigInt(numeratorStr) : BigInt(numeratorStr);
       denominator = BigInt(denominatorStr);
     }
     if (denominator === 0n) {
@@ -5384,17 +6314,24 @@ class SternBrocotTreeVisualizer {
       const currentValueStr = this.currentFraction.toString();
       const substitutedExpression = expression.replace(/\bx\b/g, `(${currentValueStr})`);
       const result = Parser.parse(substitutedExpression);
-      let resultText, rational;
-      if (result.toRational) {
-        rational = result.toRational();
+      let resultText;
+      if (result.low && result.high) {
+        const lowerFraction = Fraction.fromRational(result.low);
+        const upperFraction = Fraction.fromRational(result.high);
+        resultText = `[${this.formatFraction(lowerFraction, "fraction", false)}, ${this.formatFraction(upperFraction, "fraction", false)}]`;
       } else {
-        rational = result;
-      }
-      const fraction = Fraction.fromRational(rational);
-      try {
-        resultText = rational.toMixedString();
-      } catch {
-        resultText = this.formatFraction(fraction, "fraction", false);
+        let rational;
+        if (result.toRational) {
+          rational = result.toRational();
+        } else {
+          rational = result;
+        }
+        const fraction = Fraction.fromRational(rational);
+        try {
+          resultText = rational.toMixedString();
+        } catch {
+          resultText = this.formatFraction(fraction, "fraction", false);
+        }
       }
       this.elements.expressionResult.innerHTML = resultText;
     } catch (error) {

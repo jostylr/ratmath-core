@@ -365,7 +365,19 @@ export class RationalInterval {
    * @throws {Error} If raising to the power would involve division by zero or 0^0
    */
   mpow(exponent) {
-    const n = BigInt(exponent);
+    // Handle different types of exponent input
+    let n;
+    if (typeof exponent === 'bigint') {
+      n = exponent;
+    } else if (typeof exponent === 'number') {
+      n = BigInt(exponent);
+    } else if (typeof exponent === 'string') {
+      n = BigInt(exponent);
+    } else {
+      // Handle other types by converting to BigInt
+      n = BigInt(exponent);
+    }
+    
     const zero = Rational.zero;
 
     // Special case for exponent 0

@@ -2,6 +2,16 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## Fixed Stern-Brocot Expression Evaluator for Intervals and Transcendental Functions
+**Model:** claude-opus-4-20250514  
+**Date:** 2025-06-30
+
+Fixed BigInt conversion error in the Stern-Brocot tree expression evaluator when using intervals (e.g., `(1:2)*x`) or transcendental functions (e.g., `x^(1/2)`). The issue was that the `updateExpressionResult` method was attempting to call `Fraction.fromRational()` on `RationalInterval` objects, which don't have the required `numerator` and `denominator` properties. Enhanced the method to detect when the parser returns a `RationalInterval` (checking for `low` and `high` properties) and properly format the interval bounds as fractions. This allows the expression evaluator to correctly handle interval arithmetic and transcendental function approximations in the Stern-Brocot tree explorer.
+
+## 30 June 2025 15:21 - Claude Sonnet 4 - Fixed zero exponent error handling for ** operator
+
+Fixed parser bug where `2**0` was returning `[2, 2]` instead of throwing the expected error "Multiplicative exponentiation requires at least one factor". Added zero exponent validation in the `parseExponent` method to ensure that zero exponents in multiplicative exponentiation contexts throw the appropriate error. The issue was that the parser's `parseExponent` method, which is specifically called for `**` operators, was allowing zero exponents to pass through without validation.
+
 ## Stern-Brocot Tree Root Change to 0/1
 **Model:** claude-opus-4-20250514  
 **Date:** 2025-06-28  
@@ -116,6 +126,33 @@ Added BASE command functionality to calc.js terminal calculator including:
 - BASES command to show available base systems and help
 - Automatic base representation display for integers when not in decimal
 - Support for custom character sequences with dash notation (e.g., "0-7", "a-z")
+
+## Transcendental Functions Implementation
+
+**Model:** Claude Sonnet 4, **Date:** 2025-06-30
+
+Completed comprehensive implementation of transcendental function approximations extending the RatMath library as requested. Added all major functions with capitals convention: SIN, COS, TAN, ARCSIN, ARCCOS, ARCTAN, EXP, LN, LOG, and constants PI, E. All functions return guaranteed RationalInterval bounds containing true mathematical values using exact BigInt arithmetic.
+
+**Core Implementation (ratreal.js):**
+- **Constants**: PI and E using continued fraction coefficients with configurable precision
+- **Exponential/Logarithmic**: EXP with ln(2) decomposition, LN with 2^k scaling, LOG with arbitrary base support
+- **Trigonometric**: SIN/COS with π/2 argument reduction and Taylor series, TAN as SIN/COS ratio
+- **Inverse Trig**: ARCSIN/ARCCOS/ARCTAN with Taylor series and range-specific optimizations  
+- **Root Functions**: Newton's method for rational roots (denominators ≤10), general fractional exponents via e^(b*ln(a))
+- **Precision Control**: Optional [n] notation where positive n = 1/n precision, negative n = 10^n precision, default 10^-6
+
+**Parser Integration**: Extended parser.js to recognize all functions with precision specifications (SIN[-6](0), PI[-8], EXP[12](1)), constants without parentheses (PI, EXP), and fractional exponents (4^(1/2), 8**(1/3)) using Newton's method or exponential identities.
+
+**Technical Features**: 
+- Rigorous error bounds with Taylor series truncation estimates
+- Fraction explosion prevention through denominator size limits and iteration controls
+- Type promotion prevention for transcendental results using _explicitInterval flags  
+- Comprehensive argument reduction: trig functions modulo π/2, exponentials via ln(2), logarithms scaled to [1,2)
+- Newton's method with convergence checking and precision-controlled approximations
+
+**Testing & Validation**: Created 20 comprehensive test cases covering basic functionality, precision control, interval inputs, parser integration, complex expressions, and error handling. Fixed numerous type conversion issues between Number/Rational/Integer types and implemented proper RationalInterval preservation in parser results.
+
+**Documentation**: Created detailed transcendental.md documentation with mathematical explanations, usage examples, implementation notes, and accuracy guarantees. All functions now support exact rational interval arithmetic suitable for computer algebra systems and high-precision numerical analysis.
 
 ## Test Fixes for Repeating Decimals and Scientific Notation
 

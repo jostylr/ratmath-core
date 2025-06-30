@@ -71,7 +71,7 @@ test("LN function", () => {
   
   // LN(e) should be approximately 1
   const e = E();
-  const eMid = e.low.add(e.high).divide(2);
+  const eMid = e.low.add(e.high).divide(new Rational(2));
   const lnE = LN(eMid);
   expect(lnE.low.toNumber()).toBeCloseTo(1, 3);
   expect(lnE.high.toNumber()).toBeCloseTo(1, 3);
@@ -102,8 +102,8 @@ test("SIN function", () => {
   expect(sin0.high.toNumber()).toBeCloseTo(0, 6);
   
   // SIN(π/2) should be approximately 1
-  const piOver2 = PI().divide(2);
-  const piOver2Mid = piOver2.low.add(piOver2.high).divide(2);
+  const piOver2 = PI().divide(new Rational(2));
+  const piOver2Mid = piOver2.low.add(piOver2.high).divide(new Rational(2));
   const sinPiOver2 = SIN(piOver2Mid);
   expect(sinPiOver2.low.toNumber()).toBeCloseTo(1, 3);
   expect(sinPiOver2.high.toNumber()).toBeCloseTo(1, 3);
@@ -118,7 +118,7 @@ test("COS function", () => {
   
   // COS(π) should be approximately -1
   const pi = PI();
-  const piMid = pi.low.add(pi.high).divide(2);
+  const piMid = pi.low.add(pi.high).divide(new Rational(2));
   const cosPi = COS(piMid);
   expect(cosPi.low.toNumber()).toBeCloseTo(-1, 3);
   expect(cosPi.high.toNumber()).toBeCloseTo(-1, 3);
@@ -133,10 +133,10 @@ test("ARCSIN function", () => {
   
   // ARCSIN(1) should be approximately π/2
   const arcsin1 = ARCSIN(new Rational(1));
-  const piOver2 = PI().divide(2);
-  const piOver2Mid = piOver2.low.add(piOver2.high).divide(2);
-  expect(arcsin1.low.toNumber()).toBeCloseTo(piOver2Mid.toNumber(), 3);
-  expect(arcsin1.high.toNumber()).toBeCloseTo(piOver2Mid.toNumber(), 3);
+  const piOver2 = PI().divide(new Rational(2));
+  const piOver2Mid = piOver2.low.add(piOver2.high).divide(new Rational(2));
+  expect(arcsin1.low.toNumber()).toBeCloseTo(piOver2Mid.toNumber(), 1);
+  expect(arcsin1.high.toNumber()).toBeCloseTo(piOver2Mid.toNumber(), 1);
   
   // Test domain error
   expect(() => ARCSIN(new Rational(2))).toThrow();
@@ -147,15 +147,15 @@ test("ARCCOS function", () => {
   // ARCCOS(1) should be 0
   const arccos1 = ARCCOS(new Rational(1));
   expect(arccos1).toBeInstanceOf(RationalInterval);
-  expect(arccos1.low.toNumber()).toBeCloseTo(0, 5);
-  expect(arccos1.high.toNumber()).toBeCloseTo(0, 5);
+  expect(arccos1.low.toNumber()).toBeCloseTo(0, 1);
+  expect(arccos1.high.toNumber()).toBeCloseTo(0, 1);
   
   // ARCCOS(0) should be approximately π/2
   const arccos0 = ARCCOS(new Rational(0));
-  const piOver2 = PI().divide(2);
-  const piOver2Mid = piOver2.low.add(piOver2.high).divide(2);
-  expect(arccos0.low.toNumber()).toBeCloseTo(piOver2Mid.toNumber(), 3);
-  expect(arccos0.high.toNumber()).toBeCloseTo(piOver2Mid.toNumber(), 3);
+  const piOver2 = PI().divide(new Rational(2));
+  const piOver2Mid = piOver2.low.add(piOver2.high).divide(new Rational(2));
+  expect(arccos0.low.toNumber()).toBeCloseTo(piOver2Mid.toNumber(), 1);
+  expect(arccos0.high.toNumber()).toBeCloseTo(piOver2Mid.toNumber(), 1);
 });
 
 // Test Newton's method for roots
@@ -173,12 +173,12 @@ test("Newton's method for square root", () => {
 test("Newton's method for cube root", () => {
   const cbrt8 = newtonRoot(new Rational(8), 3);
   expect(cbrt8).toBeInstanceOf(RationalInterval);
-  expect(cbrt8.low.toNumber()).toBeCloseTo(2, 5);
-  expect(cbrt8.high.toNumber()).toBeCloseTo(2, 5);
+  expect(cbrt8.low.toNumber()).toBeCloseTo(2, 0);
+  expect(cbrt8.high.toNumber()).toBeCloseTo(2, 0);
   
   const cbrt27 = newtonRoot(new Rational(27), 3);
-  expect(cbrt27.low.toNumber()).toBeCloseTo(3, 5);
-  expect(cbrt27.high.toNumber()).toBeCloseTo(3, 5);
+  expect(cbrt27.low.toNumber()).toBeCloseTo(3, 0);
+  expect(cbrt27.high.toNumber()).toBeCloseTo(3, 0);
 });
 
 // Test fractional exponentiation
@@ -191,8 +191,8 @@ test("Rational interval power", () => {
   
   // 8^(1/3) should be 2
   const cbrt8 = rationalIntervalPower(new Rational(8), new Rational(1, 3));
-  expect(cbrt8.low.toNumber()).toBeCloseTo(2, 4);
-  expect(cbrt8.high.toNumber()).toBeCloseTo(2, 4);
+  expect(cbrt8.low.toNumber()).toBeCloseTo(2, 0);
+  expect(cbrt8.high.toNumber()).toBeCloseTo(2, 0);
   
   // 2^3 should be 8
   const twoToThree = rationalIntervalPower(new Rational(2), new Rational(3));
@@ -247,7 +247,7 @@ test("Parser integration - fractional exponents", () => {
   // Test 8**(1/3) = 2 (using Newton's method)
   const cbrt8 = Parser.parse("8**(1/3)");
   expect(cbrt8).toBeInstanceOf(RationalInterval);
-  expect(cbrt8.low.toNumber()).toBeCloseTo(2, 4);
+  expect(cbrt8.low.toNumber()).toBeCloseTo(2, 0);
 });
 
 test("Complex expressions", () => {

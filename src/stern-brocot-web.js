@@ -1837,19 +1837,30 @@ class SternBrocotTreeVisualizer {
       const result = Parser.parse(substitutedExpression);
 
       // Convert result to a displayable format
-      let resultText, rational;
-      if (result.toRational) {
-        rational = result.toRational();
+      let resultText;
+      
+      // Check if result is a RationalInterval
+      if (result.low && result.high) {
+        // It's a RationalInterval
+        const lowerFraction = Fraction.fromRational(result.low);
+        const upperFraction = Fraction.fromRational(result.high);
+        resultText = `[${this.formatFraction(lowerFraction, "fraction", false)}, ${this.formatFraction(upperFraction, "fraction", false)}]`;
       } else {
-        rational = result;
-      }
-      const fraction = Fraction.fromRational(rational);
+        // It's a Rational or something with toRational
+        let rational;
+        if (result.toRational) {
+          rational = result.toRational();
+        } else {
+          rational = result;
+        }
+        const fraction = Fraction.fromRational(rational);
 
-      // Display in mixed fraction format for better readability
-      try {
-        resultText = rational.toMixedString();
-      } catch {
-        resultText = this.formatFraction(fraction, "fraction", false);
+        // Display in mixed fraction format for better readability
+        try {
+          resultText = rational.toMixedString();
+        } catch {
+          resultText = this.formatFraction(fraction, "fraction", false);
+        }
       }
 
       this.elements.expressionResult.innerHTML = resultText;

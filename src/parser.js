@@ -10,7 +10,7 @@ import { Integer } from "./integer.js";
 import { Rational } from "./rational.js";
 import { RationalInterval } from "./rational-interval.js";
 import { BaseSystem } from "./base-system.js";
-import { PI, E, SIN, COS, ARCSIN, ARCCOS, EXP, LN, LOG, newtonRoot, rationalIntervalPower } from "./ratreal.js";
+import { PI, E, SIN, COS, TAN, ARCSIN, ARCCOS, ARCTAN, EXP, LN, LOG, newtonRoot, rationalIntervalPower } from "./ratreal.js";
 
 const DEFAULT_PRECISION = -6; // 10^-6
 
@@ -1192,7 +1192,7 @@ export class Parser {
             let result;
             if (isIntegerExponent) {
               // Use standard pow for integer exponents
-              result = factorialResult.value.pow(powerResult.value);
+            result = factorialResult.value.pow(powerResult.value);
             } else {
               // Use rationalIntervalPower for fractional exponents
               const precision = options.precision || DEFAULT_PRECISION;
@@ -1223,6 +1223,15 @@ export class Parser {
               // If not a simple integer, parse as expression
               powerResult = Parser.#parseExponentExpression(powerExpr, options);
               isIntegerExponent = false;
+            }
+
+            // Check for zero exponent in multiplicative exponentiation
+            const isZeroExponent = (isIntegerExponent && powerResult.value === 0n) ||
+              (!isIntegerExponent && powerResult.value instanceof Integer && powerResult.value.value === 0n) ||
+              (!isIntegerExponent && powerResult.value instanceof Rational && powerResult.value.numerator === 0n);
+            
+            if (isZeroExponent) {
+              throw new Error("Multiplicative exponentiation requires at least one factor");
             }
 
             let result;
@@ -1410,7 +1419,7 @@ export class Parser {
           let result;
           if (isIntegerExponent) {
             // Use standard pow for integer exponents
-            result = factorialResult.value.pow(powerResult.value);
+          result = factorialResult.value.pow(powerResult.value);
           } else {
             // Use rationalIntervalPower for fractional exponents
             const precision = options.precision || DEFAULT_PRECISION;
@@ -1441,6 +1450,15 @@ export class Parser {
             // If not a simple integer, parse as expression
             powerResult = Parser.#parseExponentExpression(powerExpr, options);
             isIntegerExponent = false;
+          }
+
+          // Check for zero exponent in multiplicative exponentiation
+          const isZeroExponent = (isIntegerExponent && powerResult.value === 0n) ||
+            (!isIntegerExponent && powerResult.value instanceof Integer && powerResult.value.value === 0n) ||
+            (!isIntegerExponent && powerResult.value instanceof Rational && powerResult.value.numerator === 0n);
+          
+          if (isZeroExponent) {
+            throw new Error("Multiplicative exponentiation requires at least one factor");
           }
 
           let result;
@@ -1514,8 +1532,10 @@ export class Parser {
           }
         }
         
+        const result = PI(precision);
+        result._explicitInterval = true;
         return {
-          value: PI(precision),
+          value: result,
           remainingExpr: remainingExpr
         };
       }
@@ -1542,14 +1562,18 @@ export class Parser {
             throw new Error("Missing closing parenthesis for EXP function");
           }
           
+          const result = EXP(argResult.value, precision);
+          result._explicitInterval = true;
           return {
-            value: EXP(argResult.value, precision),
+            value: result,
             remainingExpr: argResult.remainingExpr.substring(1)
           };
         } else {
           // Just the E constant
+          const result = E(precision);
+          result._explicitInterval = true;
           return {
-            value: E(precision),
+            value: result,
             remainingExpr: remainingExpr
           };
         }
@@ -1579,8 +1603,10 @@ export class Parser {
           throw new Error("Missing closing parenthesis for LN function");
         }
         
+        const result = LN(argResult.value, precision);
+        result._explicitInterval = true;
         return {
-          value: LN(argResult.value, precision),
+          value: result,
           remainingExpr: argResult.remainingExpr.substring(1)
         };
       }
@@ -1620,8 +1646,10 @@ export class Parser {
           throw new Error("Missing closing parenthesis for LOG function");
         }
         
+        const result = LOG(arg1Result.value, base, precision);
+        result._explicitInterval = true;
         return {
-          value: LOG(arg1Result.value, base, precision),
+          value: result,
           remainingExpr: finalRemainingExpr.substring(1)
         };
       }
@@ -1650,8 +1678,10 @@ export class Parser {
           throw new Error("Missing closing parenthesis for SIN function");
         }
         
+        const result = SIN(argResult.value, precision);
+        result._explicitInterval = true;
         return {
-          value: SIN(argResult.value, precision),
+          value: result,
           remainingExpr: argResult.remainingExpr.substring(1)
         };
       }
@@ -1680,8 +1710,10 @@ export class Parser {
           throw new Error("Missing closing parenthesis for COS function");
         }
         
+        const result = COS(argResult.value, precision);
+        result._explicitInterval = true;
         return {
-          value: COS(argResult.value, precision),
+          value: result,
           remainingExpr: argResult.remainingExpr.substring(1)
         };
       }
@@ -1710,8 +1742,10 @@ export class Parser {
           throw new Error("Missing closing parenthesis for ARCSIN function");
         }
         
+        const result = ARCSIN(argResult.value, precision);
+        result._explicitInterval = true;
         return {
-          value: ARCSIN(argResult.value, precision),
+          value: result,
           remainingExpr: argResult.remainingExpr.substring(1)
         };
       }
@@ -1740,8 +1774,74 @@ export class Parser {
           throw new Error("Missing closing parenthesis for ARCCOS function");
         }
         
+        const result = ARCCOS(argResult.value, precision);
+        result._explicitInterval = true;
         return {
-          value: ARCCOS(argResult.value, precision),
+          value: result,
+          remainingExpr: argResult.remainingExpr.substring(1)
+        };
+      }
+      
+      // Check for TAN function
+      if (expr.startsWith("TAN")) {
+        let remainingExpr = expr.substring(3);
+        let precision = undefined;
+        
+        // Check for precision specification
+        if (remainingExpr.startsWith("[")) {
+          const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
+          if (precisionMatch) {
+            precision = parseInt(precisionMatch[1], 10);
+            remainingExpr = remainingExpr.substring(precisionMatch[0].length);
+          }
+        }
+        
+        // Parse function argument
+        if (!remainingExpr.startsWith("(")) {
+          throw new Error("TAN requires parentheses");
+        }
+        
+        const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
+        if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
+          throw new Error("Missing closing parenthesis for TAN function");
+        }
+        
+        const result = TAN(argResult.value, precision);
+        result._explicitInterval = true;
+        return {
+          value: result,
+          remainingExpr: argResult.remainingExpr.substring(1)
+        };
+      }
+      
+      // Check for ARCTAN function
+      if (expr.startsWith("ARCTAN")) {
+        let remainingExpr = expr.substring(6);
+        let precision = undefined;
+        
+        // Check for precision specification
+        if (remainingExpr.startsWith("[")) {
+          const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
+          if (precisionMatch) {
+            precision = parseInt(precisionMatch[1], 10);
+            remainingExpr = remainingExpr.substring(precisionMatch[0].length);
+          }
+        }
+        
+        // Parse function argument
+        if (!remainingExpr.startsWith("(")) {
+          throw new Error("ARCTAN requires parentheses");
+        }
+        
+        const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
+        if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
+          throw new Error("Missing closing parenthesis for ARCTAN function");
+        }
+        
+        const result = ARCTAN(argResult.value, precision);
+        result._explicitInterval = true;
+        return {
+          value: result,
           remainingExpr: argResult.remainingExpr.substring(1)
         };
       }
@@ -1966,7 +2066,7 @@ export class Parser {
           let result;
           if (isIntegerExponent) {
             // Use standard pow for integer exponents
-            result = factorialResult.value.pow(powerResult.value);
+          result = factorialResult.value.pow(powerResult.value);
           } else {
             // Use rationalIntervalPower for fractional exponents
             const precision = options.precision || DEFAULT_PRECISION;
@@ -1985,6 +2085,13 @@ export class Parser {
           // Multiplicative exponentiation (mpow)
           const powerExpr = factorialResult.remainingExpr.substring(2);
           const powerResult = Parser.#parseExponent(powerExpr);
+
+          // Check for zero exponent in multiplicative exponentiation
+          const isZeroExponent = powerResult.value === 0n;
+          
+          if (isZeroExponent) {
+            throw new Error("Multiplicative exponentiation requires at least one factor");
+          }
 
           // For multiplicative exponentiation, always use mpow semantics
           let base = factorialResult.value;
@@ -2097,18 +2204,28 @@ export class Parser {
         // Standard exponentiation (pow)
         const powerExpr = factorialResult.remainingExpr.substring(1);
         
-        // First check if it's a simple integer exponent
+        // Handle both integer and fractional exponents
         let powerResult;
         let isIntegerExponent = false;
         
-        try {
-          // Try parsing as integer first
-          powerResult = Parser.#parseExponent(powerExpr);
-          isIntegerExponent = true;
-        } catch (e) {
-          // If not a simple integer, parse as expression
-          powerResult = Parser.#parseExponentExpression(powerExpr, options);
+        // Check if exponent starts with parentheses (fractional exponent)
+        if (powerExpr.startsWith('(')) {
+          powerResult = Parser.#parseExpression(powerExpr.substring(1), options);
+          if (powerResult.remainingExpr.length === 0 || powerResult.remainingExpr[0] !== ')') {
+            throw new Error('Missing closing parenthesis in exponent');
+          }
+          powerResult.remainingExpr = powerResult.remainingExpr.substring(1);
           isIntegerExponent = false;
+        } else {
+          try {
+            // Try parsing as integer first
+            powerResult = Parser.#parseExponent(powerExpr);
+            isIntegerExponent = true;
+          } catch (e) {
+            // If not a simple integer, parse as expression
+            powerResult = Parser.#parseExponentExpression(powerExpr, options);
+            isIntegerExponent = false;
+          }
         }
 
         // Check for 0^0
@@ -2136,6 +2253,7 @@ export class Parser {
           // Use rationalIntervalPower for fractional exponents
           const precision = options.precision || DEFAULT_PRECISION;
           result = rationalIntervalPower(factorialResult.value, powerResult.value, precision);
+          result._skipPromotion = true;
         }
         return {
           value: result,
@@ -2148,17 +2266,56 @@ export class Parser {
       ) {
         // Multiplicative exponentiation (mpow)
         const powerExpr = factorialResult.remainingExpr.substring(2);
-        const powerResult = Parser.#parseExponent(powerExpr);
-
-        // For multiplicative exponentiation, always use mpow semantics
-        let base = factorialResult.value;
-        if (!(base instanceof RationalInterval)) {
-          // Convert scalar to point interval for mpow
-          base = RationalInterval.point(
-            base instanceof Integer ? base.toRational() : base,
-          );
+        let powerResult;
+        
+        // Check if exponent starts with parentheses (fractional exponent)
+        if (powerExpr.startsWith('(')) {
+          powerResult = Parser.#parseExpression(powerExpr.substring(1), options);
+          if (powerResult.remainingExpr.length === 0 || powerResult.remainingExpr[0] !== ')') {
+            throw new Error('Missing closing parenthesis in exponent');
+          }
+          powerResult.remainingExpr = powerResult.remainingExpr.substring(1);
+        } else {
+          // Try parsing as integer first
+          try {
+            powerResult = Parser.#parseExponent(powerExpr);
+          } catch (e) {
+            // If integer parsing fails, try parsing as general expression
+            powerResult = Parser.#parseExpression(powerExpr, options);
+          }
         }
-        const result = base.mpow(powerResult.value);
+
+        // For multiplicative exponentiation, use rationalIntervalPower for fractional exponents
+        let base = factorialResult.value;
+        
+        // Check if exponent is an integer
+        const isIntegerExponent = (powerResult.value instanceof Integer) || 
+          (powerResult.value instanceof Rational && powerResult.value.denominator === 1n);
+        
+        // Check for zero exponent in multiplicative exponentiation
+        const isZeroExponent = (powerResult.value instanceof Integer && powerResult.value.value === 0n) ||
+          (powerResult.value instanceof Rational && powerResult.value.numerator === 0n);
+        
+        if (isZeroExponent) {
+          throw new Error("Multiplicative exponentiation requires at least one factor");
+        }
+        
+        let result;
+        if (isIntegerExponent) {
+          // Use mpow for integer exponents
+          if (!(base instanceof RationalInterval)) {
+            base = RationalInterval.point(
+              base instanceof Integer ? base.toRational() : base,
+            );
+          }
+          const exponentBigInt = powerResult.value instanceof Integer ? 
+            powerResult.value.value : powerResult.value.numerator;
+          result = base.mpow(exponentBigInt);
+        } else {
+          // Use rationalIntervalPower for fractional exponents
+          const precision = options.precision || DEFAULT_PRECISION;
+          result = rationalIntervalPower(base, powerResult.value, precision);
+        }
         result._skipPromotion = true;
         return {
           value: result,
@@ -2197,6 +2354,12 @@ export class Parser {
 
     // Convert to BigInt with proper sign
     const exponent = isNegative ? -BigInt(exponentStr) : BigInt(exponentStr);
+
+    // Special handling for zero exponents in multiplicative exponentiation context
+    // This method is called specifically for ** operators, so zero should throw an error
+    if (exponent === 0n) {
+      throw new Error("Multiplicative exponentiation requires at least one factor");
+    }
 
     return {
       value: exponent,
