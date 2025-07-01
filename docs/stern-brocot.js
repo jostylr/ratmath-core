@@ -5067,6 +5067,7 @@ class SternBrocotTreeVisualizer {
     this.currentFraction = new Fraction(0, 1);
     this.displayMode = "fraction";
     this.cfNotationMode = "ratmath";
+    this.expressionDisplayMode = "mixed";
     this.svg = document.getElementById("treeSvg");
     this.svgWidth = 800;
     this.svgHeight = 600;
@@ -5081,6 +5082,8 @@ class SternBrocotTreeVisualizer {
   }
   initializeElements() {
     this.elements = {
+      displayModeBtns: document.querySelectorAll(".display-mode-btn"),
+      precisionInput: document.getElementById("precisionInput"),
       currentFraction: document.getElementById("currentFraction"),
       currentDepth: document.getElementById("currentDepth"),
       currentPath: document.getElementById("currentPath"),
@@ -5144,6 +5147,17 @@ class SternBrocotTreeVisualizer {
     this.elements.expressionInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter")
         this.updateExpressionResult();
+    });
+    this.elements.displayModeBtns.forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        this.setExpressionDisplayMode(e.target.dataset.mode);
+      });
+    });
+    this.elements.precisionInput.addEventListener("change", () => {
+      this.updateExpressionResult();
+    });
+    this.elements.precisionInput.addEventListener("input", () => {
+      this.updateExpressionResult();
     });
     document.addEventListener("keydown", (e) => this.handleKeyPress(e));
     this.svg.addEventListener("click", (e) => this.handleSvgClick(e));
@@ -6304,6 +6318,37 @@ class SternBrocotTreeVisualizer {
       console.error("Error navigating to fraction:", error);
     }
   }
+  setExpressionDisplayMode(mode) {
+    this.expressionDisplayMode = mode;
+    this.elements.displayModeBtns.forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.mode === mode);
+    });
+    this.updateExpressionResult();
+  }
+  formatRationalByMode(rational, mode) {
+    try {
+      switch (mode) {
+        case "mixed":
+          return rational.toMixedString();
+        case "fraction":
+          return rational.toString();
+        case "decimal":
+          const decimalInfo = rational.toRepeatingDecimalWithPeriod(true);
+          return decimalInfo.decimal;
+        case "scientific":
+          return rational.toScientificNotation(6);
+        case "cf":
+          const cf = rational.toContinuedFraction();
+          if (cf.length === 1)
+            return cf[0].toString();
+          return cf[0] + ".~" + cf.slice(1).join("~");
+        default:
+          return rational.toString();
+      }
+    } catch (error) {
+      return rational.toString();
+    }
+  }
   updateExpressionResult() {
     const expression = this.elements.expressionInput.value.trim();
     if (!expression) {
@@ -6313,12 +6358,14 @@ class SternBrocotTreeVisualizer {
     try {
       const currentValueStr = this.currentFraction.toString();
       const substitutedExpression = expression.replace(/\bx\b/g, `(${currentValueStr})`);
-      const result = Parser.parse(substitutedExpression);
+      const precisionValue = parseInt(this.elements.precisionInput.value) || 6;
+      const precision = -precisionValue;
+      const result = Parser.parse(substitutedExpression, { precision });
       let resultText;
       if (result.low && result.high) {
-        const lowerFraction = Fraction.fromRational(result.low);
-        const upperFraction = Fraction.fromRational(result.high);
-        resultText = `[${this.formatFraction(lowerFraction, "fraction", false)}, ${this.formatFraction(upperFraction, "fraction", false)}]`;
+        const lowerText = this.formatRationalByMode(result.low, this.expressionDisplayMode);
+        const upperText = this.formatRationalByMode(result.high, this.expressionDisplayMode);
+        resultText = `[${lowerText}, ${upperText}]`;
       } else {
         let rational;
         if (result.toRational) {
@@ -6326,12 +6373,7 @@ class SternBrocotTreeVisualizer {
         } else {
           rational = result;
         }
-        const fraction = Fraction.fromRational(rational);
-        try {
-          resultText = rational.toMixedString();
-        } catch {
-          resultText = this.formatFraction(fraction, "fraction", false);
-        }
+        resultText = this.formatRationalByMode(rational, this.expressionDisplayMode);
       }
       this.elements.expressionResult.innerHTML = resultText;
     } catch (error) {

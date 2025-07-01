@@ -307,6 +307,49 @@ header p {
     border-left: 3px solid #3498db;
 }
 
+.display-mode-buttons {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.display-mode-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+    background: #E9ECEF;
+    border: 1px solid #CED4DA;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.display-mode-btn:hover {
+    background: #DEE2E6;
+}
+
+.display-mode-btn.active {
+    background: #007BFF;
+    color: white;
+    border-color: #0056B3;
+}
+
+.display-mode-btn.active:hover {
+    background: #0056B3;
+}
+
+.precision-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.precision-control input {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #CED4DA;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
 .jump-controls {
     background: #f8f9fa;
     border-radius: 8px;

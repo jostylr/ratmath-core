@@ -2,6 +2,24 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## Improved Precision Control UI and Extended Range
+**Model:** claude-opus-4-20250514  
+**Date:** 2025-06-30
+
+Enhanced the precision control feature with better UI and extended range. Moved the minus sign outside the input box for clearer UX - the label now shows "Precision: 10^-" and users enter positive integers (e.g., 6 for 10^-6). Extended the precision range from -15 to -100, allowing much higher precision calculations. Investigation revealed that while the square root function (using Newton's method) responds well to precision changes, some transcendental functions like SIN, EXP, and LN have hardcoded iteration limits (50-100 iterations) in their Taylor series implementations that prevent them from achieving arbitrarily high precision. This is likely to prevent rational number denominators from exploding. The constants PI and E do respond to precision changes up to about 10^-30 based on their continued fraction representations.
+
+## Added Precision Control for Transcendental Functions in Stern-Brocot
+**Model:** claude-opus-4-20250514  
+**Date:** 2025-06-30
+
+Added precision level control to the Stern-Brocot tree expression evaluator for transcendental function approximations. Implemented a precision input field that accepts negative exponents (e.g., -6 for 10^-6 precision) and passes this value to all transcendental function calls (SIN, COS, TAN, EXP, LN, LOG, etc.) through the parser's options parameter. The precision determines how narrow the resulting rational intervals will be when transcendental functions are applied to single rational numbers. For example, with precision 10^-2, sqrt(2) returns an interval with width approximately 4.3e-4. The precision input ranges from -1 to -15, defaulting to -6, and automatically re-evaluates expressions when changed. This gives users fine-grained control over the accuracy vs. complexity trade-off in transcendental function approximations.
+
+## Added Display Mode Toggle for Stern-Brocot Expression Results
+**Model:** claude-opus-4-20250514  
+**Date:** 2025-06-30
+
+Enhanced the Stern-Brocot tree expression evaluator with display mode toggle buttons that allow switching between different number representations. Added five display modes: Mixed fractions (e.g., 2..1/3), Standard fractions (e.g., 7/3), Repeating decimals (e.g., 2.#3), Scientific notation (e.g., 2.#3E0), and Continued fractions (e.g., 2.~3). The display mode applies consistently to both single rational results and rational intervals. Implemented the `formatRationalByMode` method that handles all formatting modes with proper error fallback. Added styled toggle buttons below the expression result with visual feedback for the active mode. This provides users with flexibility to view results in their preferred mathematical notation.
+
 ## Fixed Stern-Brocot Expression Evaluator for Intervals and Transcendental Functions
 **Model:** claude-opus-4-20250514  
 **Date:** 2025-06-30
