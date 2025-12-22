@@ -808,6 +808,7 @@ NUMBERS:
   12[34,42]         Integer concatenation (1234:1242)
   2:5               Intervals (from 2 to 5)
   1E3, 2.5E-2       Scientific notation
+  3.~7~15~1         Continued fraction (355/113)
 
 EXAMPLES:
   1/2 + 3/4         → 5/4 (1.25)
@@ -819,6 +820,7 @@ EXAMPLES:
   1.5[+10,-0.1]        → 1.499:1.6
   1.2[3,6]          → 1.23:1.26 (decimal concatenation)
   12[15,18]         → 1215:1218 (integer concatenation)
+  3.~7~15~1         → 355/113 (continued fraction)
 
 CONCATENATION RULES:
   Valid:   12[34,42] → 1234:1242 (integer parts: 34,42 both 2 digits)

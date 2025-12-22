@@ -132,7 +132,7 @@ Add continued fraction support to RatMath library using the syntax `3.~7~15~1~29
 - [x] Update terminal calculator to display continued fraction option
 - [x] Add CF command to show continued fraction representation
 - [x] Update web calculator to support continued fraction input/output
-- [ ] Add continued fraction examples to help documentation
+- [x] Add continued fraction examples to help documentation
 
 ### 13. Stern-Brocot Tree Interactive Demonstration
 - [x] Create separate web page for Stern-Brocot tree navigation

@@ -377,7 +377,7 @@ export class RationalInterval {
       // Handle other types by converting to BigInt
       n = BigInt(exponent);
     }
-    
+
     const zero = Rational.zero;
 
     // Special case for exponent 0
@@ -795,6 +795,15 @@ export class RationalInterval {
   }
 
   /**
+   * Computes the bit length of the rational interval.
+   * Defined as the maximum bit length of the low and high endpoints.
+   * @returns {number} The bit length
+   */
+  bitLength() {
+    return Math.max(this.#low.bitLength(), this.#high.bitLength());
+  }
+
+  /**
    * Calculates the mediant of the interval endpoints.
    * The mediant of fractions a/b and c/d is (a+c)/(b+d).
    * This is useful in continued fraction approximations and the Stern-Brocot tree.
@@ -1008,5 +1017,16 @@ export class RationalInterval {
     const newHigh = this.#high.multiply(powerOf10);
 
     return new RationalInterval(newLow, newHigh);
+  }
+
+  /**
+   * Calculates the bit length required to represent the largest endpoint in the interval.
+   *
+   * @returns {number} The bit length of the largest endpoint
+   */
+  bitLength() {
+    const lowBits = this.#low.bitLength();
+    const highBits = this.#high.bitLength();
+    return Math.max(lowBits, highBits);
   }
 }

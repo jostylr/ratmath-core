@@ -498,4 +498,15 @@ export class Integer {
 
     return new Integer(result);
   }
+
+  /**
+   * Computes the bit length of this integer
+   * The bit length is the number of bits required to represent the integer in binary.
+   * For example, the bit length of 5 (binary 101) is 3.
+   * @returns {number} The bit length of the integer
+   */
+  bitLength() {
+    if (this.#value === 0n) return 0;
+    return this.#value < 0n ? (-this.#value).toString(2).length : this.#value.toString(2).length;
+  }
 }

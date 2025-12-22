@@ -5,6 +5,14 @@
  * Represents a rational number as a fraction with numerator and denominator in lowest terms.
  */
 
+
+/** Helper function to compute bit length of a BigInt */
+const bitLength = function (int) {
+  if (int === 0n) return 0;
+  return int < 0n ? (-int).toString(2).length : int.toString(2).length;
+}
+
+
 export class Rational {
   #numerator;
   #denominator;
@@ -57,7 +65,23 @@ export class Rational {
       numerator.constructor.name === "Integer"
     ) {
       this.#numerator = numerator.value;
-      this.#denominator = 1n;
+
+      // Check if denominator is also provided and is an Integer or other types
+      if (denominator && typeof denominator === "object" && denominator.constructor.name === "Integer") {
+        this.#denominator = denominator.value;
+      } else if (denominator !== undefined) {
+        this.#denominator = BigInt(denominator);
+      } else {
+        this.#denominator = 1n;
+      }
+
+      // Check for zero denominator immediately
+      if (this.#denominator === 0n) {
+        throw new Error("Denominator cannot be zero");
+      }
+
+      this.#normalize();
+      this.#isNegative = this.#numerator < 0n;
       return;
     }
 
@@ -714,6 +738,17 @@ export class Rational {
   }
 
   /**
+   * Computes the bit length of the rational number.
+   * Defined as the maximum bit length of the numerator and denominator.
+   * @returns {number} The bit length
+   */
+  bitLength() {
+    const numLen = bitLength(this.#numerator);
+    const denLen = bitLength(this.#denominator);
+    return Math.max(numLen, denLen);
+  }
+
+  /**
    * Computes whole part and remainder (lazy computation)
    * @private
    */
@@ -1183,11 +1218,11 @@ export class Rational {
       const exponent = wholeStr.length - 1;
 
       let mantissa = firstDigit;
-      
+
       // Check if we have additional content to add after the first digit
       const hasMoreWholeDigits = wholeStr.length > 1;
       const hasFractionalPart = this.#remainder > 0n;
-      
+
       if (hasFractionalPart || hasMoreWholeDigits) {
         // For repeating decimals, check if we can consolidate whole part digits with repeating part
         if (hasFractionalPart && !this.#isTerminating) {
@@ -1196,7 +1231,7 @@ export class Rational {
           const formattedInitial = useRepeatNotation
             ? Rational.#formatRepeatedDigits(this.#initialSegment, 7)
             : this.#initialSegment;
-          
+
           // Get period digits
           let periodDigits = this.#periodDigits;
           if (
@@ -1210,7 +1245,7 @@ export class Rational {
               Math.min(10, this.#periodLength),
             );
           }
-          
+
           // Check if the remaining whole digits match the repeating pattern
           if (remainingWholeDigits && periodDigits && remainingWholeDigits === periodDigits.substring(0, remainingWholeDigits.length)) {
             // The whole part continuation matches the repeating pattern - use # notation immediately
@@ -1224,18 +1259,18 @@ export class Rational {
             const formattedPeriod = useRepeatNotation
               ? Rational.#formatRepeatedDigits(periodDigits, 7)
               : periodDigits.substring(
-                  0,
-                  Math.max(1, precision - mantissa.length + 1),
-                );
+                0,
+                Math.max(1, precision - mantissa.length + 1),
+              );
             mantissa += formattedPeriod;
           }
         } else {
           // Terminating decimal or no fractional part
-          
+
           if (hasMoreWholeDigits || hasFractionalPart) {
             // Add decimal point and remaining content
             mantissa += ".";
-            
+
             // Add remaining whole digits
             if (hasMoreWholeDigits) {
               const remainingDigits = wholeStr.substring(1);
@@ -1346,7 +1381,7 @@ export class Rational {
         const exponent = -(totalLeadingZeros + 1);
 
         let mantissa = firstDigit;
-        
+
         // Add remaining period digits with # notation
         if (firstNonZeroInPeriod.length > 1) {
           mantissa += ".#";
@@ -1427,7 +1462,7 @@ export class Rational {
 
     for (let i = 1; i < cf.length; i++) {
       const a = cf[i];
-      
+
       // Compute next convergent
       const p_next = a * p_curr + p_prev;
       const q_next = a * q_curr + q_prev;
@@ -1501,11 +1536,11 @@ export class Rational {
       // Swap and divide: den/num = quotient + remainder/num
       const quotient = den / num;
       cf.push(quotient);
-      
+
       const remainder = den % num;
       den = num;
       num = remainder;
-      
+
       termCount++;
     }
 
@@ -1522,7 +1557,7 @@ export class Rational {
     if (!this.wholePart) {
       this.wholePart = cf[0];
     }
-    
+
     // We don't store convergents here since they're computed lazily
 
     return cf;
@@ -1534,7 +1569,7 @@ export class Rational {
    */
   toContinuedFractionString() {
     const cf = this.toContinuedFraction();
-    
+
     if (cf.length === 1) {
       // Integer case
       return `${cf[0]}.~0`;
@@ -1542,7 +1577,7 @@ export class Rational {
 
     const intPart = cf[0];
     const cfTerms = cf.slice(1);
-    
+
     return `${intPart}.~${cfTerms.join('~')}`;
   }
 
@@ -1559,10 +1594,10 @@ export class Rational {
     }
 
     const [, integerPart, cfTermsStr] = cfMatch;
-    
+
     // Parse integer part
     const intPart = BigInt(integerPart);
-    
+
     // Handle special case of integer representation like "5.~0"
     if (cfTermsStr === '0') {
       return new Rational(intPart, 1n);
@@ -1584,7 +1619,7 @@ export class Rational {
     // Split terms and validate they are all positive integers
     const terms = cfTermsStr.split('~');
     const cfTerms = [];
-    
+
     for (const term of terms) {
       if (!/^\d+$/.test(term)) {
         throw new Error(`Invalid continued fraction term: ${term}`);
@@ -1609,7 +1644,7 @@ export class Rational {
     if (!this._convergents) {
       // Compute continued fraction and convergents
       const cf = this.toContinuedFraction(maxCount);
-      
+
       // Compute convergents using same algorithm as fromContinuedFraction
       if (cf.length === 1) {
         this._convergents = [new Rational(cf[0], 1n)];
@@ -1623,7 +1658,7 @@ export class Rational {
 
         for (let i = 1; i < cf.length; i++) {
           const a = cf[i];
-          
+
           // Compute next convergent
           const p_next = a * p_curr + p_prev;
           const q_next = a * q_curr + q_prev;
@@ -1636,15 +1671,15 @@ export class Rational {
           q_prev = q_curr;
           q_curr = q_next;
         }
-        
+
         this._convergents = convergents;
       }
     }
-    
+
     if (maxCount && this._convergents && this._convergents.length > maxCount) {
       return this._convergents.slice(0, maxCount);
     }
-    
+
     return this._convergents || [];
   }
 
@@ -1691,7 +1726,7 @@ export class Rational {
     if (!(target instanceof Rational)) {
       throw new Error("Target must be a Rational");
     }
-    
+
     const diff = this.subtract(target);
     return diff.isNegative ? diff.negate() : diff;
   }
@@ -1703,10 +1738,10 @@ export class Rational {
    */
   bestApproximation(maxDenominator) {
     const cf = this.toContinuedFraction();
-    
+
     // Try each convergent until we exceed the denominator limit
     let bestApprox = new Rational(cf[0], 1n);
-    
+
     const convergents = this.convergents();
     for (const convergent of convergents) {
       if (convergent.denominator <= maxDenominator) {
@@ -1715,7 +1750,16 @@ export class Rational {
         break;
       }
     }
-    
+
     return bestApprox;
   }
+
+  /**
+   * Computes the bit length of the rational number
+   * @returns {number} Bit length of the rational
+   */
+  bitLength() {
+    return Math.max(bitLength(this.numerator), bitLength(this.denominator));
+  }
+
 }
