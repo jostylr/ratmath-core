@@ -1,4 +1,10 @@
 // src/rational.js
+var bitLength = function(int) {
+  if (int === 0n)
+    return 0;
+  return int < 0n ? (-int).toString(2).length : int.toString(2).length;
+};
+
 class Rational {
   #numerator;
   #denominator;
@@ -31,7 +37,18 @@ class Rational {
   constructor(numerator, denominator = 1n) {
     if (numerator && typeof numerator === "object" && numerator.constructor.name === "Integer") {
       this.#numerator = numerator.value;
-      this.#denominator = 1n;
+      if (denominator && typeof denominator === "object" && denominator.constructor.name === "Integer") {
+        this.#denominator = denominator.value;
+      } else if (denominator !== undefined) {
+        this.#denominator = BigInt(denominator);
+      } else {
+        this.#denominator = 1n;
+      }
+      if (this.#denominator === 0n) {
+        throw new Error("Denominator cannot be zero");
+      }
+      this.#normalize();
+      this.#isNegative = this.#numerator < 0n;
       return;
     }
     if (typeof numerator === "string") {
@@ -370,6 +387,11 @@ class Rational {
       }
     }
     return count;
+  }
+  bitLength() {
+    const numLen = bitLength(this.#numerator);
+    const denLen = bitLength(this.#denominator);
+    return Math.max(numLen, denLen);
   }
   #computeWholePart() {
     if (this.#wholePart !== undefined)
@@ -944,6 +966,9 @@ class Rational {
     }
     return bestApprox;
   }
+  bitLength() {
+    return Math.max(bitLength(this.numerator), bitLength(this.denominator));
+  }
 }
 
 // src/rational-interval.js
@@ -1330,6 +1355,9 @@ class RationalInterval {
       return new Rational(quotient - 1n, 1n);
     }
   }
+  bitLength() {
+    return Math.max(this.#low.bitLength(), this.#high.bitLength());
+  }
   mediant() {
     return new Rational(this.#low.numerator + this.#high.numerator, this.#low.denominator + this.#high.denominator);
   }
@@ -1416,6 +1444,11 @@ class RationalInterval {
     const newLow = this.#low.multiply(powerOf10);
     const newHigh = this.#high.multiply(powerOf10);
     return new RationalInterval(newLow, newHigh);
+  }
+  bitLength() {
+    const lowBits = this.#low.bitLength();
+    const highBits = this.#high.bitLength();
+    return Math.max(lowBits, highBits);
   }
 }
 
@@ -1664,6 +1697,11 @@ class Integer {
       result *= i;
     }
     return new Integer(result);
+  }
+  bitLength() {
+    if (this.#value === 0n)
+      return 0;
+    return this.#value < 0n ? (-this.#value).toString(2).length : this.#value.toString(2).length;
   }
 }
 
