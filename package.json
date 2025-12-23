@@ -21,7 +21,12 @@
     "mathematics",
     "bigint"
   ],
-  "author": "",
+  "author": "James Taylor",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jostylr/ratmath.git"
+  },
+  "homepage": "https://calc.ratmath.com",
   "license": "MIT",
   "devDependencies": {
     "bun-types": "latest"

@@ -933,7 +933,7 @@ class WebCalculator {
     if (this.isMobile()) {
       // Show current input in a temporary div at bottom of calculator
       let tempDiv = document.getElementById("mobileInputDisplay");
-      console.log("seen");
+      //console.log("seen");
       /*
       // Always show the prompt when on mobile
       if (!tempDiv) {
@@ -961,19 +961,19 @@ class WebCalculator {
   }
 
   scrollToKeepAboveInput() {
-    console.log(
+    /*console.log(
       "scroll above",
       this.outputHistoryElement.scrollTop,
       this.outputHistoryElement.scrollHeight,
-    );
+    );*/
     // Simple scroll to bottom - flexbox layout handles the rest
     this.outputHistoryElement.scrollTop =
       this.outputHistoryElement.scrollHeight;
-    console.log(
+    /*console.log(
       "scroll below",
       this.outputHistoryElement.scrollTop,
       this.outputHistoryElement.scrollHeight,
-    );
+    );*/
   }
 
   enforceScrollBoundary() {
