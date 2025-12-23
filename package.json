@@ -1,6 +1,6 @@
 {
   "name": "ratmath",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Exact rational arithmetic and interval arithmetic library",
   "main": "index.js",
   "type": "module",
