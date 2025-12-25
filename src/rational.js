@@ -569,7 +569,73 @@ export class Rational {
       return this.toString();
     }
 
-    return this.toBase(baseSystem);
+    return this.toRepeatingBase(baseSystem);
+  }
+
+  /**
+   * Converts this rational to a repeating base representation.
+   * e.g., 1/3 in base 10 -> "0.#3"
+   * e.g., 1/3 in base 2 -> "0.#01"
+   * @param {BaseSystem} baseSystem - The base system to use
+   * @returns {string} String representation with specialized repeating notation
+   */
+  toRepeatingBase(baseSystem) {
+    if (!(baseSystem instanceof BaseSystem)) {
+      throw new Error("Argument must be a BaseSystem");
+    }
+
+    // Handle negative numbers
+    if (this.#numerator < 0n) {
+      return "-" + this.negate().toRepeatingBase(baseSystem);
+    }
+
+    const base = BigInt(baseSystem.base);
+    let num = this.#numerator;
+    let den = this.#denominator;
+
+    // Integer part
+    const integerPart = num / den;
+    let remainder = num % den;
+
+    let result = baseSystem.fromDecimal(integerPart);
+
+    if (remainder === 0n) {
+      return result;
+    }
+
+    result += ".";
+
+    // Fractional part with cycle detection
+    const remainders = new Map();
+    let fractionParts = [];
+    let cycleStartIndex = -1;
+
+    while (remainder !== 0n) {
+      if (remainders.has(remainder)) {
+        cycleStartIndex = remainders.get(remainder);
+        break;
+      }
+
+      remainders.set(remainder, fractionParts.length);
+
+      remainder *= base;
+      const digit = remainder / den;
+      remainder = remainder % den;
+
+      fractionParts.push(baseSystem.getChar(digit));
+    }
+
+    if (cycleStartIndex !== -1) {
+      // Repeating part found
+      const nonRepeating = fractionParts.slice(0, cycleStartIndex).join("");
+      const repeating = fractionParts.slice(cycleStartIndex).join("");
+      result += nonRepeating + "#" + repeating;
+    } else {
+      // Terminating
+      result += fractionParts.join("");
+    }
+
+    return result;
   }
 
   /**

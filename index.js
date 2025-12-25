@@ -12,6 +12,7 @@ import { Fraction } from "./src/fraction.js";
 import { FractionInterval } from "./src/fraction-interval.js";
 import { Integer } from "./src/integer.js";
 import { TypePromotion } from "./src/type-promotion.js";
+import { BaseSystem } from "./src/base-system.js";
 
 /**
  * Template string function for parsing rational arithmetic expressions
@@ -68,10 +69,10 @@ function F(strings, ...values) {
     input += strings[i] + values[i];
   }
   input += strings[strings.length - 1];
-  
+
   // Parse with type-aware disabled to get intervals when appropriate
   const result = Parser.parse(input, { typeAware: false });
-  
+
   // Convert result to Fraction types
   if (result instanceof RationalInterval) {
     // Check if this is a point interval (low equals high)
@@ -107,6 +108,7 @@ export {
   FractionInterval,
   Integer,
   TypePromotion,
+  BaseSystem,
   R,
   F,
 };
@@ -121,6 +123,7 @@ export default {
   FractionInterval,
   Integer,
   TypePromotion,
+  BaseSystem,
   R,
   F,
 };

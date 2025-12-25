@@ -72,6 +72,20 @@ export class BaseSystem {
   }
 
   /**
+   * Gets the character for a specific value
+   * @param {number|bigint} value - The numeric value
+   * @returns {string} The character representing the value
+   * @throws {Error} If the value is out of range
+   */
+  getChar(value) {
+    const i = Number(value);
+    if (i < 0 || i >= this.#characters.length) {
+      throw new Error(`Value ${value} is out of range for base ${this.#base}`);
+    }
+    return this.#characters[i];
+  }
+
+  /**
    * Gets the human-readable name of the base system
    * @returns {string} The name
    */
@@ -193,7 +207,7 @@ export class BaseSystem {
     if (this.#name === "Roman Numerals" || this.#characters.length < 10) {
       return;
     }
-    
+
     // Check for consistent ordering in common ranges
     const ranges = [
       { start: "0", end: "9", name: "digits" },
@@ -224,7 +238,7 @@ export class BaseSystem {
         for (let i = 1; i < rangeChars.length; i++) {
           const prevCode = rangeChars[i - 1].charCodeAt(0);
           const currCode = rangeChars[i].charCodeAt(0);
-          
+
           if (currCode !== prevCode + 1) {
             console.warn(
               `Non-contiguous ${range.name} range detected in base system`
@@ -252,7 +266,7 @@ export class BaseSystem {
     if (conflicts.length > 0) {
       throw new Error(
         `Base system characters conflict with parser symbols: ${conflicts.join(", ")}. ` +
-          `Reserved symbols are: ${Array.from(BaseSystem.RESERVED_SYMBOLS).join(", ")}`,
+        `Reserved symbols are: ${Array.from(BaseSystem.RESERVED_SYMBOLS).join(", ")}`,
       );
     }
   }
@@ -380,8 +394,8 @@ export class BaseSystem {
       this.#characters.length <= 20
         ? this.#characters.join("")
         : this.#characters.slice(0, 10).join("") +
-          "..." +
-          this.#characters.slice(-10).join("");
+        "..." +
+        this.#characters.slice(-10).join("");
 
     return `${this.#name} (${charPreview})`;
   }
