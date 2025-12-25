@@ -70,8 +70,8 @@ Add support for arbitrary number bases in RatMath using character sequence notat
 - [x] Handle base-specific decimal points and separators
 - [x] Validate digits against specified base character set
 - [x] Error handling for invalid digits in base context
-- [ ] In calc.js, [n] = range defines a base to be used. So [3] = 012 would be the standard trinary. But it could overwrite the default and do [3] = d-f to mean d e and f.  The number of characters should equal n.
-- [ ] For [n] where n is between 2 and 62, unless defined elsewhere, it would take the first n characters of 0-9a-zA-Z
+- [x] In calc.js, [n] = range defines a base to be used.
+- [x] For [n] where n is between 2 and 62, unless defined elsewhere, it takes default characters
 
 #### Base Conversion in Expressions
 - [x] Allow mixed bases in single expressions: `FF[16] + 101[2]`
@@ -82,14 +82,14 @@ Add support for arbitrary number bases in RatMath using character sequence notat
 ### 4. Number Class Extensions
 
 #### Integer Class Extensions
-- [ ] `toString(base)` method accepting BaseSystem or base number
-- [ ] `toBase(baseSystem)` method returning string representation
+- [x] `toString(base)` method accepting BaseSystem or base number
+- [x] `toBase(baseSystem)` method returning string representation
 - [ ] Static `fromBase(string, baseSystem)` constructor
-- [ ] Support for parsing large integers in different bases
-- [ ] Efficient base conversion algorithms using BigInt
+- [x] Support for parsing large integers in different bases
+- [x] Efficient base conversion algorithms using BigInt
 
 #### Rational Class Extensions
-- [ ] `toString(base)` method for rational representation in different bases
+- [x] `toString(base)` method for rational representation in different bases
 - [ ] Handle decimal expansion in different bases
 - [ ] Repeating decimal detection in arbitrary bases (e.g., 1/3 in base 3 = 0.1)
 - [ ] `toRepeatingBase(base)` method for exact fractional representation

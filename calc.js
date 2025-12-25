@@ -24,6 +24,7 @@ class Calculator {
     this.inputBase = BaseSystem.DECIMAL; // Base system for parsing input
     this.outputBases = [BaseSystem.DECIMAL]; // Array of base systems for displaying output
     this.customBases = new Map(); // Custom base definitions [n] = character_sequence
+    this.variableManager.setCustomBases(this.customBases);
     this.rl = createInterface({
       input: process.stdin,
       output: process.stdout,
@@ -90,6 +91,32 @@ class Calculator {
     // Reset interrupt flag for new computation
     this.shouldInterrupt = false;
 
+    // Check for base definition syntax: [n] = range
+    const baseDefMatch = input.match(/^\[(\d+)\]\s*=\s*(.+)$/);
+    if (baseDefMatch) {
+      const baseNum = parseInt(baseDefMatch[1]);
+      const range = baseDefMatch[2].trim();
+
+      try {
+        if (isNaN(baseNum) || baseNum < 2) {
+          throw new Error("Base number must be an integer >= 2");
+        }
+
+        // Create validation BaseSystem to check the range
+        const newBase = new BaseSystem(range, `Custom Base ${baseNum}`);
+
+        if (newBase.base !== baseNum) {
+          throw new Error(`Character sequence length (${newBase.base}) does not match declared base [${baseNum}]`);
+        }
+
+        this.customBases.set(baseNum, newBase);
+        console.log(`Defined custom base [${baseNum}] with characters "${range}"`);
+      } catch (error) {
+        console.error(`Error defining base: ${error.message}`);
+      }
+      return;
+    }
+
     // Handle special commands
     const upperInput = input.toUpperCase();
 
@@ -97,6 +124,7 @@ class Calculator {
       this.showHelp();
       return;
     }
+
 
     if (upperInput === "DECI") {
       this.outputMode = "DECI";
@@ -430,6 +458,10 @@ class Calculator {
     // Check if it's a pure numeric base (no letters or dashes)
     const numericBase = parseInt(baseSpec);
     if (!isNaN(numericBase) && /^\d+$/.test(baseSpec.trim())) {
+      if (this.customBases.has(numericBase)) {
+        return this.customBases.get(numericBase);
+      }
+
       if (numericBase < 2) {
         throw new Error("Base must be at least 2");
       }

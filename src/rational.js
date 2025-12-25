@@ -6,6 +6,8 @@
  */
 
 
+import { BaseSystem } from "./base-system.js";
+
 /** Helper function to compute bit length of a BigInt */
 const bitLength = function (int) {
   if (int === 0n) return 0;
@@ -540,11 +542,54 @@ export class Rational {
    * or just "numerator" if denominator is 1
    * @returns {string} String representation of this rational
    */
-  toString() {
-    if (this.#denominator === 1n) {
-      return this.#numerator.toString();
+  /**
+   * Converts this rational to a string in the format "numerator/denominator"
+   * or just "numerator" if denominator is 1. Optionally converts to a specific base.
+   * @param {number|BaseSystem} [base] - The base to convert to (default: 10)
+   * @returns {string} String representation of this rational
+   */
+  toString(base) {
+    if (base === undefined) {
+      if (this.#denominator === 1n) {
+        return this.#numerator.toString();
+      }
+      return `${this.#numerator}/${this.#denominator}`;
     }
-    return `${this.#numerator}/${this.#denominator}`;
+
+    // Handle base conversion
+    let baseSystem;
+    if (base instanceof BaseSystem) {
+      baseSystem = base;
+    } else if (typeof base === 'number') {
+      if (base === 10) {
+        return this.toString();
+      }
+      baseSystem = BaseSystem.fromBase(base);
+    } else {
+      return this.toString();
+    }
+
+    return this.toBase(baseSystem);
+  }
+
+  /**
+   * Converts this rational to a string in the specified base system.
+   * @param {BaseSystem} baseSystem - The base system to use
+   * @returns {string} String representation
+   */
+  toBase(baseSystem) {
+    if (!(baseSystem instanceof BaseSystem)) {
+      throw new Error("Argument must be a BaseSystem");
+    }
+
+    const numStr = baseSystem.fromDecimal(this.#numerator);
+
+    if (this.#denominator === 1n) {
+      return numStr;
+    }
+
+    const denStr = baseSystem.fromDecimal(this.#denominator);
+    return `${numStr}/${denStr}`;
   }
 
   /**

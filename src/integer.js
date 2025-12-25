@@ -8,6 +8,7 @@
 
 import { Rational } from "./rational.js";
 import { RationalInterval } from "./rational-interval.js";
+import { BaseSystem } from "./base-system.js";
 
 export class Integer {
   #value;
@@ -173,7 +174,7 @@ export class Integer {
    */
   pow(exponent) {
     const exp = exponent instanceof Integer ? exponent.value : BigInt(exponent);
-    
+
     if (exp === 0n) {
       if (this.#value === 0n) {
         throw new Error("Zero cannot be raised to the power of zero");
@@ -358,8 +359,40 @@ export class Integer {
    * Converts this integer to a string
    * @returns {string} String representation of this integer
    */
-  toString() {
+  /**
+   * Converts this integer to a string, optionally in a specific base.
+   * @param {number|BaseSystem} [base] - The base to convert to (default: 10)
+   * @returns {string} String representation of this integer
+   */
+  toString(base) {
+    if (base === undefined) {
+      return this.#value.toString();
+    }
+
+    if (base instanceof BaseSystem) {
+      return base.fromDecimal(this.#value);
+    }
+
+    if (typeof base === 'number') {
+      if (base === 10) {
+        return this.#value.toString();
+      }
+      return BaseSystem.fromBase(base).fromDecimal(this.#value);
+    }
+
     return this.#value.toString();
+  }
+
+  /**
+   * Converts this integer to a string in the specified base system.
+   * @param {BaseSystem} baseSystem - The base system to use
+   * @returns {string} String representation
+   */
+  toBase(baseSystem) {
+    if (!(baseSystem instanceof BaseSystem)) {
+      throw new Error("Argument must be a BaseSystem");
+    }
+    return baseSystem.fromDecimal(this.#value);
   }
 
   /**
@@ -423,7 +456,7 @@ export class Integer {
    */
   E(exponent) {
     const exp = BigInt(exponent);
-    
+
     if (exp >= 0n) {
       // Non-negative exponent: result is an integer
       const newValue = this.#value * (10n ** exp);

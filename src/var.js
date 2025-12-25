@@ -13,6 +13,7 @@ export class VariableManager {
     this.variables = new Map(); // Store single-character variables
     this.functions = new Map(); // Store function definitions
     this.inputBase = null; // Base system for interpreting numbers without explicit base notation
+    this.customBases = new Map(); // Store custom base definitions
   }
 
   /**
@@ -447,7 +448,10 @@ export class VariableManager {
       const preprocessed = this.preprocessExpression(substituted);
 
       // Parse and evaluate
-      const result = Parser.parse(preprocessed, { typeAware: true });
+      const result = Parser.parse(preprocessed, {
+        typeAware: true,
+        customBases: this.customBases
+      });
       return {
         type: "expression",
         result: result,
@@ -540,5 +544,13 @@ export class VariableManager {
    */
   setProgressCallback(callback) {
     this.progressCallback = callback;
+  }
+
+  /**
+   * Set the map of custom base systems
+   * @param {Map<number, BaseSystem>} customBases - Map of base number to BaseSystem
+   */
+  setCustomBases(customBases) {
+    this.customBases = customBases;
   }
 }

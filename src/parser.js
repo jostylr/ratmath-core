@@ -1158,11 +1158,11 @@ export class Parser {
           if (factorialResult.remainingExpr[0] === "^") {
             // Standard exponentiation (pow)
             const powerExpr = factorialResult.remainingExpr.substring(1);
-            
+
             // First check if it's a simple integer exponent
             let powerResult;
             let isIntegerExponent = false;
-            
+
             try {
               // Try parsing as integer first
               powerResult = Parser.#parseExponent(powerExpr);
@@ -1179,12 +1179,12 @@ export class Parser {
               (factorialResult.value.low.equals(zero) && factorialResult.value.high.equals(zero)) :
               (factorialResult.value instanceof Integer && factorialResult.value.value === 0n) ||
               (factorialResult.value instanceof Rational && factorialResult.value.numerator === 0n);
-              
-            const isZeroExponent = isIntegerExponent ? 
+
+            const isZeroExponent = isIntegerExponent ?
               powerResult.value === 0n :
               (powerResult.value instanceof Rational && powerResult.value.numerator === 0n) ||
               (powerResult.value instanceof Integer && powerResult.value.value === 0n);
-              
+
             if (isZeroBase && isZeroExponent) {
               throw new Error("Zero cannot be raised to the power of zero");
             }
@@ -1192,13 +1192,13 @@ export class Parser {
             let result;
             if (isIntegerExponent) {
               // Use standard pow for integer exponents
-            result = factorialResult.value.pow(powerResult.value);
+              result = factorialResult.value.pow(powerResult.value);
             } else {
               // Use rationalIntervalPower for fractional exponents
               const precision = options.precision || DEFAULT_PRECISION;
               result = rationalIntervalPower(factorialResult.value, powerResult.value, precision);
             }
-            
+
             return {
               value: result,
               remainingExpr: powerResult.remainingExpr,
@@ -1210,11 +1210,11 @@ export class Parser {
           ) {
             // Multiplicative exponentiation (mpow) or Newton root (**)
             const powerExpr = factorialResult.remainingExpr.substring(2);
-            
+
             // First check if it's a simple integer exponent
             let powerResult;
             let isIntegerExponent = false;
-            
+
             try {
               // Try parsing as integer first
               powerResult = Parser.#parseExponent(powerExpr);
@@ -1229,20 +1229,20 @@ export class Parser {
             const isZeroExponent = (isIntegerExponent && powerResult.value === 0n) ||
               (!isIntegerExponent && powerResult.value instanceof Integer && powerResult.value.value === 0n) ||
               (!isIntegerExponent && powerResult.value instanceof Rational && powerResult.value.numerator === 0n);
-            
+
             if (isZeroExponent) {
               throw new Error("Multiplicative exponentiation requires at least one factor");
             }
 
             let result;
-            if (!isIntegerExponent && powerResult.value instanceof Rational && 
-                Number(powerResult.value.denominator) <= 10 && 
-                Number(powerResult.value.denominator) > 1) {
+            if (!isIntegerExponent && powerResult.value instanceof Rational &&
+              Number(powerResult.value.denominator) <= 10 &&
+              Number(powerResult.value.denominator) > 1) {
               // Use Newton's method for rational exponents with small denominators
               const precision = options.precision || DEFAULT_PRECISION;
               const rootDegree = Number(powerResult.value.denominator);
               const rootInterval = newtonRoot(factorialResult.value, rootDegree, precision);
-              
+
               // If numerator is not 1, raise to numerator power
               if (!powerResult.value.numerator === 1n) {
                 const numeratorPower = Number(powerResult.value.numerator);
@@ -1275,7 +1275,7 @@ export class Parser {
               const precision = options.precision || DEFAULT_PRECISION;
               result = rationalIntervalPower(factorialResult.value, powerResult.value, precision);
             }
-            
+
             if (result._skipPromotion === undefined) {
               result._skipPromotion = true;
             }
@@ -1378,11 +1378,11 @@ export class Parser {
         if (factorialResult.remainingExpr[0] === "^") {
           // Standard exponentiation (pow)
           const powerExpr = factorialResult.remainingExpr.substring(1);
-          
+
           // First check if it's a simple integer exponent
           let powerResult;
           let isIntegerExponent = false;
-          
+
           try {
             // Try parsing as integer first
             powerResult = Parser.#parseExponent(powerExpr);
@@ -1406,8 +1406,8 @@ export class Parser {
           } else if (factorialResult.value instanceof Integer) {
             isZero = factorialResult.value.value === 0n;
           }
-          
-          const isZeroExponent = isIntegerExponent ? 
+
+          const isZeroExponent = isIntegerExponent ?
             powerResult.value === 0n :
             (powerResult.value instanceof Rational && powerResult.value.numerator === 0n) ||
             (powerResult.value instanceof Integer && powerResult.value.value === 0n);
@@ -1419,13 +1419,13 @@ export class Parser {
           let result;
           if (isIntegerExponent) {
             // Use standard pow for integer exponents
-          result = factorialResult.value.pow(powerResult.value);
+            result = factorialResult.value.pow(powerResult.value);
           } else {
             // Use rationalIntervalPower for fractional exponents
             const precision = options.precision || DEFAULT_PRECISION;
             result = rationalIntervalPower(factorialResult.value, powerResult.value, precision);
           }
-          
+
           return {
             value: result,
             remainingExpr: powerResult.remainingExpr,
@@ -1437,11 +1437,11 @@ export class Parser {
         ) {
           // Multiplicative exponentiation (mpow) or Newton root (**)
           const powerExpr = factorialResult.remainingExpr.substring(2);
-          
+
           // First check if it's a simple integer exponent
           let powerResult;
           let isIntegerExponent = false;
-          
+
           try {
             // Try parsing as integer first
             powerResult = Parser.#parseExponent(powerExpr);
@@ -1456,20 +1456,20 @@ export class Parser {
           const isZeroExponent = (isIntegerExponent && powerResult.value === 0n) ||
             (!isIntegerExponent && powerResult.value instanceof Integer && powerResult.value.value === 0n) ||
             (!isIntegerExponent && powerResult.value instanceof Rational && powerResult.value.numerator === 0n);
-          
+
           if (isZeroExponent) {
             throw new Error("Multiplicative exponentiation requires at least one factor");
           }
 
           let result;
-          if (!isIntegerExponent && powerResult.value instanceof Rational && 
-              Number(powerResult.value.denominator) <= 10 && 
-              Number(powerResult.value.denominator) > 1) {
+          if (!isIntegerExponent && powerResult.value instanceof Rational &&
+            Number(powerResult.value.denominator) <= 10 &&
+            Number(powerResult.value.denominator) > 1) {
             // Use Newton's method for rational exponents with small denominators
             const precision = options.precision || DEFAULT_PRECISION;
             const rootDegree = Number(powerResult.value.denominator);
             const rootInterval = newtonRoot(factorialResult.value, rootDegree, precision);
-            
+
             // If numerator is not 1, raise to numerator power
             if (!powerResult.value.numerator === 1n) {
               const numeratorPower = Number(powerResult.value.numerator);
@@ -1502,7 +1502,7 @@ export class Parser {
             const precision = options.precision || DEFAULT_PRECISION;
             result = rationalIntervalPower(factorialResult.value, powerResult.value, precision);
           }
-          
+
           if (result._skipPromotion === undefined) {
             result._skipPromotion = true;
           }
@@ -1522,7 +1522,7 @@ export class Parser {
       if (expr.startsWith("PI")) {
         let precision = undefined;
         let remainingExpr = expr.substring(2);
-        
+
         // Check for precision specification like PI[-6]
         if (remainingExpr.startsWith("[")) {
           const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
@@ -1531,7 +1531,7 @@ export class Parser {
             remainingExpr = remainingExpr.substring(precisionMatch[0].length);
           }
         }
-        
+
         const result = PI(precision);
         result._explicitInterval = true;
         return {
@@ -1539,12 +1539,12 @@ export class Parser {
           remainingExpr: remainingExpr
         };
       }
-      
+
       // Check for E constant or EXP function
       if (expr.startsWith("EXP")) {
         let remainingExpr = expr.substring(3);
         let precision = undefined;
-        
+
         // Check for precision specification like EXP[-6]
         if (remainingExpr.startsWith("[")) {
           const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
@@ -1553,7 +1553,7 @@ export class Parser {
             remainingExpr = remainingExpr.substring(precisionMatch[0].length);
           }
         }
-        
+
         // Check if this is EXP(x) function call or just the E constant
         if (remainingExpr.startsWith("(")) {
           // Parse function argument
@@ -1561,7 +1561,7 @@ export class Parser {
           if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
             throw new Error("Missing closing parenthesis for EXP function");
           }
-          
+
           const result = EXP(argResult.value, precision);
           result._explicitInterval = true;
           return {
@@ -1578,12 +1578,12 @@ export class Parser {
           };
         }
       }
-      
+
       // Check for LN function
       if (expr.startsWith("LN")) {
         let remainingExpr = expr.substring(2);
         let precision = undefined;
-        
+
         // Check for precision specification
         if (remainingExpr.startsWith("[")) {
           const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
@@ -1592,17 +1592,17 @@ export class Parser {
             remainingExpr = remainingExpr.substring(precisionMatch[0].length);
           }
         }
-        
+
         // Parse function argument
         if (!remainingExpr.startsWith("(")) {
           throw new Error("LN requires parentheses");
         }
-        
+
         const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
         if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
           throw new Error("Missing closing parenthesis for LN function");
         }
-        
+
         const result = LN(argResult.value, precision);
         result._explicitInterval = true;
         return {
@@ -1610,12 +1610,12 @@ export class Parser {
           remainingExpr: argResult.remainingExpr.substring(1)
         };
       }
-      
+
       // Check for LOG function
       if (expr.startsWith("LOG")) {
         let remainingExpr = expr.substring(3);
         let precision = undefined;
-        
+
         // Check for precision specification
         if (remainingExpr.startsWith("[")) {
           const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
@@ -1624,28 +1624,28 @@ export class Parser {
             remainingExpr = remainingExpr.substring(precisionMatch[0].length);
           }
         }
-        
+
         // Parse function arguments
         if (!remainingExpr.startsWith("(")) {
           throw new Error("LOG requires parentheses");
         }
-        
+
         const arg1Result = Parser.#parseExpression(remainingExpr.substring(1), options);
-        
+
         // Check if there's a second argument (base)
         let base = 10;
         let finalRemainingExpr = arg1Result.remainingExpr;
-        
+
         if (arg1Result.remainingExpr.startsWith(",")) {
           const arg2Result = Parser.#parseExpression(arg1Result.remainingExpr.substring(1), options);
           base = arg2Result.value;
           finalRemainingExpr = arg2Result.remainingExpr;
         }
-        
+
         if (finalRemainingExpr.length === 0 || finalRemainingExpr[0] !== ")") {
           throw new Error("Missing closing parenthesis for LOG function");
         }
-        
+
         const result = LOG(arg1Result.value, base, precision);
         result._explicitInterval = true;
         return {
@@ -1653,12 +1653,12 @@ export class Parser {
           remainingExpr: finalRemainingExpr.substring(1)
         };
       }
-      
+
       // Check for SIN function
       if (expr.startsWith("SIN")) {
         let remainingExpr = expr.substring(3);
         let precision = undefined;
-        
+
         // Check for precision specification
         if (remainingExpr.startsWith("[")) {
           const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
@@ -1667,17 +1667,17 @@ export class Parser {
             remainingExpr = remainingExpr.substring(precisionMatch[0].length);
           }
         }
-        
+
         // Parse function argument
         if (!remainingExpr.startsWith("(")) {
           throw new Error("SIN requires parentheses");
         }
-        
+
         const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
         if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
           throw new Error("Missing closing parenthesis for SIN function");
         }
-        
+
         const result = SIN(argResult.value, precision);
         result._explicitInterval = true;
         return {
@@ -1685,12 +1685,12 @@ export class Parser {
           remainingExpr: argResult.remainingExpr.substring(1)
         };
       }
-      
+
       // Check for COS function
       if (expr.startsWith("COS")) {
         let remainingExpr = expr.substring(3);
         let precision = undefined;
-        
+
         // Check for precision specification
         if (remainingExpr.startsWith("[")) {
           const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
@@ -1699,17 +1699,17 @@ export class Parser {
             remainingExpr = remainingExpr.substring(precisionMatch[0].length);
           }
         }
-        
+
         // Parse function argument
         if (!remainingExpr.startsWith("(")) {
           throw new Error("COS requires parentheses");
         }
-        
+
         const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
         if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
           throw new Error("Missing closing parenthesis for COS function");
         }
-        
+
         const result = COS(argResult.value, precision);
         result._explicitInterval = true;
         return {
@@ -1717,12 +1717,12 @@ export class Parser {
           remainingExpr: argResult.remainingExpr.substring(1)
         };
       }
-      
+
       // Check for ARCSIN function
       if (expr.startsWith("ARCSIN")) {
         let remainingExpr = expr.substring(6);
         let precision = undefined;
-        
+
         // Check for precision specification
         if (remainingExpr.startsWith("[")) {
           const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
@@ -1731,17 +1731,17 @@ export class Parser {
             remainingExpr = remainingExpr.substring(precisionMatch[0].length);
           }
         }
-        
+
         // Parse function argument
         if (!remainingExpr.startsWith("(")) {
           throw new Error("ARCSIN requires parentheses");
         }
-        
+
         const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
         if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
           throw new Error("Missing closing parenthesis for ARCSIN function");
         }
-        
+
         const result = ARCSIN(argResult.value, precision);
         result._explicitInterval = true;
         return {
@@ -1749,12 +1749,12 @@ export class Parser {
           remainingExpr: argResult.remainingExpr.substring(1)
         };
       }
-      
+
       // Check for ARCCOS function
       if (expr.startsWith("ARCCOS")) {
         let remainingExpr = expr.substring(6);
         let precision = undefined;
-        
+
         // Check for precision specification
         if (remainingExpr.startsWith("[")) {
           const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
@@ -1763,17 +1763,17 @@ export class Parser {
             remainingExpr = remainingExpr.substring(precisionMatch[0].length);
           }
         }
-        
+
         // Parse function argument
         if (!remainingExpr.startsWith("(")) {
           throw new Error("ARCCOS requires parentheses");
         }
-        
+
         const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
         if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
           throw new Error("Missing closing parenthesis for ARCCOS function");
         }
-        
+
         const result = ARCCOS(argResult.value, precision);
         result._explicitInterval = true;
         return {
@@ -1781,12 +1781,12 @@ export class Parser {
           remainingExpr: argResult.remainingExpr.substring(1)
         };
       }
-      
+
       // Check for TAN function
       if (expr.startsWith("TAN")) {
         let remainingExpr = expr.substring(3);
         let precision = undefined;
-        
+
         // Check for precision specification
         if (remainingExpr.startsWith("[")) {
           const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
@@ -1795,17 +1795,17 @@ export class Parser {
             remainingExpr = remainingExpr.substring(precisionMatch[0].length);
           }
         }
-        
+
         // Parse function argument
         if (!remainingExpr.startsWith("(")) {
           throw new Error("TAN requires parentheses");
         }
-        
+
         const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
         if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
           throw new Error("Missing closing parenthesis for TAN function");
         }
-        
+
         const result = TAN(argResult.value, precision);
         result._explicitInterval = true;
         return {
@@ -1813,12 +1813,12 @@ export class Parser {
           remainingExpr: argResult.remainingExpr.substring(1)
         };
       }
-      
+
       // Check for ARCTAN function
       if (expr.startsWith("ARCTAN")) {
         let remainingExpr = expr.substring(6);
         let precision = undefined;
-        
+
         // Check for precision specification
         if (remainingExpr.startsWith("[")) {
           const precisionMatch = remainingExpr.match(/^\[(-?\d+)\]/);
@@ -1827,17 +1827,17 @@ export class Parser {
             remainingExpr = remainingExpr.substring(precisionMatch[0].length);
           }
         }
-        
+
         // Parse function argument
         if (!remainingExpr.startsWith("(")) {
           throw new Error("ARCTAN requires parentheses");
         }
-        
+
         const argResult = Parser.#parseExpression(remainingExpr.substring(1), options);
         if (argResult.remainingExpr.length === 0 || argResult.remainingExpr[0] !== ")") {
           throw new Error("Missing closing parenthesis for ARCTAN function");
         }
-        
+
         const result = ARCTAN(argResult.value, precision);
         result._explicitInterval = true;
         return {
@@ -1866,8 +1866,13 @@ export class Parser {
         }
 
         try {
-          // Create base system for this base
-          const baseSystem = BaseSystem.fromBase(baseNum);
+          // Create base system for this base, checking custom bases first
+          let baseSystem;
+          if (options.customBases && options.customBases.has(baseNum)) {
+            baseSystem = options.customBases.get(baseNum);
+          } else {
+            baseSystem = BaseSystem.fromBase(baseNum);
+          }
 
           // Parse the number string according to the base notation
           const result = parseBaseNotation(numberStr, baseSystem, options);
@@ -2031,11 +2036,11 @@ export class Parser {
         if (factorialResult.remainingExpr[0] === "^") {
           // Standard exponentiation (pow)
           const powerExpr = factorialResult.remainingExpr.substring(1);
-          
+
           // First check if it's a simple integer exponent
           let powerResult;
           let isIntegerExponent = false;
-          
+
           try {
             // Try parsing as integer first
             powerResult = Parser.#parseExponent(powerExpr);
@@ -2047,18 +2052,18 @@ export class Parser {
           }
 
           // Check for 0^0
-          const isZeroBase = 
+          const isZeroBase =
             (factorialResult.value instanceof Integer && factorialResult.value.value === 0n) ||
             (factorialResult.value instanceof Rational && factorialResult.value.numerator === 0n) ||
-            (factorialResult.value.low && factorialResult.value.high && 
-              factorialResult.value.low.equals(new Rational(0)) && 
+            (factorialResult.value.low && factorialResult.value.high &&
+              factorialResult.value.low.equals(new Rational(0)) &&
               factorialResult.value.high.equals(new Rational(0)));
-              
-          const isZeroExponent = isIntegerExponent ? 
+
+          const isZeroExponent = isIntegerExponent ?
             powerResult.value === 0n :
             (powerResult.value instanceof Rational && powerResult.value.numerator === 0n) ||
             (powerResult.value instanceof Integer && powerResult.value.value === 0n);
-            
+
           if (isZeroBase && isZeroExponent) {
             throw new Error("Zero cannot be raised to the power of zero");
           }
@@ -2066,13 +2071,13 @@ export class Parser {
           let result;
           if (isIntegerExponent) {
             // Use standard pow for integer exponents
-          result = factorialResult.value.pow(powerResult.value);
+            result = factorialResult.value.pow(powerResult.value);
           } else {
             // Use rationalIntervalPower for fractional exponents
             const precision = options.precision || DEFAULT_PRECISION;
             result = rationalIntervalPower(factorialResult.value, powerResult.value, precision);
           }
-          
+
           return {
             value: result,
             remainingExpr: powerResult.remainingExpr,
@@ -2088,7 +2093,7 @@ export class Parser {
 
           // Check for zero exponent in multiplicative exponentiation
           const isZeroExponent = powerResult.value === 0n;
-          
+
           if (isZeroExponent) {
             throw new Error("Multiplicative exponentiation requires at least one factor");
           }
@@ -2203,11 +2208,11 @@ export class Parser {
       if (factorialResult.remainingExpr[0] === "^") {
         // Standard exponentiation (pow)
         const powerExpr = factorialResult.remainingExpr.substring(1);
-        
+
         // Handle both integer and fractional exponents
         let powerResult;
         let isIntegerExponent = false;
-        
+
         // Check if exponent starts with parentheses (fractional exponent)
         if (powerExpr.startsWith('(')) {
           powerResult = Parser.#parseExpression(powerExpr.substring(1), options);
@@ -2229,18 +2234,18 @@ export class Parser {
         }
 
         // Check for 0^0
-        const isZeroBase = 
+        const isZeroBase =
           (factorialResult.value instanceof Integer && factorialResult.value.value === 0n) ||
           (factorialResult.value instanceof Rational && factorialResult.value.numerator === 0n) ||
-          (factorialResult.value.low && factorialResult.value.high && 
-            factorialResult.value.low.equals(new Rational(0)) && 
+          (factorialResult.value.low && factorialResult.value.high &&
+            factorialResult.value.low.equals(new Rational(0)) &&
             factorialResult.value.high.equals(new Rational(0)));
-            
-        const isZeroExponent = isIntegerExponent ? 
+
+        const isZeroExponent = isIntegerExponent ?
           powerResult.value === 0n :
           (powerResult.value instanceof Rational && powerResult.value.numerator === 0n) ||
           (powerResult.value instanceof Integer && powerResult.value.value === 0n);
-          
+
         if (isZeroBase && isZeroExponent) {
           throw new Error("Zero cannot be raised to the power of zero");
         }
@@ -2267,7 +2272,7 @@ export class Parser {
         // Multiplicative exponentiation (mpow)
         const powerExpr = factorialResult.remainingExpr.substring(2);
         let powerResult;
-        
+
         // Check if exponent starts with parentheses (fractional exponent)
         if (powerExpr.startsWith('(')) {
           powerResult = Parser.#parseExpression(powerExpr.substring(1), options);
@@ -2287,19 +2292,19 @@ export class Parser {
 
         // For multiplicative exponentiation, use rationalIntervalPower for fractional exponents
         let base = factorialResult.value;
-        
+
         // Check if exponent is an integer
-        const isIntegerExponent = (powerResult.value instanceof Integer) || 
+        const isIntegerExponent = (powerResult.value instanceof Integer) ||
           (powerResult.value instanceof Rational && powerResult.value.denominator === 1n);
-        
+
         // Check for zero exponent in multiplicative exponentiation
         const isZeroExponent = (powerResult.value instanceof Integer && powerResult.value.value === 0n) ||
           (powerResult.value instanceof Rational && powerResult.value.numerator === 0n);
-        
+
         if (isZeroExponent) {
           throw new Error("Multiplicative exponentiation requires at least one factor");
         }
-        
+
         let result;
         if (isIntegerExponent) {
           // Use mpow for integer exponents
@@ -2308,7 +2313,7 @@ export class Parser {
               base instanceof Integer ? base.toRational() : base,
             );
           }
-          const exponentBigInt = powerResult.value instanceof Integer ? 
+          const exponentBigInt = powerResult.value instanceof Integer ?
             powerResult.value.value : powerResult.value.numerator;
           result = base.mpow(exponentBigInt);
         } else {
@@ -2612,7 +2617,7 @@ export class Parser {
         const colonIndex = expr.indexOf(':');
         const leftPart = expr.substring(0, colonIndex);
         const rightPart = expr.substring(colonIndex + 1);
-        
+
         // Try CF interval parsing if either part contains .~
         if (leftPart.includes('.~') || rightPart.includes('.~')) {
           try {
@@ -2623,7 +2628,7 @@ export class Parser {
             } else {
               leftResult = Parser.#parseInterval(leftPart, options);
             }
-            
+
             // Parse right side (could be CF or regular)
             let rightResult;
             if (rightPart.includes('.~')) {
@@ -2631,7 +2636,7 @@ export class Parser {
             } else {
               rightResult = Parser.#parseInterval(rightPart, options);
             }
-            
+
             // Convert both to rationals for interval creation
             let leftRational, rightRational;
             if (leftResult.value instanceof Integer) {
@@ -2641,7 +2646,7 @@ export class Parser {
             } else {
               throw new Error("Left side must evaluate to a rational");
             }
-            
+
             if (rightResult.value instanceof Integer) {
               rightRational = rightResult.value.toRational();
             } else if (rightResult.value instanceof Rational) {
@@ -2651,7 +2656,7 @@ export class Parser {
             } else {
               throw new Error("Right side must evaluate to a rational");
             }
-            
+
             // Create the interval
             const interval = new RationalInterval(leftRational, rightRational);
             return {
@@ -2663,7 +2668,7 @@ export class Parser {
           }
         }
       }
-      
+
       // Try regular continued fraction parsing
       try {
         const cfResult = Parser.#parseContinuedFraction(expr, options);
@@ -3480,7 +3485,7 @@ export class Parser {
     }
 
     const [fullMatch, integerPart, cfTermsStr, remaining] = cfMatch;
-    
+
     // Validate format
     if (cfTermsStr === '') {
       throw new Error("Continued fraction must have at least one term after .~");
@@ -3498,7 +3503,7 @@ export class Parser {
 
     // Parse the coefficient array
     const cfArray = Parser.parseContinuedFraction(fullMatch.substring(0, fullMatch.length - remaining.length));
-    
+
     // Convert to Rational using the forthcoming fromContinuedFraction method
     // For now, we'll create a placeholder - this will be implemented when we add the Rational class method
     if (typeof Rational.fromContinuedFraction === 'function') {
@@ -3526,10 +3531,10 @@ export class Parser {
     }
 
     const [, integerPart, cfTermsStr] = cfMatch;
-    
+
     // Parse integer part
     const intPart = BigInt(integerPart);
-    
+
     // Handle special case of integer representation like "5.~0"
     if (cfTermsStr === '0') {
       return [intPart];
@@ -3551,7 +3556,7 @@ export class Parser {
     // Split terms and validate they are all positive integers (except the integer part)
     const terms = cfTermsStr.split('~');
     const cfTerms = [];
-    
+
     for (const term of terms) {
       if (!/^\d+$/.test(term)) {
         throw new Error(`Invalid continued fraction term: ${term}`);
