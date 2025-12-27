@@ -1264,6 +1264,40 @@ The library throws clear error messages for various error conditions:
 - Invalid repeating decimal format: `"Invalid repeating decimal format. Use format like '0.12#45'"`
 - Non-numeric characters in repeating part: `"Repeating part must contain only digits"`
 
+## Base System Support
+
+RatMath supports arbitrary number bases (2-62 and custom character sets), allowing for exact conversion and arithmetic across different numeral systems.
+
+### Features
+- **Arbitrary Bases**: Binary, Octal, Hexadecimal, Base 36, Base 62, and user-defined bases.
+- **Exact Rational Conversion**: `1/3` in Base 3 becomes `0.1`, while `1/3` in Base 10 becomes `0.#3`.
+- **Custom Character Sets**: Define bases using custom characters (e.g., `[3]=abc`).
+- **Mixed Base Arithmetic**: `101[2] + A[16]`.
+
+### Usage
+```javascript
+import { Integer, Rational, BaseSystem } from 'ratmath';
+
+// Integer Conversion
+const n = new Integer(42);
+console.log(n.toString(2));  // "101010"
+console.log(n.toString(16)); // "2a"
+
+// Rational Conversion
+const r = new Rational(1, 3);
+console.log(r.toString(2));  // "0.#01" (repeating binary)
+
+// Custom Bases
+const custom = new BaseSystem("abc"); // Base 3
+console.log(new Integer(5).toBase(custom)); // "bc"
+```
+
+### Calculator Commands
+- `BASE <n>`: Set input/output base (e.g., `BASE 16`).
+- `BASE <in>-><out>`: Separate input/output bases.
+- `[n]=<chars>`: Define custom base (e.g., `[3]=abc`).
+- `expr BASE <n>`: Show result in specific base.
+
 ## License
 
 MIT

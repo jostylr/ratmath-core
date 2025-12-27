@@ -561,9 +561,6 @@ export class Rational {
     if (base instanceof BaseSystem) {
       baseSystem = base;
     } else if (typeof base === 'number') {
-      if (base === 10) {
-        return this.toString();
-      }
       baseSystem = BaseSystem.fromBase(base);
     } else {
       return this.toString();

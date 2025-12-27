@@ -548,13 +548,8 @@ class Calculator {
       const baseRepr = baseSystem.fromDecimal(result.value);
       console.log(`${baseRepr}[${baseSystem.base}]`);
     } else if (result instanceof Rational) {
-      // For rationals, show the integer part in the specified base if possible
-      if (result.denominator === 1n) {
-        const baseRepr = baseSystem.fromDecimal(result.numerator);
-        console.log(`${baseRepr}[${baseSystem.base}]`);
-      } else {
-        console.log("Base conversion for fractions not yet implemented");
-      }
+      const baseRepr = result.toString(baseSystem);
+      console.log(`${baseRepr}[${baseSystem.base}]`);
     } else {
       console.log("Base conversion not supported for this result type");
     }
