@@ -1,3 +1,312 @@
+// src/base-system.js
+class BaseSystem {
+  #base;
+  #characters;
+  #charMap;
+  #name;
+  static RESERVED_SYMBOLS = new Set([
+    "+",
+    "-",
+    "*",
+    "/",
+    "^",
+    "!",
+    "(",
+    ")",
+    "[",
+    "]",
+    ":",
+    ".",
+    "#",
+    "~"
+  ]);
+  constructor(characterSequence, name) {
+    this.#characters = this.#parseCharacterSequence(characterSequence);
+    this.#base = this.#characters.length;
+    this.#charMap = this.#createCharacterMap();
+    this.#name = name || `Base ${this.#base}`;
+    this.#validateBase();
+    this.#checkForConflicts();
+  }
+  get base() {
+    return this.#base;
+  }
+  get characters() {
+    return [...this.#characters];
+  }
+  get charMap() {
+    return new Map(this.#charMap);
+  }
+  getChar(value) {
+    const i = Number(value);
+    if (i < 0 || i >= this.#characters.length) {
+      throw new Error(`Value ${value} is out of range for base ${this.#base}`);
+    }
+    return this.#characters[i];
+  }
+  get name() {
+    return this.#name;
+  }
+  #parseCharacterSequence(sequence) {
+    if (typeof sequence !== "string" || sequence.length === 0) {
+      throw new Error("Character sequence must be a non-empty string");
+    }
+    const characters = [];
+    let i = 0;
+    while (i < sequence.length) {
+      if (i + 2 < sequence.length && sequence[i + 1] === "-") {
+        const startChar = sequence[i];
+        const endChar = sequence[i + 2];
+        const startCode = startChar.charCodeAt(0);
+        const endCode = endChar.charCodeAt(0);
+        if (startCode > endCode) {
+          throw new Error(`Invalid range: '${startChar}-${endChar}'. Start character must come before end character.`);
+        }
+        for (let code = startCode;code <= endCode; code++) {
+          characters.push(String.fromCharCode(code));
+        }
+        i += 3;
+      } else {
+        characters.push(sequence[i]);
+        i++;
+      }
+    }
+    const uniqueChars = new Set(characters);
+    if (uniqueChars.size !== characters.length) {
+      throw new Error("Character sequence contains duplicate characters");
+    }
+    if (characters.length < 2) {
+      throw new Error("Base system must have at least 2 characters");
+    }
+    return characters;
+  }
+  #createCharacterMap() {
+    const map = new Map;
+    for (let i = 0;i < this.#characters.length; i++) {
+      map.set(this.#characters[i], i);
+    }
+    return map;
+  }
+  #validateBase() {
+    if (this.#base < 2) {
+      throw new Error("Base must be at least 2");
+    }
+    if (this.#base !== this.#characters.length) {
+      throw new Error(`Base ${this.#base} does not match character set length ${this.#characters.length}`);
+    }
+    const uniqueChars = new Set(this.#characters);
+    if (uniqueChars.size !== this.#characters.length) {
+      throw new Error("Character set contains duplicate characters");
+    }
+    this.#validateCharacterOrdering();
+    if (this.#base > 1000) {
+      console.warn(`Very large base system (${this.#base}). This may impact performance.`);
+    }
+  }
+  #validateCharacterOrdering() {
+    if (this.#name === "Roman Numerals" || this.#characters.length < 10) {
+      return;
+    }
+    const ranges = [
+      { start: "0", end: "9", name: "digits" },
+      { start: "a", end: "z", name: "lowercase letters" },
+      { start: "A", end: "Z", name: "uppercase letters" }
+    ];
+    for (const range of ranges) {
+      const startCode = range.start.charCodeAt(0);
+      const endCode = range.end.charCodeAt(0);
+      let rangeChars = [];
+      for (let i = 0;i < this.#characters.length; i++) {
+        const char = this.#characters[i];
+        const code = char.charCodeAt(0);
+        if (code >= startCode && code <= endCode) {
+          rangeChars.push(char);
+        }
+      }
+      if (rangeChars.length >= 5 && rangeChars.length > (endCode - startCode) / 3) {
+        for (let i = 1;i < rangeChars.length; i++) {
+          const prevCode = rangeChars[i - 1].charCodeAt(0);
+          const currCode = rangeChars[i].charCodeAt(0);
+          if (currCode !== prevCode + 1) {
+            console.warn(`Non-contiguous ${range.name} range detected in base system`);
+            break;
+          }
+        }
+      }
+    }
+  }
+  #checkForConflicts() {
+    const conflicts = [];
+    for (const char of this.#characters) {
+      if (BaseSystem.RESERVED_SYMBOLS.has(char)) {
+        conflicts.push(char);
+      }
+    }
+    if (conflicts.length > 0) {
+      throw new Error(`Base system characters conflict with parser symbols: ${conflicts.join(", ")}. ` + `Reserved symbols are: ${Array.from(BaseSystem.RESERVED_SYMBOLS).join(", ")}`);
+    }
+  }
+  toDecimal(str) {
+    if (typeof str !== "string" || str.length === 0) {
+      throw new Error("Input must be a non-empty string");
+    }
+    let negative = false;
+    if (str.startsWith("-")) {
+      negative = true;
+      str = str.slice(1);
+    }
+    let result = 0n;
+    const baseBigInt = BigInt(this.#base);
+    for (let i = 0;i < str.length; i++) {
+      const char = str[i];
+      if (!this.#charMap.has(char)) {
+        throw new Error(`Invalid character '${char}' for ${this.#name} (base ${this.#base})`);
+      }
+      const digitValue = BigInt(this.#charMap.get(char));
+      result = result * baseBigInt + digitValue;
+    }
+    return negative ? -result : result;
+  }
+  fromDecimal(value) {
+    if (typeof value !== "bigint") {
+      throw new Error("Value must be a BigInt");
+    }
+    if (value === 0n) {
+      return this.#characters[0];
+    }
+    let negative = false;
+    if (value < 0n) {
+      negative = true;
+      value = -value;
+    }
+    const baseBigInt = BigInt(this.#base);
+    const digits = [];
+    while (value > 0n) {
+      const remainder = Number(value % baseBigInt);
+      digits.unshift(this.#characters[remainder]);
+      value = value / baseBigInt;
+    }
+    const result = digits.join("");
+    return negative ? "-" + result : result;
+  }
+  isValidString(str) {
+    if (typeof str !== "string") {
+      return false;
+    }
+    if (str.startsWith("-")) {
+      str = str.slice(1);
+    }
+    if (str.length === 0) {
+      return false;
+    }
+    for (const char of str) {
+      if (!this.#charMap.has(char)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  getMaxDigit() {
+    return this.#characters[this.#characters.length - 1];
+  }
+  getMinDigit() {
+    return this.#characters[0];
+  }
+  toString() {
+    const charPreview = this.#characters.length <= 20 ? this.#characters.join("") : this.#characters.slice(0, 10).join("") + "..." + this.#characters.slice(-10).join("");
+    return `${this.#name} (${charPreview})`;
+  }
+  equals(other) {
+    if (!(other instanceof BaseSystem)) {
+      return false;
+    }
+    if (this.#base !== other.#base) {
+      return false;
+    }
+    for (let i = 0;i < this.#characters.length; i++) {
+      if (this.#characters[i] !== other.#characters[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+  static fromBase(base, name) {
+    if (!Number.isInteger(base) || base < 2) {
+      throw new Error("Base must be an integer >= 2");
+    }
+    let sequence;
+    if (base <= 10) {
+      sequence = `0-${base - 1}`;
+    } else if (base <= 36) {
+      const lastLetter = String.fromCharCode(97 + base - 11);
+      sequence = `0-9a-${lastLetter}`;
+    } else if (base <= 62) {
+      const lastLetter = String.fromCharCode(65 + base - 37);
+      sequence = `0-9a-zA-${lastLetter}`;
+    } else {
+      throw new Error("BaseSystem.fromBase() only supports bases up to 62. Use constructor with custom character sequence for larger bases.");
+    }
+    return new BaseSystem(sequence, name || `Base ${base}`);
+  }
+  static createPattern(pattern, size, name) {
+    switch (pattern.toLowerCase()) {
+      case "alphanumeric":
+        if (size <= 36) {
+          return BaseSystem.fromBase(size, name);
+        } else if (size <= 62) {
+          return BaseSystem.fromBase(size, name);
+        } else {
+          throw new Error(`Alphanumeric pattern only supports up to base 62, got ${size}`);
+        }
+      case "digits-only":
+        if (size > 10) {
+          throw new Error(`Digits-only pattern only supports up to base 10, got ${size}`);
+        }
+        return new BaseSystem(`0-${size - 1}`, name || `Base ${size} (digits only)`);
+      case "letters-only":
+        if (size <= 26) {
+          const lastLetter2 = String.fromCharCode(97 + size - 1);
+          return new BaseSystem(`a-${lastLetter2}`, name || `Base ${size} (lowercase letters)`);
+        } else if (size <= 52) {
+          const lastLetter2 = String.fromCharCode(65 + size - 27);
+          return new BaseSystem(`a-zA-${lastLetter2}`, name || `Base ${size} (mixed case letters)`);
+        } else {
+          throw new Error(`Letters-only pattern only supports up to base 52, got ${size}`);
+        }
+      case "uppercase-only":
+        if (size > 26) {
+          throw new Error(`Uppercase-only pattern only supports up to base 26, got ${size}`);
+        }
+        const lastLetter = String.fromCharCode(65 + size - 1);
+        return new BaseSystem(`A-${lastLetter}`, name || `Base ${size} (uppercase letters)`);
+      default:
+        throw new Error(`Unknown pattern: ${pattern}. Supported patterns: alphanumeric, digits-only, letters-only, uppercase-only`);
+    }
+  }
+  withCaseSensitivity(caseSensitive) {
+    if (caseSensitive === true) {
+      return this;
+    }
+    if (caseSensitive === false) {
+      const lowerChars = this.#characters.map((char) => char.toLowerCase());
+      const uniqueLowerChars = [...new Set(lowerChars)];
+      if (uniqueLowerChars.length !== lowerChars.length) {
+        console.warn("Case-insensitive conversion resulted in duplicate characters");
+      }
+      return new BaseSystem(uniqueLowerChars.join(""), `${this.#name} (case-insensitive)`);
+    }
+    throw new Error("caseSensitive must be a boolean value");
+  }
+}
+BaseSystem.BINARY = new BaseSystem("0-1", "Binary");
+BaseSystem.OCTAL = new BaseSystem("0-7", "Octal");
+BaseSystem.DECIMAL = new BaseSystem("0-9", "Decimal");
+BaseSystem.HEXADECIMAL = new BaseSystem("0-9a-f", "Hexadecimal");
+BaseSystem.BASE36 = new BaseSystem("0-9a-z", "Base 36");
+BaseSystem.BASE62 = new BaseSystem("0-9a-zA-Z", "Base 62");
+BaseSystem.BASE60 = new BaseSystem("0-9a-zA-X", "Base 60 (Sexagesimal)");
+BaseSystem.ROMAN = new BaseSystem("IVXLCDM", "Roman Numerals");
+
 // src/rational.js
 var bitLength = function(int) {
   if (int === 0n)
@@ -288,11 +597,73 @@ class Rational {
   abs() {
     return this.#numerator < 0n ? this.negate() : new Rational(this.#numerator, this.#denominator);
   }
-  toString() {
-    if (this.#denominator === 1n) {
-      return this.#numerator.toString();
+  toString(base) {
+    if (base === undefined) {
+      if (this.#denominator === 1n) {
+        return this.#numerator.toString();
+      }
+      return `${this.#numerator}/${this.#denominator}`;
     }
-    return `${this.#numerator}/${this.#denominator}`;
+    let baseSystem;
+    if (base instanceof BaseSystem) {
+      baseSystem = base;
+    } else if (typeof base === "number") {
+      baseSystem = BaseSystem.fromBase(base);
+    } else {
+      return this.toString();
+    }
+    return this.toRepeatingBase(baseSystem);
+  }
+  toRepeatingBase(baseSystem) {
+    if (!(baseSystem instanceof BaseSystem)) {
+      throw new Error("Argument must be a BaseSystem");
+    }
+    if (this.#numerator < 0n) {
+      return "-" + this.negate().toRepeatingBase(baseSystem);
+    }
+    const base = BigInt(baseSystem.base);
+    let num = this.#numerator;
+    let den = this.#denominator;
+    const integerPart = num / den;
+    let remainder = num % den;
+    let result = baseSystem.fromDecimal(integerPart);
+    if (remainder === 0n) {
+      return result;
+    }
+    result += ".";
+    const remainders = new Map;
+    let fractionParts = [];
+    let cycleStartIndex = -1;
+    while (remainder !== 0n) {
+      if (remainders.has(remainder)) {
+        cycleStartIndex = remainders.get(remainder);
+        break;
+      }
+      remainders.set(remainder, fractionParts.length);
+      remainder *= base;
+      const digit = remainder / den;
+      remainder = remainder % den;
+      fractionParts.push(baseSystem.getChar(digit));
+    }
+    if (cycleStartIndex !== -1) {
+      const nonRepeating = fractionParts.slice(0, cycleStartIndex).join("");
+      const repeating = fractionParts.slice(cycleStartIndex).join("");
+      result += nonRepeating + "#" + repeating;
+    } else {
+      result += fractionParts.join("");
+    }
+    return result;
+  }
+  toBase(baseSystem) {
+    if (!(baseSystem instanceof BaseSystem)) {
+      throw new Error("Argument must be a BaseSystem");
+    }
+    const numStr = baseSystem.fromDecimal(this.#numerator);
+    if (this.#denominator === 1n) {
+      return numStr;
+    }
+    const denStr = baseSystem.fromDecimal(this.#denominator);
+    return `${numStr}/${denStr}`;
   }
   toMixedString() {
     if (this.#denominator === 1n || this.#numerator === 0n) {
@@ -1640,8 +2011,26 @@ class Integer {
     const product = this.multiply(other).abs();
     return product.divide(gcd);
   }
-  toString() {
+  toString(base) {
+    if (base === undefined) {
+      return this.#value.toString();
+    }
+    if (base instanceof BaseSystem) {
+      return base.fromDecimal(this.#value);
+    }
+    if (typeof base === "number") {
+      if (base === 10) {
+        return this.#value.toString();
+      }
+      return BaseSystem.fromBase(base).fromDecimal(this.#value);
+    }
     return this.#value.toString();
+  }
+  toBase(baseSystem) {
+    if (!(baseSystem instanceof BaseSystem)) {
+      throw new Error("Argument must be a BaseSystem");
+    }
+    return baseSystem.fromDecimal(this.#value);
   }
   toNumber() {
     return Number(this.#value);
@@ -1704,308 +2093,6 @@ class Integer {
     return this.#value < 0n ? (-this.#value).toString(2).length : this.#value.toString(2).length;
   }
 }
-
-// src/base-system.js
-class BaseSystem {
-  #base;
-  #characters;
-  #charMap;
-  #name;
-  static RESERVED_SYMBOLS = new Set([
-    "+",
-    "-",
-    "*",
-    "/",
-    "^",
-    "!",
-    "(",
-    ")",
-    "[",
-    "]",
-    ":",
-    ".",
-    "#",
-    "~"
-  ]);
-  constructor(characterSequence, name) {
-    this.#characters = this.#parseCharacterSequence(characterSequence);
-    this.#base = this.#characters.length;
-    this.#charMap = this.#createCharacterMap();
-    this.#name = name || `Base ${this.#base}`;
-    this.#validateBase();
-    this.#checkForConflicts();
-  }
-  get base() {
-    return this.#base;
-  }
-  get characters() {
-    return [...this.#characters];
-  }
-  get charMap() {
-    return new Map(this.#charMap);
-  }
-  get name() {
-    return this.#name;
-  }
-  #parseCharacterSequence(sequence) {
-    if (typeof sequence !== "string" || sequence.length === 0) {
-      throw new Error("Character sequence must be a non-empty string");
-    }
-    const characters = [];
-    let i = 0;
-    while (i < sequence.length) {
-      if (i + 2 < sequence.length && sequence[i + 1] === "-") {
-        const startChar = sequence[i];
-        const endChar = sequence[i + 2];
-        const startCode = startChar.charCodeAt(0);
-        const endCode = endChar.charCodeAt(0);
-        if (startCode > endCode) {
-          throw new Error(`Invalid range: '${startChar}-${endChar}'. Start character must come before end character.`);
-        }
-        for (let code = startCode;code <= endCode; code++) {
-          characters.push(String.fromCharCode(code));
-        }
-        i += 3;
-      } else {
-        characters.push(sequence[i]);
-        i++;
-      }
-    }
-    const uniqueChars = new Set(characters);
-    if (uniqueChars.size !== characters.length) {
-      throw new Error("Character sequence contains duplicate characters");
-    }
-    if (characters.length < 2) {
-      throw new Error("Base system must have at least 2 characters");
-    }
-    return characters;
-  }
-  #createCharacterMap() {
-    const map = new Map;
-    for (let i = 0;i < this.#characters.length; i++) {
-      map.set(this.#characters[i], i);
-    }
-    return map;
-  }
-  #validateBase() {
-    if (this.#base < 2) {
-      throw new Error("Base must be at least 2");
-    }
-    if (this.#base !== this.#characters.length) {
-      throw new Error(`Base ${this.#base} does not match character set length ${this.#characters.length}`);
-    }
-    const uniqueChars = new Set(this.#characters);
-    if (uniqueChars.size !== this.#characters.length) {
-      throw new Error("Character set contains duplicate characters");
-    }
-    this.#validateCharacterOrdering();
-    if (this.#base > 1000) {
-      console.warn(`Very large base system (${this.#base}). This may impact performance.`);
-    }
-  }
-  #validateCharacterOrdering() {
-    if (this.#name === "Roman Numerals" || this.#characters.length < 10) {
-      return;
-    }
-    const ranges = [
-      { start: "0", end: "9", name: "digits" },
-      { start: "a", end: "z", name: "lowercase letters" },
-      { start: "A", end: "Z", name: "uppercase letters" }
-    ];
-    for (const range of ranges) {
-      const startCode = range.start.charCodeAt(0);
-      const endCode = range.end.charCodeAt(0);
-      let rangeChars = [];
-      for (let i = 0;i < this.#characters.length; i++) {
-        const char = this.#characters[i];
-        const code = char.charCodeAt(0);
-        if (code >= startCode && code <= endCode) {
-          rangeChars.push(char);
-        }
-      }
-      if (rangeChars.length >= 5 && rangeChars.length > (endCode - startCode) / 3) {
-        for (let i = 1;i < rangeChars.length; i++) {
-          const prevCode = rangeChars[i - 1].charCodeAt(0);
-          const currCode = rangeChars[i].charCodeAt(0);
-          if (currCode !== prevCode + 1) {
-            console.warn(`Non-contiguous ${range.name} range detected in base system`);
-            break;
-          }
-        }
-      }
-    }
-  }
-  #checkForConflicts() {
-    const conflicts = [];
-    for (const char of this.#characters) {
-      if (BaseSystem.RESERVED_SYMBOLS.has(char)) {
-        conflicts.push(char);
-      }
-    }
-    if (conflicts.length > 0) {
-      throw new Error(`Base system characters conflict with parser symbols: ${conflicts.join(", ")}. ` + `Reserved symbols are: ${Array.from(BaseSystem.RESERVED_SYMBOLS).join(", ")}`);
-    }
-  }
-  toDecimal(str) {
-    if (typeof str !== "string" || str.length === 0) {
-      throw new Error("Input must be a non-empty string");
-    }
-    let negative = false;
-    if (str.startsWith("-")) {
-      negative = true;
-      str = str.slice(1);
-    }
-    let result = 0n;
-    const baseBigInt = BigInt(this.#base);
-    for (let i = 0;i < str.length; i++) {
-      const char = str[i];
-      if (!this.#charMap.has(char)) {
-        throw new Error(`Invalid character '${char}' for ${this.#name} (base ${this.#base})`);
-      }
-      const digitValue = BigInt(this.#charMap.get(char));
-      result = result * baseBigInt + digitValue;
-    }
-    return negative ? -result : result;
-  }
-  fromDecimal(value) {
-    if (typeof value !== "bigint") {
-      throw new Error("Value must be a BigInt");
-    }
-    if (value === 0n) {
-      return this.#characters[0];
-    }
-    let negative = false;
-    if (value < 0n) {
-      negative = true;
-      value = -value;
-    }
-    const baseBigInt = BigInt(this.#base);
-    const digits = [];
-    while (value > 0n) {
-      const remainder = Number(value % baseBigInt);
-      digits.unshift(this.#characters[remainder]);
-      value = value / baseBigInt;
-    }
-    const result = digits.join("");
-    return negative ? "-" + result : result;
-  }
-  isValidString(str) {
-    if (typeof str !== "string") {
-      return false;
-    }
-    if (str.startsWith("-")) {
-      str = str.slice(1);
-    }
-    if (str.length === 0) {
-      return false;
-    }
-    for (const char of str) {
-      if (!this.#charMap.has(char)) {
-        return false;
-      }
-    }
-    return true;
-  }
-  getMaxDigit() {
-    return this.#characters[this.#characters.length - 1];
-  }
-  getMinDigit() {
-    return this.#characters[0];
-  }
-  toString() {
-    const charPreview = this.#characters.length <= 20 ? this.#characters.join("") : this.#characters.slice(0, 10).join("") + "..." + this.#characters.slice(-10).join("");
-    return `${this.#name} (${charPreview})`;
-  }
-  equals(other) {
-    if (!(other instanceof BaseSystem)) {
-      return false;
-    }
-    if (this.#base !== other.#base) {
-      return false;
-    }
-    for (let i = 0;i < this.#characters.length; i++) {
-      if (this.#characters[i] !== other.#characters[i]) {
-        return false;
-      }
-    }
-    return true;
-  }
-  static fromBase(base, name) {
-    if (!Number.isInteger(base) || base < 2) {
-      throw new Error("Base must be an integer >= 2");
-    }
-    let sequence;
-    if (base <= 10) {
-      sequence = `0-${base - 1}`;
-    } else if (base <= 36) {
-      const lastLetter = String.fromCharCode(97 + base - 11);
-      sequence = `0-9a-${lastLetter}`;
-    } else if (base <= 62) {
-      const lastLetter = String.fromCharCode(65 + base - 37);
-      sequence = `0-9a-zA-${lastLetter}`;
-    } else {
-      throw new Error("BaseSystem.fromBase() only supports bases up to 62. Use constructor with custom character sequence for larger bases.");
-    }
-    return new BaseSystem(sequence, name || `Base ${base}`);
-  }
-  static createPattern(pattern, size, name) {
-    switch (pattern.toLowerCase()) {
-      case "alphanumeric":
-        if (size <= 36) {
-          return BaseSystem.fromBase(size, name);
-        } else if (size <= 62) {
-          return BaseSystem.fromBase(size, name);
-        } else {
-          throw new Error(`Alphanumeric pattern only supports up to base 62, got ${size}`);
-        }
-      case "digits-only":
-        if (size > 10) {
-          throw new Error(`Digits-only pattern only supports up to base 10, got ${size}`);
-        }
-        return new BaseSystem(`0-${size - 1}`, name || `Base ${size} (digits only)`);
-      case "letters-only":
-        if (size <= 26) {
-          const lastLetter2 = String.fromCharCode(97 + size - 1);
-          return new BaseSystem(`a-${lastLetter2}`, name || `Base ${size} (lowercase letters)`);
-        } else if (size <= 52) {
-          const lastLetter2 = String.fromCharCode(65 + size - 27);
-          return new BaseSystem(`a-zA-${lastLetter2}`, name || `Base ${size} (mixed case letters)`);
-        } else {
-          throw new Error(`Letters-only pattern only supports up to base 52, got ${size}`);
-        }
-      case "uppercase-only":
-        if (size > 26) {
-          throw new Error(`Uppercase-only pattern only supports up to base 26, got ${size}`);
-        }
-        const lastLetter = String.fromCharCode(65 + size - 1);
-        return new BaseSystem(`A-${lastLetter}`, name || `Base ${size} (uppercase letters)`);
-      default:
-        throw new Error(`Unknown pattern: ${pattern}. Supported patterns: alphanumeric, digits-only, letters-only, uppercase-only`);
-    }
-  }
-  withCaseSensitivity(caseSensitive) {
-    if (caseSensitive === true) {
-      return this;
-    }
-    if (caseSensitive === false) {
-      const lowerChars = this.#characters.map((char) => char.toLowerCase());
-      const uniqueLowerChars = [...new Set(lowerChars)];
-      if (uniqueLowerChars.length !== lowerChars.length) {
-        console.warn("Case-insensitive conversion resulted in duplicate characters");
-      }
-      return new BaseSystem(uniqueLowerChars.join(""), `${this.#name} (case-insensitive)`);
-    }
-    throw new Error("caseSensitive must be a boolean value");
-  }
-}
-BaseSystem.BINARY = new BaseSystem("0-1", "Binary");
-BaseSystem.OCTAL = new BaseSystem("0-7", "Octal");
-BaseSystem.DECIMAL = new BaseSystem("0-9", "Decimal");
-BaseSystem.HEXADECIMAL = new BaseSystem("0-9a-f", "Hexadecimal");
-BaseSystem.BASE36 = new BaseSystem("0-9a-z", "Base 36");
-BaseSystem.BASE62 = new BaseSystem("0-9a-zA-Z", "Base 62");
-BaseSystem.BASE60 = new BaseSystem("0-9a-zA-X", "Base 60 (Sexagesimal)");
-BaseSystem.ROMAN = new BaseSystem("IVXLCDM", "Roman Numerals");
 
 // src/ratreal.js
 var LN2_CF = [0, 1, 2, 3, 1, 6, 3, 1, 1, 2, 1, 1, 6, 1, 6, 1, 1, 4, 1, 2, 4, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
@@ -3650,7 +3737,12 @@ class Parser {
           throw new Error(`Base ${baseNum} is not supported. Base must be between 2 and 62.`);
         }
         try {
-          const baseSystem = BaseSystem.fromBase(baseNum);
+          let baseSystem;
+          if (options.customBases && options.customBases.has(baseNum)) {
+            baseSystem = options.customBases.get(baseNum);
+          } else {
+            baseSystem = BaseSystem.fromBase(baseNum);
+          }
           const result = parseBaseNotation(numberStr, baseSystem, options);
           return {
             value: result,
@@ -5254,6 +5346,7 @@ var ratmath_default = {
   FractionInterval,
   Integer,
   TypePromotion,
+  BaseSystem,
   R,
   F
 };
@@ -5268,5 +5361,6 @@ export {
   Integer,
   FractionInterval,
   Fraction,
-  F
+  F,
+  BaseSystem
 };
