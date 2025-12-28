@@ -63,35 +63,57 @@ export class VariableManager {
 
     return expression.replace(numberPattern, (match) => {
       try {
-        // Skip if this looks like it contains decimal points in a non-decimal base
-        // For now, only convert simple integers in non-decimal bases
-        if (this.inputBase.base !== 10 && match.includes(".")) {
-          return match; // Don't convert decimals in non-decimal bases for now
-        }
+        // Normalize for case-insensitive bases (letters)
+        const normalize = (s) => (this.inputBase.base > 10 ? s.toLowerCase() : s);
 
-        // Check if it's a simple integer that can be converted
-        if (new RegExp(`^-?[${validChars}]+$`).test(match)) {
-          // Validate that all characters are valid in the input base
-          const absMatch = match.startsWith("-") ? match.substring(1) : match;
-          // For bases that use letters, try both original case and lowercase
-          let normalizedMatch = match;
-          if (this.inputBase.base > 10) {
-            normalizedMatch = match.toLowerCase();
-          }
-          const normalizedAbs = normalizedMatch.startsWith("-")
-            ? normalizedMatch.substring(1)
-            : normalizedMatch;
-
-          if (this.inputBase.isValidString(normalizedAbs)) {
-            const decimalValue = this.inputBase.toDecimal(normalizedMatch);
-            return decimalValue.toString();
+        // Handle mixed numbers: whole..num/den
+        if (match.includes("..")) {
+          const [whole, fraction] = match.split("..");
+          const wholeDec = this.inputBase.toDecimal(normalize(whole));
+          if (fraction.includes("/")) {
+            const [num, den] = fraction.split("/");
+            const numDec = this.inputBase.toDecimal(normalize(num));
+            const denDec = this.inputBase.toDecimal(normalize(den));
+            return `${wholeDec}..${numDec}/${denDec}`;
+          } else {
+            const fracDec = this.inputBase.toDecimal(normalize(fraction));
+            return `${wholeDec}..${fracDec}`;
           }
         }
 
-        // If we can't convert it, return as-is
-        return match;
+        // Handle simple fractions: num/den
+        if (match.includes("/") && !match.includes(".")) {
+          const [num, den] = match.split("/");
+          const numDec = this.inputBase.toDecimal(normalize(num));
+          const denDec = this.inputBase.toDecimal(normalize(den));
+          return `${numDec}/${denDec}`;
+        }
+
+        // Handle decimals: int.frac
+        if (match.includes(".")) {
+          const [intStr, fracStr] = match.split(".");
+          const isNegative = intStr.startsWith("-");
+
+          let val = new Rational(this.inputBase.toDecimal(normalize(intStr)));
+          const base = BigInt(this.inputBase.base);
+          let divisor = base;
+
+          for (const char of fracStr) {
+            // Use toDecimal for single char to get its numeric value
+            const digitValue = this.inputBase.toDecimal(normalize(char));
+            const term = new Rational(digitValue, divisor);
+            val = isNegative ? val.subtract(term) : val.add(term);
+            divisor *= base;
+          }
+
+          // Return as a standard fractional representation that the decimal parser understands
+          return val.toString();
+        }
+
+        // Handle simple integers
+        return this.inputBase.toDecimal(normalize(match)).toString();
       } catch (error) {
-        // If conversion fails, return original
+        // If conversion fails for any part, return as-is
         return match;
       }
     });
