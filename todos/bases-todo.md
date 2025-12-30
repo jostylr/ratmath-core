@@ -90,10 +90,10 @@ Add support for arbitrary number bases in RatMath using character sequence notat
 
 #### Rational Class Extensions
 - [x] `toString(base)` method for rational representation in different bases
-- [ ] Handle decimal expansion in different bases
-- [ ] Repeating decimal detection in arbitrary bases (e.g., 1/3 in base 3 = 0.1)
-- [ ] `toRepeatingBase(base)` method for exact fractional representation
-- [ ] Support for mixed numbers in different bases
+- [x] Handle decimal expansion in different bases
+- [x] Repeating decimal detection in arbitrary bases (e.g., 1/3 in base 3 = 0.1)
+- [x] `toRepeatingBase(base)` method for exact fractional representation
+- [x] Support for mixed numbers in different bases
 
 #### Base-Specific Arithmetic
 - [ ] Preserve base context in arithmetic operations when meaningful
@@ -124,16 +124,16 @@ Add support for arbitrary number bases in RatMath using character sequence notat
 ### 6. Repeating Patterns in Different Bases
 
 #### Pattern Detection
-- [ ] Extend repeating decimal algorithm to arbitrary bases
-- [ ] Detect cycles in fractional expansions: `1/3[2] = 0.#01[2]`
-- [ ] Handle different cycle lengths in different bases
-- [ ] Optimize pattern detection for large cycles
+- [x] Extend repeating decimal algorithm to arbitrary bases
+- [x] Detect cycles in fractional expansions: `1/3[2] = 0.#01[2]`
+- [x] Handle different cycle lengths in different bases
+- [x] Optimize pattern detection for large cycles
 
 #### Base-Specific Notation
-- [ ] Extend `#` notation to different bases: `0.#3[8]` for octal
-- [ ] Support base-specific repeating pattern syntax
-- [ ] Conversion between repeating patterns in different bases
-- [ ] Validate repeating patterns against base character sets
+- [x] Extend `#` notation to different bases: `0.#3[8]` for octal
+- [x] Support base-specific repeating pattern syntax
+- [x] Conversion between repeating patterns in different bases
+- [x] Validate repeating patterns against base character sets
 
 ### 7. Advanced Features
 

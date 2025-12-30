@@ -5,7 +5,7 @@
  * Supports rational arithmetic, intervals, and various output formats.
  */
 
-import { Parser, Rational, RationalInterval, Integer } from "../index.js";
+import { Parser, Rational, RationalInterval, Integer, BaseSystem } from "../index.js";
 import { VariableManager } from "./var.js";
 import { IntervalVisualization, OperationVisualization, MultiStepVisualization } from "./IntervalVisualization.js";
 
@@ -23,6 +23,10 @@ class WebCalculator {
     this.mobileInput = ""; // Track mobile input separately
     this.mobileKeypadSetup = false; // Track if mobile keypad is setup
     this.variableManager = new VariableManager(); // Variable and function management
+    this.inputBase = BaseSystem.DECIMAL; // Base system for parsing input
+    this.outputBases = [BaseSystem.DECIMAL]; // Array of base systems for displaying output
+    this.customBases = new Map(); // Custom base definitions [n] = character_sequence
+    this.variableManager.setCustomBases(this.customBases);
     this.currentVisualization = null; // Current visualization instance
     this.lastResult = null; // Store last result for visualization
 
@@ -42,7 +46,7 @@ class WebCalculator {
     this.mobileKeypad = document.getElementById("mobileKeypad");
     this.commandPanel = document.getElementById("commandPanel");
     this.closeCommandPanel = document.getElementById("closeCommandPanel");
-    
+
     // Visualization elements
     this.visualizationModal = document.getElementById("visualizationModal");
     this.visualizationContainer = document.getElementById("visualizationContainer");
@@ -201,6 +205,40 @@ class WebCalculator {
     // Display input
     this.addToOutput(input, null, false);
 
+    // Check for base definition syntax: [n] = range
+    const baseDefMatch = input.match(/^\[(\d+)\]\s*=\s*(.+)$/);
+    if (baseDefMatch) {
+      const baseNum = parseInt(baseDefMatch[1]);
+      const range = baseDefMatch[2].trim();
+
+      try {
+        if (isNaN(baseNum) || baseNum < 2) {
+          throw new Error("Base number must be an integer >= 2");
+        }
+
+        // Create validation BaseSystem to check the range
+        const newBase = new BaseSystem(range, `Custom Base ${baseNum}`);
+
+        if (newBase.base !== baseNum) {
+          throw new Error(
+            `Character sequence length (${newBase.base}) does not match declared base [${baseNum}]`,
+          );
+        }
+
+        this.customBases.set(baseNum, newBase);
+        const output = `Defined custom base [${baseNum}] with characters "${range}"`;
+        this.addToOutput("", output, false);
+        this.finishEntry(output);
+      } catch (error) {
+        const output = `Error defining base: ${error.message}`;
+        this.addToOutput("", output, true);
+        this.currentEntry.isError = true;
+        this.finishEntry(output);
+      }
+      this.inputElement.value = "";
+      return;
+    }
+
     // Handle special commands
     const upperInput = input.toUpperCase();
 
@@ -334,6 +372,64 @@ class WebCalculator {
       return;
     }
 
+    // Handle BASE commands (but not BASES)
+    if (upperInput.startsWith("BASE") && upperInput !== "BASES") {
+      this.handleBaseCommand(upperInput);
+      this.inputElement.value = "";
+      return;
+    }
+
+    // Handle BIN, HEX, OCT shortcuts
+    if (upperInput === "BIN") {
+      this.inputBase = BaseSystem.BINARY;
+      this.outputBases = [BaseSystem.BINARY];
+      this.variableManager.setInputBase(BaseSystem.BINARY);
+      const output = "Base set to binary (base 2)";
+      this.addToOutput("", output, false);
+      this.finishEntry(output);
+      this.inputElement.value = "";
+      return;
+    }
+
+    if (upperInput === "HEX") {
+      this.inputBase = BaseSystem.HEXADECIMAL;
+      this.outputBases = [BaseSystem.HEXADECIMAL];
+      this.variableManager.setInputBase(BaseSystem.HEXADECIMAL);
+      const output = "Base set to hexadecimal (base 16)";
+      this.addToOutput("", output, false);
+      this.finishEntry(output);
+      this.inputElement.value = "";
+      return;
+    }
+
+    if (upperInput === "OCT") {
+      this.inputBase = BaseSystem.OCTAL;
+      this.outputBases = [BaseSystem.OCTAL];
+      this.variableManager.setInputBase(BaseSystem.OCTAL);
+      const output = "Base set to octal (base 8)";
+      this.addToOutput("", output, false);
+      this.finishEntry(output);
+      this.inputElement.value = "";
+      return;
+    }
+
+    if (upperInput === "DEC") {
+      this.inputBase = BaseSystem.DECIMAL;
+      this.outputBases = [BaseSystem.DECIMAL];
+      this.variableManager.setInputBase(BaseSystem.DECIMAL);
+      const output = "Base set to decimal (base 10)";
+      this.addToOutput("", output, false);
+      this.finishEntry(output);
+      this.inputElement.value = "";
+      return;
+    }
+
+    if (upperInput === "BASES") {
+      this.showBases();
+      this.inputElement.value = "";
+      return;
+    }
+
     // Try to process with variable manager first
     const varResult = this.variableManager.processInput(input);
 
@@ -424,36 +520,67 @@ class WebCalculator {
       ? rational.toMixedString()
       : rational.toString();
 
-    const isTerminatingDecimal = repeatingDecimal.endsWith("#0");
-    const displayDecimal = isTerminatingDecimal
-      ? repeatingDecimal
-      : this.formatRepeatingDecimal(rational);
+    // Format the decimal representation, respecting truncation limits
+    const displayDecimal = this.formatRepeatingExpansion(repeatingDecimal);
 
-    const periodInfo = period > 0 ? ` {period: ${period}}` : "";
+    // Add period information for true repeating decimals (period > 0)
+    const periodInfo =
+      period === -1
+        ? " [period > 10^7]"
+        : period > 0
+          ? ` {period: ${period}}`
+          : "";
+
+    // Show base representations if not all decimal
+    let baseRepresentation = "";
+    if (this.outputBases.some((base) => base.base !== 10)) {
+      const baseReprs = [];
+      for (const base of this.outputBases) {
+        if (base.base !== 10) {
+          try {
+            const { baseStr, period: basePeriod } =
+              rational.toRepeatingBaseWithPeriod(base);
+            const formattedBaseStr = this.formatRepeatingExpansion(baseStr);
+            const basePeriodInfo =
+              basePeriod === -1
+                ? " [period > 10^6]"
+                : basePeriod > 0
+                  ? ` {period: ${basePeriod}}`
+                  : "";
+            baseReprs.push(`${formattedBaseStr}[${base.base}]${basePeriodInfo}`);
+          } catch (error) {
+            // Ignore conversion errors for individual bases
+          }
+        }
+      }
+      if (baseReprs.length > 0) {
+        baseRepresentation = ` (${baseReprs.join(", ")})`;
+      }
+    }
 
     switch (this.outputMode) {
       case "DECI":
-        return `${displayDecimal}${periodInfo}`;
+        return `${displayDecimal}${periodInfo}${baseRepresentation}`;
       case "RAT":
-        return fraction;
+        return `${fraction}${baseRepresentation}`;
       case "SCI":
         const scientificNotation = rational.toScientificNotation(
           true,
           this.sciPrecision,
           this.showPeriodInfo,
         );
-        return `${scientificNotation} (${fraction})`;
+        return `${scientificNotation} (${fraction})${baseRepresentation}`;
       case "CF":
         const continuedFraction = rational.toContinuedFractionString();
-        return `${continuedFraction} (${fraction})`;
+        return `${continuedFraction} (${fraction})${baseRepresentation}`;
       case "BOTH":
-        if (fraction.includes("/")) {
-          return `${displayDecimal}${periodInfo} (${fraction})`;
+        if (fraction.includes("/") || fraction.includes("..")) {
+          return `${displayDecimal}${periodInfo} (${fraction})${baseRepresentation}`;
         } else {
-          return decimal;
+          return `${decimal}${baseRepresentation}`;
         }
       default:
-        return `${displayDecimal}${periodInfo} (${fraction})`;
+        return `${displayDecimal}${periodInfo} (${fraction})${baseRepresentation}`;
     }
   }
 
@@ -471,18 +598,25 @@ class WebCalculator {
     return decimal;
   }
 
-  formatRepeatingDecimal(rational) {
-    const repeatingDecimal = rational.toRepeatingDecimal();
-
-    if (!repeatingDecimal.includes("#")) {
-      return repeatingDecimal;
+  formatRepeatingExpansion(expansion) {
+    // If no repeating part (#), return as is or truncate if too long
+    if (!expansion.includes("#")) {
+      if (expansion.length > this.decimalLimit + 2) {
+        const dotIndex = expansion.indexOf(".");
+        if (
+          dotIndex !== -1 &&
+          expansion.length - dotIndex - 1 > this.decimalLimit
+        ) {
+          return expansion.substring(0, dotIndex + this.decimalLimit + 1) + "...";
+        }
+      }
+      return expansion;
     }
 
-    if (repeatingDecimal.endsWith("#0")) {
-      const withoutRepeating = repeatingDecimal.substring(
-        0,
-        repeatingDecimal.length - 2,
-      );
+    // Check if it's a terminating decimal (ends with #0)
+    if (expansion.endsWith("#0")) {
+      const withoutRepeating = expansion.substring(0, expansion.length - 2);
+      // If the terminating part exceeds limit, truncate it
       if (withoutRepeating.length > this.decimalLimit + 2) {
         const dotIndex = withoutRepeating.indexOf(".");
         if (
@@ -498,15 +632,19 @@ class WebCalculator {
       return withoutRepeating;
     }
 
-    if (repeatingDecimal.length > this.decimalLimit + 2) {
-      const hashIndex = repeatingDecimal.indexOf("#");
-      const beforeHash = repeatingDecimal.substring(0, hashIndex);
-      const afterHash = repeatingDecimal.substring(hashIndex + 1);
+    // Check if the total length exceeds limit
+    if (expansion.length > this.decimalLimit + 2) {
+      // +2 for potential "0."
+      const hashIndex = expansion.indexOf("#");
+      const beforeHash = expansion.substring(0, hashIndex);
+      const afterHash = expansion.substring(hashIndex + 1);
 
+      // If the non-repeating part alone exceeds limit, truncate it
       if (beforeHash.length > this.decimalLimit + 1) {
         return beforeHash.substring(0, this.decimalLimit + 1) + "...";
       }
 
+      // If adding some of the repeating part would exceed limit, truncate
       const remainingSpace = this.decimalLimit + 2 - beforeHash.length;
       if (remainingSpace <= 1) {
         return beforeHash + "#...";
@@ -517,7 +655,7 @@ class WebCalculator {
       }
     }
 
-    return repeatingDecimal;
+    return expansion;
   }
 
   formatInterval(interval) {
@@ -527,19 +665,11 @@ class WebCalculator {
     const highRepeating = highRepeatingInfo.decimal;
     const lowPeriod = lowRepeatingInfo.period;
     const highPeriod = highRepeatingInfo.period;
-    const lowDecimal = this.formatDecimal(interval.low);
-    const highDecimal = this.formatDecimal(interval.high);
     const lowFraction = interval.low.toString();
     const highFraction = interval.high.toString();
 
-    const lowIsTerminating = lowRepeating.endsWith("#0");
-    const highIsTerminating = highRepeating.endsWith("#0");
-    const lowDisplay = lowIsTerminating
-      ? lowRepeating.substring(0, lowRepeating.length - 2)
-      : this.formatRepeatingDecimal(interval.low);
-    const highDisplay = highIsTerminating
-      ? highRepeating.substring(0, highRepeating.length - 2)
-      : this.formatRepeatingDecimal(interval.high);
+    const lowDisplay = this.formatRepeatingExpansion(lowRepeating);
+    const highDisplay = this.formatRepeatingExpansion(highRepeating);
 
     let periodInfo = "";
     if (lowPeriod > 0 || highPeriod > 0) {
@@ -596,12 +726,12 @@ class WebCalculator {
 
       if (!isError) {
         let icons = `<span class="inject-icon" title="Inject value">→</span>`;
-        
+
         // Add visualization icon for intervals
         if (result && (result instanceof RationalInterval || result.constructor.name === 'RationalInterval')) {
           icons += `<span class="viz-icon" title="Visualize interval">📊</span>`;
         }
-        
+
         outputLine.innerHTML = `${this.escapeHtml(output)}${icons}`;
 
         // Store expression with this output for visualization
@@ -1065,7 +1195,7 @@ class WebCalculator {
   showVisualization(result, expression = "") {
     // Clear previous visualization
     this.visualizationContainer.innerHTML = "";
-    
+
     if (this.currentVisualization) {
       this.currentVisualization.destroy();
       this.currentVisualization = null;
@@ -1073,19 +1203,19 @@ class WebCalculator {
 
     if (result instanceof RationalInterval) {
       // Check if this is an operation
-      const isOperation = expression.includes('+') || expression.includes('-') || 
-                         expression.includes('*') || expression.includes('/');
-      
+      const isOperation = expression.includes('+') || expression.includes('-') ||
+        expression.includes('*') || expression.includes('/');
+
       if (isOperation) {
         // Parse the expression tree
         const operationTree = this.parseOperationExpression(expression);
-        
+
         if (operationTree && operationTree.type === 'operation') {
           // Complex multi-step operation - use MultiStepVisualization
           this.currentVisualization = new MultiStepVisualization(this.visualizationContainer, {
             width: this.visualizationContainer.clientWidth || Math.min(window.innerWidth - 100, 900)
           });
-          
+
           this.currentVisualization.visualizeExpressionTree(operationTree, result);
           this.updateVisualizationStepSize(); // Apply current step size
         } else {
@@ -1094,7 +1224,7 @@ class WebCalculator {
             width: this.visualizationContainer.clientWidth || Math.min(window.innerWidth - 100, 800),
             height: 200
           });
-          
+
           // Use expression as label if it's simple, otherwise use "Interval"
           const label = expression && expression.length <= 20 ? expression : "Interval";
           this.currentVisualization.addInterval(result, {
@@ -1110,7 +1240,7 @@ class WebCalculator {
           width: this.visualizationContainer.clientWidth || Math.min(window.innerWidth - 100, 800),
           height: 200
         });
-        
+
         // Use expression as label if it's simple, otherwise use "Interval"
         const label = expression && expression.length <= 20 ? expression : "Interval";
         this.currentVisualization.addInterval(result, {
@@ -1120,7 +1250,7 @@ class WebCalculator {
         });
         this.updateVisualizationStepSize(); // Apply current step size
       }
-      
+
       // Listen for interval changes
       this.visualizationContainer.addEventListener('intervalChange', (e) => {
         // Update the save button to reflect changes
@@ -1137,25 +1267,25 @@ class WebCalculator {
   hideVisualization() {
     this.visualizationModal.style.display = "none";
     document.body.style.overflow = "auto";
-    
+
     if (this.currentVisualization) {
       this.currentVisualization.destroy();
       this.currentVisualization = null;
     }
-    
+
     // Reset save button
     this.saveComputationBtn.textContent = "Save to Calculator";
     this.saveComputationBtn.classList.remove("modified");
-    
+
     // Reset step size to default
     this.stepSizeInput.value = "10";
-    
+
     // Delay focus to ensure modal is fully hidden (except on mobile)
     if (!this.isMobile()) {
       setTimeout(() => this.inputElement.focus(), 100);
     }
   }
-  
+
   handleStepSizeKeydown(e) {
     if (e.key === "ArrowUp") {
       e.preventDefault();
@@ -1169,14 +1299,14 @@ class WebCalculator {
       this.updateVisualizationStepSize();
     }
   }
-  
+
   handleVisualizationKeydown(e) {
     // Handle up/down for step size everywhere except input fields
     // Left/right only handled by selected intervals
     if (e.target.tagName.toLowerCase() === 'input') {
       return; // Let input handle its own keys
     }
-    
+
     if (e.key === "ArrowUp") {
       e.preventDefault();
       const currentValue = parseInt(this.stepSizeInput.value) || 10;
@@ -1190,11 +1320,11 @@ class WebCalculator {
     }
     // Let selected intervals handle left/right arrows
   }
-  
+
   updateVisualizationStepSize() {
     const n = parseInt(this.stepSizeInput.value) || 10;
     const stepSize = new Rational(1, n); // 1/n
-    
+
     if (this.currentVisualization) {
       if (this.currentVisualization.setDragStepSize) {
         // Single visualization
@@ -1216,7 +1346,7 @@ class WebCalculator {
       const svgData = this.currentVisualization.exportSVG();
       const blob = new Blob([svgData], { type: 'image/svg+xml' });
       const url = URL.createObjectURL(blob);
-      
+
       const link = document.createElement('a');
       link.href = url;
       link.download = 'interval_visualization.svg';
@@ -1232,7 +1362,7 @@ class WebCalculator {
       const htmlData = this.currentVisualization.exportHTML();
       const blob = new Blob([htmlData], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
-      
+
       const link = document.createElement('a');
       link.href = url;
       link.download = 'interval_visualization.html';
@@ -1245,9 +1375,9 @@ class WebCalculator {
 
   saveVisualizationToCalculator() {
     if (!this.currentVisualization) return;
-    
+
     let interval = null;
-    
+
     if (this.currentVisualization instanceof MultiStepVisualization) {
       // For multi-step visualization, get the result from the last stage
       if (this.currentVisualization.stages.length > 0) {
@@ -1261,22 +1391,174 @@ class WebCalculator {
       const intervalData = this.currentVisualization.intervals[0];
       interval = intervalData.interval;
     }
-    
+
     if (interval) {
       // Format the interval and inject it
       const value = `${interval.low.toString()}:${interval.high.toString()}`;
       this.injectValue(value);
-      
+
       // Hide visualization
       this.hideVisualization();
     }
   }
 
-  parseOperationExpression(expression) {
-    // Parse expression into an operation tree for multi-step visualization
-    return this.parseExpressionTree(expression);
+  handleBaseCommand(command) {
+    const parts = command.split(/\s+/);
+
+    if (parts.length === 1) {
+      // Just "BASE" - show current base configuration
+      let output;
+      if (
+        this.outputBases.length === 1 &&
+        this.inputBase.equals(this.outputBases[0])
+      ) {
+        output = `Current base: ${this.inputBase.name} (base ${this.inputBase.base})`;
+      } else {
+        output = `Input base: ${this.inputBase.name} (base ${this.inputBase.base})\n` +
+          `Output base${this.outputBases.length > 1 ? "s" : ""}: ${this.outputBases.map((b) => `${b.name} (base ${b.base})`).join(", ")}`;
+      }
+      this.addToOutput("", output, false);
+      this.finishEntry(output);
+      return;
+    }
+
+    const baseSpec = parts.slice(1).join(" ");
+
+    // Check for input->output notation: BASE 3->10 or BASE 3->[10,5,3]
+    if (baseSpec.includes("->")) {
+      this.handleInputOutputBaseCommand(baseSpec);
+      return;
+    }
+
+    // Legacy behavior: set both input and output to same base
+    this.handleLegacyBaseCommand(baseSpec);
   }
-  
+
+  handleInputOutputBaseCommand(baseSpec) {
+    const [inputSpec, outputSpec] = baseSpec.split("->", 2);
+
+    if (!inputSpec.trim() || !outputSpec.trim()) {
+      const output = "Error: Invalid input->output format. Use BASE 3->10 or BASE 3->[10,5,3]";
+      this.addToOutput("", output, true);
+      this.currentEntry.isError = true;
+      this.finishEntry(output);
+      return;
+    }
+
+    // Parse input base
+    try {
+      this.inputBase = this.parseBaseSpec(inputSpec.trim());
+      this.variableManager.setInputBase(this.inputBase);
+    } catch (error) {
+      const output = `Error parsing input base: ${error.message}`;
+      this.addToOutput("", output, true);
+      this.currentEntry.isError = true;
+      this.finishEntry(output);
+      return;
+    }
+
+    // Parse output base(s)
+    try {
+      const trimmedOutput = outputSpec.trim();
+      if (trimmedOutput.startsWith("[") && trimmedOutput.endsWith("]")) {
+        // Multiple output bases: [10,5,3]
+        const baseSpecs = trimmedOutput
+          .slice(1, -1)
+          .split(",")
+          .map((s) => s.trim());
+        if (baseSpecs.length === 0) {
+          throw new Error("Empty output base list");
+        }
+        this.outputBases = baseSpecs.map((spec) => this.parseBaseSpec(spec));
+      } else {
+        // Single output base: 10
+        this.outputBases = [this.parseBaseSpec(trimmedOutput)];
+      }
+    } catch (error) {
+      const output = `Error parsing output base(s): ${error.message}`;
+      this.addToOutput("", output, true);
+      this.currentEntry.isError = true;
+      this.finishEntry(output);
+      return;
+    }
+
+    // Success message
+    const outputBaseNames = this.outputBases
+      .map((b) => `${b.name} (base ${b.base})`)
+      .join(", ");
+    const output = `Input base: ${this.inputBase.name} (base ${this.inputBase.base})\n` +
+      `Output base${this.outputBases.length > 1 ? "s" : ""}: ${outputBaseNames}`;
+    this.addToOutput("", output, false);
+    this.finishEntry(output);
+  }
+
+  handleLegacyBaseCommand(baseSpec) {
+    try {
+      const base = this.parseBaseSpec(baseSpec);
+      this.inputBase = base;
+      this.outputBases = [base];
+      this.variableManager.setInputBase(base);
+      const output = `Base set to ${base.name} (base ${base.base})`;
+      this.addToOutput("", output, false);
+      this.finishEntry(output);
+    } catch (error) {
+      const output = `Error: ${error.message}`;
+      this.addToOutput("", output, true);
+      this.currentEntry.isError = true;
+      this.finishEntry(output);
+    }
+  }
+
+  parseBaseSpec(baseSpec) {
+    // Check if it's a pure numeric base (no letters or dashes)
+    const numericBase = parseInt(baseSpec);
+    if (!isNaN(numericBase) && /^\d+$/.test(baseSpec.trim())) {
+      if (this.customBases.has(numericBase)) {
+        return this.customBases.get(numericBase);
+      }
+
+      if (numericBase < 2) {
+        throw new Error("Base must be at least 2");
+      }
+      if (numericBase > 62) {
+        throw new Error(
+          "Numeric bases must be 62 or less. Use character sequence for larger bases.",
+        );
+      }
+      return BaseSystem.fromBase(numericBase);
+    }
+
+    // Check if it's a character sequence (contains dashes or letters)
+    if (baseSpec.includes("-") || /[a-zA-Z]/.test(baseSpec)) {
+      return new BaseSystem(baseSpec, `Custom Base ${baseSpec}`);
+    }
+
+    throw new Error(
+      "Invalid base specification. Use a number (2-62) or character sequence with dashes (e.g., '0-9a-f')",
+    );
+  }
+
+  showBases() {
+    let output = "Available base systems:\n\nStandard bases:\n";
+    output += "  Binary (BIN):       base 2\n";
+    output += "  Octal (OCT):        base 8\n";
+    output += "  Decimal (DEC):      base 10\n";
+    output += "  Hexadecimal (HEX):  base 16\n";
+    output += "  Base 36:            base 36\n";
+    output += "  Base 62:            base 62\n\n";
+    output += "Base commands:\n";
+    output += "  BASE                - Show current base\n";
+    output += "  BASE <n>            - Set base to n (2-62)\n";
+    output += "  BASE <sequence>     - Set custom base using character sequence\n";
+    output += "  BASE <in>-><out>    - Set input base <in> and output base <out>\n";
+    output += "  BASE <in>->[<out1>,<out2>,...] - Set input base and multiple output bases\n";
+    output += "  BIN, HEX, OCT, DEC  - Quick base shortcuts\n";
+    output += "  BASES               - Show this help";
+
+    this.addToOutput("", output, false);
+    this.finishEntry(output);
+  }
+
   parseExpressionTree(expr) {
     // Remove outer parentheses if they wrap the whole expression
     expr = expr.trim();
@@ -1293,16 +1575,16 @@ class WebCalculator {
       }
       if (valid) expr = expr.slice(1, -1).trim();
     }
-    
+
     // Check if this might be an interval - if it contains ':', be more careful with operators
     const hasColon = expr.includes(':');
-    
+
     // Find operators by precedence (+ and - have lower precedence than * and /)
     const operators = [
       { symbols: ['+', '-'], precedence: 1 },
       { symbols: ['*', '/'], precedence: 2 }
     ];
-    
+
     for (const opGroup of operators) {
       let parenDepth = 0;
       // Scan from right to left to handle left-associativity
@@ -1313,13 +1595,13 @@ class WebCalculator {
           const leftExpr = expr.substring(0, i).trim();
           const rightExpr = expr.substring(i + 1).trim();
           const operator = expr[i];
-          
+
           // Skip if this is a negative sign at the beginning of the expression
           // or if the left expression would be empty or only whitespace
           if (operator === '-' && (leftExpr === '' || leftExpr.trim() === '')) {
             continue;
           }
-          
+
           // Also skip if this minus follows an operator (indicating negative number)
           if (operator === '-' && i > 0) {
             // Look backwards for the previous non-whitespace character
@@ -1334,7 +1616,7 @@ class WebCalculator {
               continue;
             }
           }
-          
+
           // Special check for intervals: if we have a colon and this is a division,
           // check if this division might be part of interval notation
           if (hasColon && operator === '/') {
@@ -1355,18 +1637,18 @@ class WebCalculator {
               // If it doesn't parse as an interval, proceed with division
             }
           }
-          
+
           // Recursively parse sub-expressions
           const leftTree = this.parseExpressionTree(leftExpr);
           const rightTree = this.parseExpressionTree(rightExpr);
-          
+
           const operationMap = {
             '+': 'add',
             '-': 'subtract',
             '*': 'multiply',
             '/': 'divide'
           };
-          
+
           return {
             type: 'operation',
             operator: operator,
@@ -1377,13 +1659,13 @@ class WebCalculator {
         }
       }
     }
-    
+
     // No operators found, this is a leaf node (number or interval)
     try {
       const value = Parser.parse(expr);
-      const interval = value instanceof RationalInterval ? value : 
-                      RationalInterval.point(value instanceof Integer ? value.toRational() : value);
-      
+      const interval = value instanceof RationalInterval ? value :
+        RationalInterval.point(value instanceof Integer ? value.toRational() : value);
+
       return {
         type: 'value',
         value: interval,

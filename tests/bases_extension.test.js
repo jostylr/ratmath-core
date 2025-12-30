@@ -62,12 +62,12 @@ describe('Bases Extension', () => {
     describe('Rational.toString(base)', () => {
         it('converts using numeric base', () => {
             const r = new Rational(3, 4); // 0.11 in binary
-            expect(r.toString(2)).toBe('0.11');
+            expect(r.toString(2)).toBe('0.11#0');
         });
 
         it('converts using BaseSystem object', () => {
             const r = new Rational(3, 4);
-            expect(r.toString(BaseSystem.BINARY)).toBe('0.11');
+            expect(r.toString(BaseSystem.BINARY)).toBe('0.11#0');
         });
     });
 });

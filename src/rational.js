@@ -577,16 +577,33 @@ export class Rational {
    * @returns {string} String representation with specialized repeating notation
    */
   toRepeatingBase(baseSystem) {
+    return this.toRepeatingBaseWithPeriod(baseSystem).baseStr;
+  }
+
+  /**
+   * Converts this rational to a repeating base representation with period metadata.
+   * @param {BaseSystem} baseSystem - The base system to use
+   * @param {boolean} useRepeatNotation - Whether to use {c~n} notation for identical digits
+   * @returns {Object} { baseStr: string, period: number }
+   */
+  toRepeatingBaseWithPeriod(baseSystem, useRepeatNotation = true) {
     if (!(baseSystem instanceof BaseSystem)) {
       throw new Error("Argument must be a BaseSystem");
     }
 
     // Handle negative numbers
     if (this.#numerator < 0n) {
-      return "-" + this.negate().toRepeatingBase(baseSystem);
+      const result = this.negate().toRepeatingBaseWithPeriod(
+        baseSystem,
+        useRepeatNotation,
+      );
+      return {
+        baseStr: "-" + result.baseStr,
+        period: result.period,
+      };
     }
 
-    const base = BigInt(baseSystem.base);
+    const baseBigInt = BigInt(baseSystem.base);
     let num = this.#numerator;
     let den = this.#denominator;
 
@@ -597,7 +614,7 @@ export class Rational {
     let result = baseSystem.fromDecimal(integerPart);
 
     if (remainder === 0n) {
-      return result;
+      return { baseStr: result, period: 0 };
     }
 
     result += ".";
@@ -606,8 +623,10 @@ export class Rational {
     const remainders = new Map();
     let fractionParts = [];
     let cycleStartIndex = -1;
+    // Safety limit for arbitrary base cycles to prevent hangs on very long periods
+    const limit = 1000000;
 
-    while (remainder !== 0n) {
+    while (remainder !== 0n && fractionParts.length < limit) {
       if (remainders.has(remainder)) {
         cycleStartIndex = remainders.get(remainder);
         break;
@@ -615,24 +634,46 @@ export class Rational {
 
       remainders.set(remainder, fractionParts.length);
 
-      remainder *= base;
+      remainder *= baseBigInt;
       const digit = remainder / den;
       remainder = remainder % den;
 
       fractionParts.push(baseSystem.getChar(digit));
     }
 
+    let period = 0;
     if (cycleStartIndex !== -1) {
       // Repeating part found
       const nonRepeating = fractionParts.slice(0, cycleStartIndex).join("");
       const repeating = fractionParts.slice(cycleStartIndex).join("");
-      result += nonRepeating + "#" + repeating;
-    } else {
+      period = fractionParts.length - cycleStartIndex;
+
+      const formattedNonRepeating = useRepeatNotation
+        ? Rational.#formatRepeatedDigits(nonRepeating)
+        : nonRepeating;
+      const formattedRepeating = useRepeatNotation
+        ? Rational.#formatRepeatedDigits(repeating)
+        : repeating;
+
+      result += formattedNonRepeating + "#" + formattedRepeating;
+    } else if (remainder === 0n) {
       // Terminating
-      result += fractionParts.join("");
+      const terminating = fractionParts.join("");
+      const formattedTerminating = useRepeatNotation
+        ? Rational.#formatRepeatedDigits(terminating)
+        : terminating;
+      result += formattedTerminating + "#0";
+    } else {
+      // Hit limit before cycle detection
+      const partial = fractionParts.join("");
+      const formattedPartial = useRepeatNotation
+        ? Rational.#formatRepeatedDigits(partial)
+        : partial;
+      result += formattedPartial + "...";
+      period = -1; // Indicates unknown/too long
     }
 
-    return result;
+    return { baseStr: result, period: period };
   }
 
   /**

@@ -139,11 +139,10 @@ describe("Base Input-Output Functionality", () => {
       const vm = new VariableManager();
       vm.setInputBase(BaseSystem.BINARY);
 
-      // For now, complex number patterns in fractions are not converted
       const result = vm.processInput("101/11");
       expect(result.type).toBe("expression");
-      // Current limitation: fraction components not yet converted automatically
-      expect(result.result.toString()).toBe("101/11");
+      // Now fractions ARE converted automatically: 101[2]=5, 11[2]=3
+      expect(result.result.toString()).toBe("5/3");
     });
 
     it("should handle parentheses with input base", () => {

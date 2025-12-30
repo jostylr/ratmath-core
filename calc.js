@@ -279,8 +279,10 @@ class Calculator {
       // Process the expression first
       const varResult = this.variableManager.processInput(expression);
 
-      // Clear any progress line
-      process.stdout.write("\r" + " ".repeat(80) + "\r");
+      // Clear any progress line if interactive
+      if (process.stdout.isTTY) {
+        process.stdout.write("\r" + " ".repeat(80) + "\r");
+      }
 
       if (varResult.type === "error") {
         console.log(varResult.message);
@@ -302,9 +304,6 @@ class Calculator {
 
     // Try to process with variable manager first
     const varResult = this.variableManager.processInput(input);
-
-    // Clear any progress line
-    process.stdout.write("\r" + " ".repeat(80) + "\r");
 
     if (varResult.type === "error") {
       console.log(varResult.message);
@@ -620,11 +619,8 @@ class Calculator {
       ? rational.toMixedString()
       : rational.toString();
 
-    // For fractions that convert to terminating decimals, show #0 notation
-    const isTerminatingDecimal = repeatingDecimal.endsWith("#0");
-    const displayDecimal = isTerminatingDecimal
-      ? repeatingDecimal
-      : this.formatRepeatingDecimal(rational);
+    // Format the decimal representation, respecting truncation limits
+    const displayDecimal = this.formatRepeatingExpansion(repeatingDecimal);
 
     // Add period information for true repeating decimals (period > 0)
     const periodInfo =
@@ -641,8 +637,16 @@ class Calculator {
       for (const base of this.outputBases) {
         if (base.base !== 10) {
           try {
-            const baseRepr = rational.toString(base);
-            baseReprs.push(`${baseRepr}[${base.base}]`);
+            const { baseStr, period: basePeriod } =
+              rational.toRepeatingBaseWithPeriod(base);
+            const formattedBaseStr = this.formatRepeatingExpansion(baseStr);
+            const basePeriodInfo =
+              basePeriod === -1
+                ? " [period > 10^6]"
+                : basePeriod > 0
+                  ? ` {period: ${basePeriod}}`
+                  : "";
+            baseReprs.push(`${formattedBaseStr}[${base.base}]${basePeriodInfo}`);
           } catch (error) {
             // Ignore conversion errors for individual bases
           }
@@ -699,20 +703,24 @@ class Calculator {
     return decimal;
   }
 
-  formatRepeatingDecimal(rational) {
-    const repeatingDecimal = rational.toRepeatingDecimal();
-
-    // If no repeating part (#), return as is
-    if (!repeatingDecimal.includes("#")) {
-      return repeatingDecimal;
+  formatRepeatingExpansion(expansion) {
+    // If no repeating part (#), return as is or truncate if too long
+    if (!expansion.includes("#")) {
+      if (expansion.length > this.decimalLimit + 2) {
+        const dotIndex = expansion.indexOf(".");
+        if (
+          dotIndex !== -1 &&
+          expansion.length - dotIndex - 1 > this.decimalLimit
+        ) {
+          return expansion.substring(0, dotIndex + this.decimalLimit + 1) + "...";
+        }
+      }
+      return expansion;
     }
 
     // Check if it's a terminating decimal (ends with #0)
-    if (repeatingDecimal.endsWith("#0")) {
-      const withoutRepeating = repeatingDecimal.substring(
-        0,
-        repeatingDecimal.length - 2,
-      );
+    if (expansion.endsWith("#0")) {
+      const withoutRepeating = expansion.substring(0, expansion.length - 2);
       // If the terminating part exceeds limit, truncate it
       if (withoutRepeating.length > this.decimalLimit + 2) {
         const dotIndex = withoutRepeating.indexOf(".");
@@ -730,11 +738,11 @@ class Calculator {
     }
 
     // Check if the total length exceeds limit
-    if (repeatingDecimal.length > this.decimalLimit + 2) {
+    if (expansion.length > this.decimalLimit + 2) {
       // +2 for potential "0."
-      const hashIndex = repeatingDecimal.indexOf("#");
-      const beforeHash = repeatingDecimal.substring(0, hashIndex);
-      const afterHash = repeatingDecimal.substring(hashIndex + 1);
+      const hashIndex = expansion.indexOf("#");
+      const beforeHash = expansion.substring(0, hashIndex);
+      const afterHash = expansion.substring(hashIndex + 1);
 
       // If the non-repeating part alone exceeds limit, truncate it
       if (beforeHash.length > this.decimalLimit + 1) {
@@ -752,7 +760,7 @@ class Calculator {
       }
     }
 
-    return repeatingDecimal;
+    return expansion;
   }
 
   displayInterval(interval) {
@@ -772,10 +780,10 @@ class Calculator {
     const highIsTerminating = highRepeating.endsWith("#0");
     const lowDisplay = lowIsTerminating
       ? lowRepeating.substring(0, lowRepeating.length - 2)
-      : this.formatRepeatingDecimal(interval.low);
+      : this.formatRepeatingExpansion(lowRepeating);
     const highDisplay = highIsTerminating
       ? highRepeating.substring(0, highRepeating.length - 2)
-      : this.formatRepeatingDecimal(interval.high);
+      : this.formatRepeatingExpansion(highRepeating);
 
     // Add period information for intervals with repeating endpoints
     let periodInfo = "";
@@ -951,12 +959,14 @@ Press Ctrl+C to exit
 
     switch (this.outputMode) {
       case "DECI":
-        return this.formatRepeatingDecimal(rational);
+        return this.formatRepeatingExpansion(rational.toRepeatingDecimal());
       case "RAT":
         return fraction;
       case "BOTH":
         if (fraction.includes("/") || fraction.includes("..")) {
-          const decimal = this.formatRepeatingDecimal(rational);
+          const decimal = this.formatRepeatingExpansion(
+            rational.toRepeatingDecimal(),
+          );
           return `${decimal} (${fraction})`;
         } else {
           return this.formatDecimal(rational);

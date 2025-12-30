@@ -6,21 +6,21 @@ describe("Rational Base Expansion", () => {
     describe("Terminating Expansions", () => {
         test("should handle terminating fractions in base 2", () => {
             const r = new Rational(1, 2);
-            expect(r.toRepeatingBase(BaseSystem.BINARY)).toBe("0.1");
-            expect(r.toString(2)).toBe("0.1");
+            expect(r.toRepeatingBase(BaseSystem.BINARY)).toBe("0.1#0");
+            expect(r.toString(2)).toBe("0.1#0");
 
             const r2 = new Rational(1, 4);
-            expect(r2.toRepeatingBase(BaseSystem.BINARY)).toBe("0.01");
+            expect(r2.toRepeatingBase(BaseSystem.BINARY)).toBe("0.01#0");
         });
 
         test("should handle terminating fractions in base 3", () => {
             const r = new Rational(1, 3);
-            expect(r.toRepeatingBase(new BaseSystem("012"))).toBe("0.1");
+            expect(r.toRepeatingBase(new BaseSystem("012"))).toBe("0.1#0");
         });
 
         test("should handle mixed numbers", () => {
             const r = new Rational(3, 2); // 1.5
-            expect(r.toRepeatingBase(BaseSystem.BINARY)).toBe("1.1");
+            expect(r.toRepeatingBase(BaseSystem.BINARY)).toBe("1.1#0");
         });
     });
 
@@ -52,11 +52,11 @@ describe("Rational Base Expansion", () => {
         test("should work with base 16", () => {
             // 1/16 = 0.1 in hex
             const r = new Rational(1, 16);
-            expect(r.toRepeatingBase(BaseSystem.HEXADECIMAL)).toBe("0.1");
+            expect(r.toRepeatingBase(BaseSystem.HEXADECIMAL)).toBe("0.1#0");
 
             // 10.5 -> A.8
             const r2 = new Rational(21, 2);
-            expect(r2.toRepeatingBase(BaseSystem.HEXADECIMAL)).toBe("a.8");
+            expect(r2.toRepeatingBase(BaseSystem.HEXADECIMAL)).toBe("a.8#0");
         });
 
         test("should work with custom charsets", () => {
