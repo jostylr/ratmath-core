@@ -634,17 +634,14 @@ class Calculator {
           ? ` {period: ${period}}`
           : "";
 
-    // Show base representations if not all decimal and is integer
+    // Show base representations if not all decimal
     let baseRepresentation = "";
-    if (
-      rational.denominator === 1n &&
-      this.outputBases.some((base) => base.base !== 10)
-    ) {
+    if (this.outputBases.some((base) => base.base !== 10)) {
       const baseReprs = [];
       for (const base of this.outputBases) {
         if (base.base !== 10) {
           try {
-            const baseRepr = base.fromDecimal(rational.numerator);
+            const baseRepr = rational.toString(base);
             baseReprs.push(`${baseRepr}[${base.base}]`);
           } catch (error) {
             // Ignore conversion errors for individual bases
