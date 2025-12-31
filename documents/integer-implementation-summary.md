@@ -268,7 +268,7 @@ Applications relying on the error for negative exponents will need to be updated
 
 ### Basic Usage
 ```javascript
-import { Integer } from 'ratmath';
+import { Integer } from '@ratmath/core';
 
 const base = new Integer(2);
 

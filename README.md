@@ -12,19 +12,19 @@ A JavaScript library for exact rational arithmetic, interval arithmetic, and hig
 ## Installation
 
 ```bash
-npm install ratmath
+npm install @ratmath/core
 ```
 
 ## Related Projects
 
-- **[ratmath-parser](../ratmath-parser)**: Expression parser and template literal tags (`R`, `F`).
-- **[ratcalc](../ratcalc)**: Terminal-based calculator (REPL).
-- **[ratweb](../ratweb)**: Web-based calculator and documentation.
+- **[@ratmath/parser](https://github.com/jostylr/ratmath-parser)**: Expression parser and template literal tags (`R`, `F`).
+- **[ratcalc](https://github.com/jostylr/ratcalc)**: Terminal-based calculator (REPL).
+- **[ratweb](https://github.com/jostylr/ratmath-web)**: Web-based calculator and documentation.
 
 ## Usage
 
 ```javascript
-import { Rational, RationalInterval, PI } from "ratmath";
+import { Rational, RationalInterval, PI } from "@ratmath/core";
 
 const half = new Rational(1, 2);
 const third = new Rational(1, 3);

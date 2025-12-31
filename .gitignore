@@ -1,6 +1,5 @@
 # Ignore dependencies
 node_modules/
-bun.lockb
 
 # Ignore build output
 dist/

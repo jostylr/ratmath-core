@@ -19,7 +19,7 @@ The parser now supports type-aware parsing that returns the most appropriate typ
 ### Basic Usage
 
 ```javascript
-import { Parser, Integer, Rational, RationalInterval } from 'ratmath';
+import { Parser, Integer, Rational, RationalInterval } from '@ratmath/core';
 
 // Type-aware parsing (new behavior)
 Parser.parse('42', { typeAware: true })        // → Integer(42)

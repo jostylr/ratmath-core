@@ -1,5 +1,5 @@
 {
-  "name": "ratmath",
+  "name": "@ratmath/core",
   "version": "0.2.0",
   "description": "Exact rational arithmetic and interval arithmetic library",
   "main": "index.js",
@@ -7,11 +7,6 @@
   "scripts": {
     "test": "bun test",
     "calc": "bun calc.js",
-    "build-web": "bun build src/web-calc.js --outfile docs/calc.js --format esm --target browser",
-    "build-stern-brocot": "bun build src/stern-brocot-web.js --outfile docs/stern-brocot.js --format esm --target browser",
-    "build-showcase": "bun build index.js --outfile docs/ratmath.js --format esm --target browser",
-    "build-all": "bun run build-web && bun run build-stern-brocot && bun run build-showcase",
-    "serve": "python3 -m http.server 3000 --directory docs"
   },
   "keywords": [
     "rational",

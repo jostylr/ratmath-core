@@ -92,7 +92,7 @@ The function throws descriptive errors for:
 ### Basic Usage
 
 ```javascript
-import { parseRepeatingDecimal } from 'ratmath';
+import { parseRepeatingDecimal } from '@ratmath/core';
 
 // Common fractions
 const oneThird = parseRepeatingDecimal('0.#3');        // 1/3
@@ -114,7 +114,7 @@ const uncertain = parseRepeatingDecimal('3.14');       // [3.135, 3.145]
 The repeating decimal notation integrates with the expression parser:
 
 ```javascript
-import { Parser } from 'ratmath';
+import { Parser } from '@ratmath/core';
 
 // Arithmetic with repeating decimals
 const result1 = Parser.parse('0.#3 + 0.#6');          // 1 (exactly)

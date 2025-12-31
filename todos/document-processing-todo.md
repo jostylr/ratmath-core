@@ -7,7 +7,7 @@ A separate document processing project that imports RatMath as a library to crea
 
 ### 1. Separate Project Structure
 - [ ] Create new project: `ratmath-docs` or `ratmath-literate`
-- [ ] Import RatMath as dependency: `import { Rational, Parser, ... } from 'ratmath'`
+- [ ] Import RatMath as dependency: `import { Rational, Parser, ... } from '@ratmath/core'`
 - [ ] Modular architecture for different input/output formats
 - [ ] Plugin system for extensibility
 - [ ] CLI tool and programmatic API
