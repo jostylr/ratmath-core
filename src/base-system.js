@@ -33,12 +33,25 @@ export class BaseSystem {
   /**
    * Creates a new BaseSystem.
    *
-   * @param {string} characterSequence - Character sequence with range notation
+   * @param {string|string[]} characters - Character sequence string or array of characters.
+   *                                     NOTE: Does NOT support range notation (e.g., "0-9").
+   *                                     Use BaseParser from @ratmath/parser for range parsing.
    * @param {string} [name] - Optional human-readable name for the base system
    * @throws {Error} If the character sequence is invalid or contains conflicts
    */
-  constructor(characterSequence, name) {
-    this.#characters = this.#parseCharacterSequence(characterSequence);
+  constructor(characters, name) {
+    if (typeof characters === "string") {
+      this.#characters = characters.split("");
+    } else if (Array.isArray(characters)) {
+      this.#characters = [...characters];
+    } else {
+      throw new Error("Characters must be a string or array of strings");
+    }
+
+    if (this.#characters.length < 2) {
+      throw new Error("Base system must have at least 2 characters");
+    }
+
     this.#base = this.#characters.length;
     this.#charMap = this.#createCharacterMap();
     this.#name = name || `Base ${this.#base}`;
@@ -46,6 +59,7 @@ export class BaseSystem {
     this.#validateBase();
     this.#checkForConflicts();
   }
+
 
   /**
    * Gets the numeric base value
@@ -93,67 +107,7 @@ export class BaseSystem {
     return this.#name;
   }
 
-  /**
-   * Parses character sequence with range notation.
-   * Supports formats like:
-   * - "0-9" → ["0","1","2","3","4","5","6","7","8","9"]
-   * - "a-z" → ["a","b","c",...,"z"]
-   * - "0-9a-f" → ["0","1",...,"9","a","b",...,"f"]
-   * - "01234567" → ["0","1","2","3","4","5","6","7"]
-   *
-   * @param {string} sequence - The character sequence
-   * @returns {string[]} Array of characters in order
-   * @throws {Error} If the sequence format is invalid
-   */
-  #parseCharacterSequence(sequence) {
-    if (typeof sequence !== "string" || sequence.length === 0) {
-      throw new Error("Character sequence must be a non-empty string");
-    }
 
-    const characters = [];
-    let i = 0;
-
-    while (i < sequence.length) {
-      // Check for range notation (char-char)
-      if (i + 2 < sequence.length && sequence[i + 1] === "-") {
-        const startChar = sequence[i];
-        const endChar = sequence[i + 2];
-
-        // Validate range
-        const startCode = startChar.charCodeAt(0);
-        const endCode = endChar.charCodeAt(0);
-
-        if (startCode > endCode) {
-          throw new Error(
-            `Invalid range: '${startChar}-${endChar}'. Start character must come before end character.`,
-          );
-        }
-
-        // Add all characters in range
-        for (let code = startCode; code <= endCode; code++) {
-          characters.push(String.fromCharCode(code));
-        }
-
-        i += 3; // Skip past the range
-      } else {
-        // Single character
-        characters.push(sequence[i]);
-        i++;
-      }
-    }
-
-    // Validate no duplicates
-    const uniqueChars = new Set(characters);
-    if (uniqueChars.size !== characters.length) {
-      throw new Error("Character sequence contains duplicate characters");
-    }
-
-    if (characters.length < 2) {
-      throw new Error("Base system must have at least 2 characters");
-    }
-
-    return characters;
-  }
 
   /**
    * Creates a mapping from characters to their numeric values
@@ -435,22 +389,33 @@ export class BaseSystem {
       throw new Error("Base must be an integer >= 2");
     }
 
-    let sequence;
-    if (base <= 10) {
-      sequence = `0-${base - 1}`;
-    } else if (base <= 36) {
-      const lastLetter = String.fromCharCode("a".charCodeAt(0) + base - 11);
-      sequence = `0-9a-${lastLetter}`;
-    } else if (base <= 62) {
-      const lastLetter = String.fromCharCode("A".charCodeAt(0) + base - 37);
-      sequence = `0-9a-zA-${lastLetter}`;
+    const characters = [];
+    if (base <= 62) {
+      // 0-9
+      for (let i = 0; i < Math.min(base, 10); i++) {
+        characters.push(String.fromCharCode(48 + i)); // '0' is 48
+      }
+
+      // a-z
+      if (base > 10) {
+        for (let i = 0; i < Math.min(base - 10, 26); i++) {
+          characters.push(String.fromCharCode(97 + i)); // 'a' is 97
+        }
+      }
+
+      // A-Z
+      if (base > 36) {
+        for (let i = 0; i < base - 36; i++) {
+          characters.push(String.fromCharCode(65 + i)); // 'A' is 65
+        }
+      }
     } else {
       throw new Error(
         "BaseSystem.fromBase() only supports bases up to 62. Use constructor with custom character sequence for larger bases.",
       );
     }
 
-    return new BaseSystem(sequence, name || `Base ${base}`);
+    return new BaseSystem(characters, name || `Base ${base}`);
   }
 
   /**
@@ -461,59 +426,49 @@ export class BaseSystem {
    * @returns {BaseSystem} New BaseSystem instance
    */
   static createPattern(pattern, size, name) {
+    const characters = [];
+
     switch (pattern.toLowerCase()) {
       case "alphanumeric":
-        if (size <= 36) {
-          return BaseSystem.fromBase(size, name);
-        } else if (size <= 62) {
-          return BaseSystem.fromBase(size, name);
-        } else {
-          throw new Error(
-            `Alphanumeric pattern only supports up to base 62, got ${size}`,
-          );
+        if (size > 62) {
+          throw new Error(`Alphanumeric pattern only supports up to base 62, got ${size}`);
         }
+        return BaseSystem.fromBase(size, name);
 
       case "digits-only":
         if (size > 10) {
-          throw new Error(
-            `Digits-only pattern only supports up to base 10, got ${size}`,
-          );
+          throw new Error(`Digits-only pattern only supports up to base 10, got ${size}`);
         }
-        return new BaseSystem(
-          `0-${size - 1}`,
-          name || `Base ${size} (digits only)`,
-        );
+        for (let i = 0; i < size; i++) characters.push(String.fromCharCode(48 + i));
+        return new BaseSystem(characters, name || `Base ${size} (digits only)`);
 
       case "letters-only":
-        if (size <= 26) {
-          const lastLetter = String.fromCharCode("a".charCodeAt(0) + size - 1);
-          return new BaseSystem(
-            `a-${lastLetter}`,
-            name || `Base ${size} (lowercase letters)`,
-          );
-        } else if (size <= 52) {
-          const lastLetter = String.fromCharCode("A".charCodeAt(0) + size - 27);
-          return new BaseSystem(
-            `a-zA-${lastLetter}`,
-            name || `Base ${size} (mixed case letters)`,
-          );
-        } else {
-          throw new Error(
-            `Letters-only pattern only supports up to base 52, got ${size}`,
-          );
+        if (size > 52) {
+          throw new Error(`Letters-only pattern only supports up to base 52, got ${size}`);
         }
+        // a-z
+        for (let i = 0; i < Math.min(size, 26); i++) {
+          characters.push(String.fromCharCode(97 + i));
+        }
+        // A-Z
+        if (size > 26) {
+          for (let i = 0; i < size - 26; i++) {
+            characters.push(String.fromCharCode(65 + i));
+          }
+        }
+        return new BaseSystem(
+          characters,
+          name || (size <= 26 ? `Base ${size} (lowercase letters)` : `Base ${size} (mixed case letters)`)
+        );
 
       case "uppercase-only":
         if (size > 26) {
-          throw new Error(
-            `Uppercase-only pattern only supports up to base 26, got ${size}`,
-          );
+          throw new Error(`Uppercase-only pattern only supports up to base 26, got ${size}`);
         }
-        const lastLetter = String.fromCharCode("A".charCodeAt(0) + size - 1);
-        return new BaseSystem(
-          `A-${lastLetter}`,
-          name || `Base ${size} (uppercase letters)`,
-        );
+        for (let i = 0; i < size; i++) {
+          characters.push(String.fromCharCode(65 + i));
+        }
+        return new BaseSystem(characters, name || `Base ${size} (uppercase letters)`);
 
       default:
         throw new Error(
@@ -555,15 +510,15 @@ export class BaseSystem {
 }
 
 // Standard base presets - defined after class to avoid circular reference
-BaseSystem.BINARY = new BaseSystem("0-1", "Binary");
-BaseSystem.OCTAL = new BaseSystem("0-7", "Octal");
-BaseSystem.DECIMAL = new BaseSystem("0-9", "Decimal");
-BaseSystem.HEXADECIMAL = new BaseSystem("0-9a-f", "Hexadecimal");
-BaseSystem.BASE36 = new BaseSystem("0-9a-z", "Base 36");
-BaseSystem.BASE62 = new BaseSystem("0-9a-zA-Z", "Base 62");
+BaseSystem.BINARY = new BaseSystem(["0", "1"], "Binary");
+BaseSystem.OCTAL = new BaseSystem(["0", "1", "2", "3", "4", "5", "6", "7"], "Octal");
+BaseSystem.DECIMAL = new BaseSystem(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"], "Decimal");
+BaseSystem.HEXADECIMAL = new BaseSystem(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"], "Hexadecimal");
+BaseSystem.BASE36 = new BaseSystem("0123456789abcdefghijklmnopqrstuvwxyz".split(""), "Base 36");
+BaseSystem.BASE62 = new BaseSystem("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""), "Base 62");
 
 // Extended base presets
-BaseSystem.BASE60 = new BaseSystem("0-9a-zA-X", "Base 60 (Sexagesimal)");
+BaseSystem.BASE60 = new BaseSystem("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWX".split(""), "Base 60 (Sexagesimal)");
 
 // Roman numerals - special case with custom validation
-BaseSystem.ROMAN = new BaseSystem("IVXLCDM", "Roman Numerals");
+BaseSystem.ROMAN = new BaseSystem(["I", "V", "X", "L", "C", "D", "M"], "Roman Numerals");

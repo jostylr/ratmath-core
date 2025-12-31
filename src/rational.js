@@ -583,23 +583,25 @@ export class Rational {
   /**
    * Converts this rational to a repeating base representation with period metadata.
    * @param {BaseSystem} baseSystem - The base system to use
-   * @param {boolean} useRepeatNotation - Whether to use {c~n} notation for identical digits
-   * @returns {Object} { baseStr: string, period: number }
+   * @param {Object} [options] - Configuration options
+   * @param {boolean} [options.useRepeatNotation=true] - Whether to use {c~n} notation for identical digits
+   * @param {number} [options.limit=1000] - Hard limit on number of digits to compute
+   * @returns {Object} { baseStr: string, period: number, limitHit: boolean }
    */
-  toRepeatingBaseWithPeriod(baseSystem, useRepeatNotation = true) {
+  toRepeatingBaseWithPeriod(baseSystem, options = {}) {
     if (!(baseSystem instanceof BaseSystem)) {
       throw new Error("Argument must be a BaseSystem");
     }
 
+    const { useRepeatNotation = true, limit = 1000 } = options;
+
     // Handle negative numbers
     if (this.#numerator < 0n) {
-      const result = this.negate().toRepeatingBaseWithPeriod(
-        baseSystem,
-        useRepeatNotation,
-      );
+      const result = this.negate().toRepeatingBaseWithPeriod(baseSystem, options);
       return {
         baseStr: "-" + result.baseStr,
         period: result.period,
+        limitHit: result.limitHit
       };
     }
 
@@ -614,7 +616,7 @@ export class Rational {
     let result = baseSystem.fromDecimal(integerPart);
 
     if (remainder === 0n) {
-      return { baseStr: result, period: 0 };
+      return { baseStr: result, period: 0, limitHit: false };
     }
 
     result += ".";
@@ -623,12 +625,16 @@ export class Rational {
     const remainders = new Map();
     let fractionParts = [];
     let cycleStartIndex = -1;
-    // Safety limit for arbitrary base cycles to prevent hangs on very long periods
-    const limit = 1000000;
+    let limitHit = false;
 
-    while (remainder !== 0n && fractionParts.length < limit) {
+    while (remainder !== 0n) {
       if (remainders.has(remainder)) {
         cycleStartIndex = remainders.get(remainder);
+        break;
+      }
+
+      if (fractionParts.length >= limit) {
+        limitHit = true;
         break;
       }
 
@@ -673,7 +679,59 @@ export class Rational {
       period = -1; // Indicates unknown/too long
     }
 
-    return { baseStr: result, period: period };
+    return { baseStr: result, period: period, limitHit: limitHit };
+  }
+
+  /**
+   * Calculates the period length of this rational in a given base using modular arithmetic.
+   * This allows finding the period length even if it's very large, where direct division converts fails.
+   * NOTE: This is computationally expensive for large denominators.
+   * 
+   * @param {BaseSystem} baseSystem - The base system
+   * @param {number} [limit=1000000] - Iteration limit to prevent infinite loops (though mathematically guaranteed to end)
+   * @returns {number} The period length
+   * @throws {Error} If limit is exceeded
+   */
+  periodModulo(baseSystem, limit = 1000000) {
+    if (!(baseSystem instanceof BaseSystem)) {
+      throw new Error("Argument must be a BaseSystem");
+    }
+
+    // Work with positive absolute value
+    let num = this.#numerator < 0n ? -this.#numerator : this.#numerator;
+    let den = this.#denominator;
+
+    // Remove factors of base from denominator to find "non-terminating part"
+    const baseBigInt = BigInt(baseSystem.base);
+
+    // Simplify fraction first
+    if (den === 1n) return 0;
+
+    // Remove factors of base from denominator (pre-period part)
+    // gcd(den, base)
+    let common = this.#gcd(den, baseBigInt);
+    while (common > 1n) {
+      den /= common;
+      common = this.#gcd(den, baseBigInt);
+    }
+
+    if (den === 1n) return 0; // Terminating
+
+    // Multiplicative order of base modulo den: base^k = 1 (mod den)
+    // We need to find smallest k > 0
+    let k = 1;
+    let power = baseBigInt % den;
+
+    while (power !== 1n && k <= limit) {
+      power = (power * baseBigInt) % den;
+      k++;
+    }
+
+    if (k > limit) {
+      throw new Error(`Period calculation exceeded limit of ${limit} iterations. Period is likely > ${limit}.`);
+    }
+
+    return k;
   }
 
   /**
