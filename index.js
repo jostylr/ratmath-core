@@ -12,23 +12,6 @@ import { FractionInterval } from "./src/fraction-interval.js";
 import { Integer } from "./src/integer.js";
 import { TypePromotion } from "./src/type-promotion.js";
 import { BaseSystem } from "./src/base-system.js";
-import {
-  PI,
-  E,
-  SIN,
-  COS,
-  TAN,
-  ARCSIN,
-  ARCCOS,
-  ARCTAN,
-  EXP,
-  LN,
-  LOG,
-  newtonRoot,
-  rationalIntervalPower,
-} from "./src/ratreal.js";
-
-
 // Export named exports
 export {
   Rational,
@@ -38,19 +21,6 @@ export {
   Integer,
   TypePromotion,
   BaseSystem,
-  PI,
-  E,
-  SIN,
-  COS,
-  TAN,
-  ARCSIN,
-  ARCCOS,
-  ARCTAN,
-  EXP,
-  LN,
-  LOG,
-  newtonRoot,
-  rationalIntervalPower,
 };
 
 // Default export for convenient importing
@@ -62,18 +32,5 @@ export default {
   Integer,
   TypePromotion,
   BaseSystem,
-  PI,
-  E,
-  SIN,
-  COS,
-  TAN,
-  ARCSIN,
-  ARCCOS,
-  ARCTAN,
-  EXP,
-  LN,
-  LOG,
-  newtonRoot,
-  rationalIntervalPower,
 };
 

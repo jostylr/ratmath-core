@@ -5,8 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "bun test",
-    "calc": "bun calc.js",
+    "test": "bun test"
   },
   "keywords": [
     "rational",
