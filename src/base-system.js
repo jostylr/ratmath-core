@@ -12,6 +12,9 @@ export class BaseSystem {
   #charMap;
   #name;
 
+  // Prefix registry
+  static #prefixMap = new Map();
+
   // Parser symbols that cannot be used in base character sets
   static RESERVED_SYMBOLS = new Set([
     "+",
@@ -478,6 +481,43 @@ export class BaseSystem {
   }
 
   /**
+   * Registers a prefix for a base system
+   * @param {string} prefix - The single-character prefix (e.g., 'x', 'b')
+   * @param {BaseSystem} baseSystem - The base system to associate
+   */
+  static registerPrefix(prefix, baseSystem) {
+    if (typeof prefix !== "string" || prefix.length !== 1) {
+      throw new Error("Prefix must be a single character");
+    }
+    if (!(baseSystem instanceof BaseSystem)) {
+      throw new Error("Must provide a valid BaseSystem");
+    }
+    // Check for reserved system prefixes (optional, but good practice)
+    if (!/^[a-zA-Z]$/.test(prefix)) {
+      throw new Error("Prefix must be a letter");
+    }
+
+    BaseSystem.#prefixMap.set(prefix, baseSystem);
+  }
+
+  /**
+   * Unregisters a prefix
+   * @param {string} prefix - The prefix to remove
+   */
+  static unregisterPrefix(prefix) {
+    BaseSystem.#prefixMap.delete(prefix);
+  }
+
+  /**
+   * Gets the base system for a registered prefix
+   * @param {string} prefix - The prefix character
+   * @returns {BaseSystem|undefined} The associated BaseSystem or undefined
+   */
+  static getSystemForPrefix(prefix) {
+    return BaseSystem.#prefixMap.get(prefix);
+  }
+
+  /**
    * Validates case sensitivity settings
    * @param {boolean} caseSensitive - Whether the base system should be case sensitive
    * @returns {BaseSystem} New BaseSystem with case sensitivity applied
@@ -522,3 +562,8 @@ BaseSystem.BASE60 = new BaseSystem("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGH
 
 // Roman numerals - special case with custom validation
 BaseSystem.ROMAN = new BaseSystem(["I", "V", "X", "L", "C", "D", "M"], "Roman Numerals");
+
+// Default Prefix Registrations
+BaseSystem.registerPrefix("x", BaseSystem.HEXADECIMAL);
+BaseSystem.registerPrefix("b", BaseSystem.BINARY);
+BaseSystem.registerPrefix("o", BaseSystem.OCTAL);
