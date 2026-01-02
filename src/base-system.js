@@ -481,7 +481,7 @@ export class BaseSystem {
   }
 
   /**
-   * Registers a prefix for a base system
+   * Registers a prefix for a base system (case-insensitive lookup, case-sensitive storage)
    * @param {string} prefix - The single-character prefix (e.g., 'x', 'b')
    * @param {BaseSystem} baseSystem - The base system to associate
    */
@@ -492,7 +492,6 @@ export class BaseSystem {
     if (!(baseSystem instanceof BaseSystem)) {
       throw new Error("Must provide a valid BaseSystem");
     }
-    // Check for reserved system prefixes (optional, but good practice)
     if (!/^[a-zA-Z]$/.test(prefix)) {
       throw new Error("Prefix must be a letter");
     }
@@ -508,13 +507,32 @@ export class BaseSystem {
     BaseSystem.#prefixMap.delete(prefix);
   }
 
-  /**
-   * Gets the base system for a registered prefix
-   * @param {string} prefix - The prefix character
-   * @returns {BaseSystem|undefined} The associated BaseSystem or undefined
-   */
   static getSystemForPrefix(prefix) {
-    return BaseSystem.#prefixMap.get(prefix);
+    // Try exact match first
+    if (BaseSystem.#prefixMap.has(prefix)) {
+      return BaseSystem.#prefixMap.get(prefix);
+    }
+    // Try case-insensitive fallback if not found
+    for (const [p, system] of BaseSystem.#prefixMap.entries()) {
+      if (p.toLowerCase() === prefix.toLowerCase()) {
+        return system;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Finds the first registered prefix for a base system
+   * @param {BaseSystem} baseSystem - The base system to find a prefix for
+   * @returns {string|undefined} The prefix or undefined
+   */
+  static getPrefixForSystem(baseSystem) {
+    for (const [prefix, system] of BaseSystem.#prefixMap.entries()) {
+      if (system.equals(baseSystem)) {
+        return prefix;
+      }
+    }
+    return undefined;
   }
 
   /**
@@ -567,3 +585,4 @@ BaseSystem.ROMAN = new BaseSystem(["I", "V", "X", "L", "C", "D", "M"], "Roman Nu
 BaseSystem.registerPrefix("x", BaseSystem.HEXADECIMAL);
 BaseSystem.registerPrefix("b", BaseSystem.BINARY);
 BaseSystem.registerPrefix("o", BaseSystem.OCTAL);
+BaseSystem.registerPrefix("d", BaseSystem.DECIMAL);
