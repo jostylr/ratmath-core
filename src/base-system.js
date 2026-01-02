@@ -508,15 +508,8 @@ export class BaseSystem {
   }
 
   static getSystemForPrefix(prefix) {
-    // Try exact match first
     if (BaseSystem.#prefixMap.has(prefix)) {
       return BaseSystem.#prefixMap.get(prefix);
-    }
-    // Try case-insensitive fallback if not found
-    for (const [p, system] of BaseSystem.#prefixMap.entries()) {
-      if (p.toLowerCase() === prefix.toLowerCase()) {
-        return system;
-      }
     }
     return undefined;
   }
