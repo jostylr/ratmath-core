@@ -508,9 +508,22 @@ export class BaseSystem {
   }
 
   static getSystemForPrefix(prefix) {
+    if (prefix === "D") return null; // Reserved for "Default" in parser
+
+    // Standard lookup
     if (BaseSystem.#prefixMap.has(prefix)) {
       return BaseSystem.#prefixMap.get(prefix);
     }
+
+    // Try case-insensitive except for 'D'/'d'
+    const lower = prefix.toLowerCase();
+    if (BaseSystem.#prefixMap.has(lower)) {
+      // If lower is 'd', only return if original was 'd' 
+      // (D is already intercepted above)
+      if (lower === "d" && prefix !== "d") return undefined;
+      return BaseSystem.#prefixMap.get(lower);
+    }
+
     return undefined;
   }
 
