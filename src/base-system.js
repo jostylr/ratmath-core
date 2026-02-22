@@ -575,20 +575,35 @@ export class BaseSystem {
 
 // Standard base presets - defined after class to avoid circular reference
 BaseSystem.BINARY = new BaseSystem(["0", "1"], "Binary");
+BaseSystem.TERNARY = new BaseSystem(["0", "1", "2"], "Ternary");
+BaseSystem.QUATERNARY = new BaseSystem(["0", "1", "2", "3"], "Quaternary");
+BaseSystem.QUINARY = new BaseSystem(["0", "1", "2", "3", "4"], "Quinary (Base 5)");
+BaseSystem.SEPTENARY = new BaseSystem(["0", "1", "2", "3", "4", "5", "6"], "Septenary (Base 7)");
 BaseSystem.OCTAL = new BaseSystem(["0", "1", "2", "3", "4", "5", "6", "7"], "Octal");
 BaseSystem.DECIMAL = new BaseSystem(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"], "Decimal");
+BaseSystem.DUODECIMAL = new BaseSystem(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b"], "Duodecimal (Clock/Base 12)");
 BaseSystem.HEXADECIMAL = new BaseSystem(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"], "Hexadecimal");
-BaseSystem.BASE36 = new BaseSystem("0123456789abcdefghijklmnopqrstuvwxyz".split(""), "Base 36");
+BaseSystem.VIGESIMAL = new BaseSystem("0123456789abcdefghij".split(""), "Vigesimal (Base 20)");
+BaseSystem.BASE36 = new BaseSystem("0123456789abcdefghijklmnopqrstuvwxyz".split(""), "Base 36 (URL)");
 BaseSystem.BASE62 = new BaseSystem("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""), "Base 62");
+BaseSystem.BASE64 = new BaseSystem("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@&".split(""), "Base 64");
 
 // Extended base presets
-BaseSystem.BASE60 = new BaseSystem("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWX".split(""), "Base 60 (Sexagesimal)");
+BaseSystem.BASE60 = new BaseSystem("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWX".split(""), "Base 60 (Mesopotamia)");
 
 // Roman numerals - special case with custom validation
 BaseSystem.ROMAN = new BaseSystem(["I", "V", "X", "L", "C", "D", "M"], "Roman Numerals");
 
 // Default Prefix Registrations
-BaseSystem.registerPrefix("x", BaseSystem.HEXADECIMAL);
 BaseSystem.registerPrefix("b", BaseSystem.BINARY);
+BaseSystem.registerPrefix("t", BaseSystem.TERNARY);
+BaseSystem.registerPrefix("q", BaseSystem.QUATERNARY);
+BaseSystem.registerPrefix("f", BaseSystem.QUINARY);
+BaseSystem.registerPrefix("s", BaseSystem.SEPTENARY);
 BaseSystem.registerPrefix("o", BaseSystem.OCTAL);
-BaseSystem.registerPrefix("d", BaseSystem.DECIMAL);
+BaseSystem.registerPrefix("d", BaseSystem.DUODECIMAL);
+BaseSystem.registerPrefix("x", BaseSystem.HEXADECIMAL);
+BaseSystem.registerPrefix("v", BaseSystem.VIGESIMAL);
+BaseSystem.registerPrefix("u", BaseSystem.BASE36);
+BaseSystem.registerPrefix("m", BaseSystem.BASE60);
+BaseSystem.registerPrefix("y", BaseSystem.BASE64);
