@@ -8,6 +8,8 @@
 import { Rational } from "./rational.js";
 
 export class RationalInterval {
+  #start;
+  #end;
   #low;
   #high;
   static zero = Object.freeze(
@@ -30,7 +32,10 @@ export class RationalInterval {
     const aRational = a instanceof Rational ? a : new Rational(a);
     const bRational = b instanceof Rational ? b : new Rational(b);
 
-    // Ensure the interval is ordered correctly (lower endpoint first)
+    this.#start = aRational;
+    this.#end = bRational;
+
+    // Ensure the interval is ordered correctly for mathematical operations
     if (aRational.lessThanOrEqual(bRational)) {
       this.#low = aRational;
       this.#high = bRational;
@@ -38,6 +43,30 @@ export class RationalInterval {
       this.#low = bRational;
       this.#high = aRational;
     }
+  }
+
+  /**
+   * Gets the start endpoint of the interval
+   * @returns {Rational} The start endpoint
+   */
+  get start() {
+    return this.#start;
+  }
+
+  /**
+   * Gets the end endpoint of the interval
+   * @returns {Rational} The end endpoint
+   */
+  get end() {
+    return this.#end;
+  }
+
+  /**
+   * Gets whether this interval is ordered from low to high
+   * @returns {boolean} True if the interval is ascending
+   */
+  get isAscending() {
+    return this.#start.lessThanOrEqual(this.#end);
   }
 
   /**
@@ -517,7 +546,7 @@ export class RationalInterval {
    * @returns {string} String representation of this interval
    */
   toString() {
-    return `${this.#low.toString()}:${this.#high.toString()}`;
+    return `${this.#start.toString()}:${this.#end.toString()}`;
   }
 
   /**
@@ -527,7 +556,7 @@ export class RationalInterval {
    * @returns {string} Mixed number string representation of this interval
    */
   toMixedString() {
-    return `${this.#low.toMixedString()}:${this.#high.toMixedString()}`;
+    return `${this.#start.toMixedString()}:${this.#end.toMixedString()}`;
   }
 
   /**
@@ -571,11 +600,11 @@ export class RationalInterval {
    * @returns {string} Repeating decimal interval string (e.g., "1/3:1/2" becomes "0.#3:0.5#0")
    */
   toRepeatingDecimal(useRepeatNotation = true) {
-    const lowDecimal =
-      this.#low.toRepeatingDecimalWithPeriod(useRepeatNotation).decimal;
-    const highDecimal =
-      this.#high.toRepeatingDecimalWithPeriod(useRepeatNotation).decimal;
-    return `${lowDecimal}:${highDecimal}`;
+    const startDecimal =
+      this.#start.toRepeatingDecimalWithPeriod(useRepeatNotation).decimal;
+    const endDecimal =
+      this.#end.toRepeatingDecimalWithPeriod(useRepeatNotation).decimal;
+    return `${startDecimal}:${endDecimal}`;
   }
 
   /**
@@ -585,16 +614,16 @@ export class RationalInterval {
    */
   compactedDecimalInterval() {
     // Convert both endpoints to decimal strings
-    const lowStr = this.#low.toDecimal();
-    const highStr = this.#high.toDecimal();
+    const startStr = this.#start.toDecimal();
+    const endStr = this.#end.toDecimal();
 
     // Find the longest common prefix
     let commonPrefix = "";
-    const minLength = Math.min(lowStr.length, highStr.length);
+    const minLength = Math.min(startStr.length, endStr.length);
 
     for (let i = 0; i < minLength; i++) {
-      if (lowStr[i] === highStr[i]) {
-        commonPrefix += lowStr[i];
+      if (startStr[i] === endStr[i]) {
+        commonPrefix += startStr[i];
       } else {
         break;
       }
@@ -605,26 +634,24 @@ export class RationalInterval {
       commonPrefix.length <= 1 ||
       (commonPrefix.startsWith("-") && commonPrefix.length <= 2)
     ) {
-      return `${lowStr}:${highStr}`;
+      return `${startStr}:${endStr}`;
     }
 
     // Extract the differing parts
-    const lowSuffix = lowStr.substring(commonPrefix.length);
-    const highSuffix = highStr.substring(commonPrefix.length);
+    const startSuffix = startStr.substring(commonPrefix.length);
+    const endSuffix = endStr.substring(commonPrefix.length);
 
     // If either suffix is empty or they're not the same length, use regular format
-    if (!lowSuffix || !highSuffix || lowSuffix.length !== highSuffix.length) {
-      return `${lowStr}:${highStr}`;
+    if (!startSuffix || !endSuffix || startSuffix.length !== endSuffix.length) {
+      return `${startStr}:${endStr}`;
     }
 
     // Check if both suffixes are purely numeric (no decimal point)
-    if (!/^\d+$/.test(lowSuffix) || !/^\d+$/.test(highSuffix)) {
-      return `${lowStr}:${highStr}`;
+    if (!/^\d+$/.test(startSuffix) || !/^\d+$/.test(endSuffix)) {
+      return `${startStr}:${endStr}`;
     }
 
-    // For the compacted notation, we want the range to go from low to high
-    // So use lowSuffix,highSuffix (which represents the actual low:high order)
-    return `${commonPrefix}[${lowSuffix},${highSuffix}]`;
+    return `${commonPrefix}[${startSuffix},${endSuffix}]`;
   }
 
   /**
@@ -633,17 +660,27 @@ export class RationalInterval {
    * @returns {string} Relative midpoint decimal interval string (e.g., "1.224:1.235" becomes "1.2295[+-0.0055]")
    */
   relativeMidDecimalInterval() {
-    // Calculate the midpoint
+    // Calculate the midpoint based on actual bounds
     const midpoint = this.#low.add(this.#high).divide(new Rational(2));
 
-    // Calculate offset from midpoint (should be same for both directions in symmetric case)
-    const offset = this.#high.subtract(midpoint);
+    // Calculate offsets based on start and end
+    const offsetEnd = this.#end.subtract(midpoint);
+    const offsetStart = this.#start.subtract(midpoint);
 
     // Convert to decimal strings
     const midpointStr = midpoint.toDecimal();
-    const offsetStr = offset.toDecimal();
 
-    return `${midpointStr}[+-${offsetStr}]`;
+    if (offsetStart.equals(offsetEnd.negate())) {
+      // Symmetric
+      const offsetStr = offsetEnd.abs().toDecimal();
+      return `${midpointStr}[+-${offsetStr}]`;
+    }
+
+    // Asymmetric (though shouldn't happen strictly speaking unless we implement custom betweenness offsets)
+    const offStartStr = offsetStart.toDecimal();
+    const offEndStr = offsetEnd.toDecimal();
+
+    return `${midpointStr}[${offStartStr > 0 ? '+' : ''}${offStartStr},${offEndStr > 0 ? '+' : ''}${offEndStr}]`;
   }
 
   /**
@@ -657,8 +694,9 @@ export class RationalInterval {
     const shortestDecimal = this.#findShortestPreciseDecimal();
 
     // Calculate the actual offsets from this decimal to the interval bounds
-    const offsetLow = shortestDecimal.subtract(this.#low); // positive if decimal > low
-    const offsetHigh = this.#high.subtract(shortestDecimal); // positive if high > decimal
+    // We want offsetEnd if we start from shortest and go to end
+    const offsetStart = this.#start.subtract(shortestDecimal);
+    const offsetEnd = this.#end.subtract(shortestDecimal);
 
     // Determine the scale factor based on decimal places in the base number
     const decimalStr = shortestDecimal.toDecimal();
@@ -666,35 +704,36 @@ export class RationalInterval {
       ? decimalStr.split(".")[1].length
       : 0;
 
-    let scaledOffsetLow, scaledOffsetHigh;
+    let scaledOffsetStart, scaledOffsetEnd;
 
     if (decimalPlaces === 0) {
       // Integer base: new parser applies offsets directly, so export them directly
-      scaledOffsetLow = offsetLow;
-      scaledOffsetHigh = offsetHigh;
+      scaledOffsetStart = offsetStart;
+      scaledOffsetEnd = offsetEnd;
     } else {
       // Decimal base: new parser scales offsets, so export them scaled
       const scaleFactor = new Rational(10).pow(decimalPlaces + 1);
-      scaledOffsetLow = offsetLow.multiply(scaleFactor);
-      scaledOffsetHigh = offsetHigh.multiply(scaleFactor);
+      scaledOffsetStart = offsetStart.multiply(scaleFactor);
+      scaledOffsetEnd = offsetEnd.multiply(scaleFactor);
     }
 
-    const offsetLowStr = scaledOffsetLow.toDecimal();
-    const offsetHighStr = scaledOffsetHigh.toDecimal();
+    const offsetStartStr = scaledOffsetStart.toDecimal();
+    const offsetEndStr = scaledOffsetEnd.toDecimal();
 
     // Check if offsets are symmetric (within small tolerance)
     if (
-      offsetLow.subtract(offsetHigh).abs().compareTo(new Rational(1, 1000000)) <
+      offsetStart.add(offsetEnd).abs().compareTo(new Rational(1, 1000000)) <
       0
     ) {
       // Use symmetric notation for nearly equal offsets
-      const avgOffset = scaledOffsetLow
-        .add(scaledOffsetHigh)
+      const avgOffset = scaledOffsetStart
+        .abs()
+        .add(scaledOffsetEnd.abs())
         .divide(new Rational(2));
       return `${decimalStr}[+-${avgOffset.toDecimal()}]`;
     } else {
-      // Use asymmetric notation
-      return `${decimalStr}[+${offsetHighStr},-${offsetLowStr}]`;
+      // Use asymmetric notation keeping the specific start/end directions
+      return `${decimalStr}[${scaledOffsetStart.greaterThanOrEqual(Rational.zero) ? '+' : ''}${offsetStartStr},${scaledOffsetEnd.greaterThanOrEqual(Rational.zero) ? '+' : ''}${offsetEndStr}]`;
     }
   }
 
