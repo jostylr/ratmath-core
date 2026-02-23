@@ -733,7 +733,15 @@ export class RationalInterval {
       return `${decimalStr}[+-${avgOffset.toDecimal()}]`;
     } else {
       // Use asymmetric notation keeping the specific start/end directions
-      return `${decimalStr}[${scaledOffsetStart.greaterThanOrEqual(Rational.zero) ? '+' : ''}${offsetStartStr},${scaledOffsetEnd.greaterThanOrEqual(Rational.zero) ? '+' : ''}${offsetEndStr}]`;
+      // Sort to put positive first which is standard for this notation
+      const off1 = { v: scaledOffsetStart, s: offsetStartStr };
+      const off2 = { v: scaledOffsetEnd, s: offsetEndStr };
+      const sorted = [off1, off2].sort((a, b) => b.v.compareTo(a.v));
+
+      const s1 = "+" + sorted[0].v.abs().toDecimal();
+      const s2 = "-" + sorted[1].v.abs().toDecimal();
+
+      return `${decimalStr}[${s1},${s2}]`;
     }
   }
 
