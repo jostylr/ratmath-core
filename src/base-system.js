@@ -507,6 +507,15 @@ export class BaseSystem {
     BaseSystem.#prefixMap.delete(prefix);
   }
 
+  /**
+   * Checks whether a specific prefix exists with exact case match.
+   * @param {string} prefix
+   * @returns {boolean}
+   */
+  static hasExactPrefix(prefix) {
+    return BaseSystem.#prefixMap.has(prefix);
+  }
+
   static getSystemForPrefix(prefix) {
     if (prefix === "D") return null; // Reserved for "Default" in parser
 
