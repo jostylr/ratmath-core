@@ -384,4 +384,17 @@ describe("Rational", () => {
       expect(r3.denominator).toBe(1n);
     });
   });
+
+  describe("continued-fraction utilities", () => {
+    it("returns a nonnegative approximation error", () => {
+      const target = new Rational(1, 2);
+
+      expect(new Rational(1, 3).approximationError(target).toString()).toBe(
+        "1/6",
+      );
+      expect(new Rational(2, 3).approximationError(target).toString()).toBe(
+        "1/6",
+      );
+    });
+  });
 });

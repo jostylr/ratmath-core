@@ -1923,8 +1923,7 @@ export class Rational {
       throw new Error("Target must be a Rational");
     }
 
-    const diff = this.subtract(target);
-    return diff.isNegative ? diff.negate() : diff;
+    return this.subtract(target).abs();
   }
 
   /**

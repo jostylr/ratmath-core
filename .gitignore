@@ -37,3 +37,6 @@ coverage/
 Thumbs.db
 
 .claude/
+
+# Quarto's intermediate site; scripts/build-docs.sh copies it to docs/.
+documentation/_site/

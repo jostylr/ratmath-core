@@ -21,7 +21,8 @@
   "sideEffects": false,
   "scripts": {
     "test": "bun test",
-    "test:pack": "npm pack --dry-run"
+    "test:pack": "npm pack --dry-run",
+    "docs:build": "bash scripts/build-docs.sh"
   },
   "keywords": [
     "rational",
@@ -39,7 +40,7 @@
     "type": "git",
     "url": "git+https://github.com/jostylr/ratmath-core.git"
   },
-  "homepage": "https://github.com/jostylr/ratmath-core#readme",
+  "homepage": "https://jostylr.github.io/ratmath-core/",
   "bugs": {
     "url": "https://github.com/jostylr/ratmath-core/issues"
   },

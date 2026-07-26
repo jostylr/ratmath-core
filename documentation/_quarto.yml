@@ -1,0 +1,54 @@
+project:
+  type: website
+  output-dir: _site
+  resources:
+    - .nojekyll
+
+website:
+  title: "@ratmath/core"
+  site-url: https://jostylr.github.io/ratmath-core/
+  repo-url: https://github.com/jostylr/ratmath-core
+  repo-actions: [source, issue]
+  navbar:
+    left:
+      - href: index.md
+        text: Overview
+      - href: getting-started.md
+        text: Getting started
+      - href: examples.md
+        text: Examples
+    right:
+      - icon: github
+        href: https://github.com/jostylr/ratmath-core
+  sidebar:
+    style: docked
+    search: true
+    contents:
+      - index.md
+      - getting-started.md
+      - parsing.md
+      - examples.md
+      - section: Classes
+        contents:
+          - integer.md
+          - rational.md
+          - rational-interval.md
+          - fraction.md
+          - fraction-interval.md
+          - base-system.md
+          - type-promotion.md
+      - api-index.md
+
+format:
+  html:
+    theme:
+      light: cosmo
+      dark: darkly
+    toc: true
+    code-copy: true
+    anchor-sections: true
+    link-external-newwindow: true
+    css: styles.css
+
+execute:
+  freeze: true

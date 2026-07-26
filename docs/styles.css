@@ -1,0 +1,19 @@
+:root {
+  --ratmath-accent: #6750a4;
+}
+
+.navbar {
+  border-bottom: 3px solid var(--ratmath-accent);
+}
+
+code {
+  font-variant-ligatures: none;
+}
+
+.callout-note {
+  border-left-color: var(--ratmath-accent);
+}
+
+table {
+  width: 100%;
+}

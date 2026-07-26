@@ -225,18 +225,16 @@ export class TypePromotion {
    */
   static determineTypeFromString(str) {
     // Check for interval notation
-    if (str.includes(':')) {
+    if (
+      str.includes(':') ||
+      (str.includes('[') && str.includes(']'))
+    ) {
       return 'interval';
     }
     
     // Check for rational notation
     if (str.includes('/') || str.includes('..') || str.includes('.')) {
       return 'rational';
-    }
-    
-    // Check for uncertainty notation (contains [...])
-    if (str.includes('[') && str.includes(']')) {
-      return 'interval';
     }
     
     // Default to integer for whole numbers

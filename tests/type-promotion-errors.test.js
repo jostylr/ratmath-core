@@ -20,3 +20,11 @@ describe("TypePromotion.promoteToLevel error handling", () => {
     expect(() => TypePromotion.promoteToLevel(interval, 1.5)).toThrow();
   });
 });
+
+describe("TypePromotion.determineTypeFromString", () => {
+  it("recognizes decimal uncertainty notation as an interval", () => {
+    expect(TypePromotion.determineTypeFromString("1.2[+-1]")).toBe(
+      "interval",
+    );
+  });
+});

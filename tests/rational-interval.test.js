@@ -1,5 +1,5 @@
 import { describe, expect, it, test } from "bun:test";
-import { Rational, RationalInterval } from "../index.js";
+import { Integer, Rational, RationalInterval } from "../index.js";
 
 describe("RationalInterval", () => {
   describe("constructor", () => {
@@ -368,6 +368,12 @@ describe("RationalInterval", () => {
 
       expect(interval.low.equals(new Rational(2, 3))).toBe(true);
       expect(interval.high.equals(new Rational(2, 3))).toBe(true);
+    });
+
+    it("creates a point interval from an Integer", () => {
+      const interval = RationalInterval.point(new Integer(7));
+
+      expect(interval.toString()).toBe("7:7");
     });
 
     it("creates an interval from a string", () => {

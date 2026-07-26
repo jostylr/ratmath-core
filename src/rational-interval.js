@@ -569,12 +569,18 @@ export class RationalInterval {
     let r;
     if (value instanceof Rational) {
       r = value;
+    } else if (
+      value &&
+      typeof value === "object" &&
+      typeof value.value === "bigint"
+    ) {
+      r = new Rational(value.value);
     } else if (typeof value === "number") {
       r = new Rational(String(value));
     } else if (typeof value === "string" || typeof value === "bigint") {
       r = new Rational(value);
     } else {
-      r = new Rational(0);
+      throw new Error("Point value must be an Integer or Rational input");
     }
     return new RationalInterval(r, r);
   }

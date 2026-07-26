@@ -126,6 +126,23 @@ The public API also includes `Integer`, `Fraction`, `FractionInterval`,
 `RationalInterval`, `BaseSystem`, and `TypePromotion`. TypeScript declarations
 ship with the package.
 
+## Documentation
+
+The complete manual has an overview, a page for every public class, number
+parsing details, an API index, and runnable examples:
+
+- [Published documentation](https://jostylr.github.io/ratmath-core/)
+- [Documentation source](documentation/)
+
+Build the GitHub Pages site manually with:
+
+```sh
+npm run docs:build
+```
+
+This requires [Quarto](https://quarto.org/) and writes the rendered site to
+`docs/`. Documentation is not rendered or published by CI.
+
 ## License
 
 MIT
