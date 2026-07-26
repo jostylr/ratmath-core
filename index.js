@@ -2,7 +2,7 @@
  * ratmath - A library for exact rational arithmetic and interval arithmetic
  *
  * This module exports classes for working with exact rational numbers
- * and rational intervals, along with a parser for interval expressions.
+ * and rational intervals, along with number-only parsing helpers.
  */
 
 import { Rational } from "./src/rational.js";
@@ -12,6 +12,16 @@ import { FractionInterval } from "./src/fraction-interval.js";
 import { Integer } from "./src/integer.js";
 import { TypePromotion } from "./src/type-promotion.js";
 import { BaseSystem } from "./src/base-system.js";
+import {
+  parseContinuedFraction,
+  parseDecimal,
+  parseInterval,
+  parseMixedNumber,
+  parseNumber,
+  parseRational,
+  parseRepeatingDecimal,
+} from "./src/number-parser.js";
+
 // Export named exports
 export {
   Rational,
@@ -21,6 +31,13 @@ export {
   Integer,
   TypePromotion,
   BaseSystem,
+  parseContinuedFraction,
+  parseDecimal,
+  parseInterval,
+  parseMixedNumber,
+  parseNumber,
+  parseRational,
+  parseRepeatingDecimal,
 };
 
 // Default export for convenient importing
@@ -32,5 +49,11 @@ export default {
   Integer,
   TypePromotion,
   BaseSystem,
+  parseContinuedFraction,
+  parseDecimal,
+  parseInterval,
+  parseMixedNumber,
+  parseNumber,
+  parseRational,
+  parseRepeatingDecimal,
 };
-

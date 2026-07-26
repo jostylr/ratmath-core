@@ -1,0 +1,60 @@
+name: Test and pack
+
+on:
+  push:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "index.js"
+      - "index.d.ts"
+      - "package.json"
+      - "bunfig.toml"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "index.js"
+      - "index.d.ts"
+      - "package.json"
+      - "bunfig.toml"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-pack:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20, 22]
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Test core
+        run: bun test
+
+      - name: Pack and test clean Node and browser consumers
+        shell: bash
+        run: |
+          mkdir -p tmp/npm-smoke
+          tarball="$(npm pack --pack-destination tmp/npm-smoke --silent)"
+          mkdir -p tmp/npm-smoke/consumer
+          npm install --silent --prefix tmp/npm-smoke/consumer "./tmp/npm-smoke/$tarball"
+          cd tmp/npm-smoke/consumer
+          node --input-type=module -e "import { parseNumber } from '@ratmath/core'; if (parseNumber('0.#3').toString() !== '1/3') process.exit(1)"
+          printf "import { parseInterval } from '@ratmath/core'; globalThis.answer = parseInterval('1:2').toString();\n" > browser-entry.js
+          bun build browser-entry.js --target=browser --outfile=browser-bundle.js

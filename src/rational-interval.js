@@ -842,15 +842,6 @@ export class RationalInterval {
   }
 
   /**
-   * Computes the bit length of the rational interval.
-   * Defined as the maximum bit length of the low and high endpoints.
-   * @returns {number} The bit length
-   */
-  bitLength() {
-    return Math.max(this.#low.bitLength(), this.#high.bitLength());
-  }
-
-  /**
    * Calculates the mediant of the interval endpoints.
    * The mediant of fractions a/b and c/d is (a+c)/(b+d).
    * This is useful in continued fraction approximations and the Stern-Brocot tree.

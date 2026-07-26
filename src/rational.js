@@ -945,17 +945,6 @@ export class Rational {
   }
 
   /**
-   * Computes the bit length of the rational number.
-   * Defined as the maximum bit length of the numerator and denominator.
-   * @returns {number} The bit length
-   */
-  bitLength() {
-    const numLen = bitLength(this.#numerator);
-    const denLen = bitLength(this.#denominator);
-    return Math.max(numLen, denLen);
-  }
-
-  /**
    * Computes whole part and remainder (lazy computation)
    * @private
    */

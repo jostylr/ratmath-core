@@ -1,16 +1,35 @@
 {
   "name": "@ratmath/core",
   "version": "0.2.0",
-  "description": "Exact rational arithmetic and interval arithmetic library",
+  "description": "Exact integers, rational numbers, rational intervals, and number-only parsing",
   "main": "index.js",
+  "types": "index.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js",
+      "default": "./index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "src/"
+  ],
+  "sideEffects": false,
   "scripts": {
-    "test": "bun test"
+    "test": "bun test",
+    "test:pack": "npm pack --dry-run"
   },
   "keywords": [
     "rational",
+    "fraction",
     "arithmetic",
     "interval",
+    "continued-fraction",
+    "repeating-decimal",
     "exact",
     "mathematics",
     "bigint"
@@ -18,10 +37,19 @@
   "author": "James Taylor",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jostylr/ratmath.git"
+    "url": "git+https://github.com/jostylr/ratmath-core.git"
   },
-  "homepage": "https://calc.ratmath.com",
+  "homepage": "https://github.com/jostylr/ratmath-core#readme",
+  "bugs": {
+    "url": "https://github.com/jostylr/ratmath-core/issues"
+  },
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "bun-types": "latest"
   }
