@@ -13,7 +13,7 @@ by RiX. It parses numbers, not arithmetic expressions.
 npm install @ratmath/core
 ```
 
-`@ratmath/core` is an ES module and requires Node.js 18 or newer.
+`@ratmath/core` is an ES module and requires Node.js 22 or newer.
 
 ## Exact arithmetic
 

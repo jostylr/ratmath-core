@@ -580,7 +580,7 @@
     "href": "getting-started.html",
     "title": "Getting started",
     "section": "",
-    "text": "npm install @ratmath/core\n@ratmath/core is an ES module and requires Node.js 18 or newer.",
+    "text": "npm install @ratmath/core\n@ratmath/core is an ES module and requires Node.js 22 or newer.",
     "crumbs": [
       "Overview",
       "Getting started"
@@ -591,7 +591,7 @@
     "href": "getting-started.html#install",
     "title": "Getting started",
     "section": "",
-    "text": "npm install @ratmath/core\n@ratmath/core is an ES module and requires Node.js 18 or newer.",
+    "text": "npm install @ratmath/core\n@ratmath/core is an ES module and requires Node.js 22 or newer.",
     "crumbs": [
       "Overview",
       "Getting started"
@@ -834,7 +834,7 @@
     "href": "index.html#runtime-and-package-shape",
     "title": "@ratmath/core",
     "section": "Runtime and package shape",
-    "text": "Runtime and package shape\n\nECMAScript modules only\nNode.js 18 or newer\nno runtime dependencies\nnamed exports and a default namespace export\nTypeScript declarations included\n\nThe Getting started page covers installation and imports. The API index is the compact reference for every public export.",
+    "text": "Runtime and package shape\n\nECMAScript modules only\nNode.js 22 or newer\nno runtime dependencies\nnamed exports and a default namespace export\nTypeScript declarations included\n\nThe Getting started page covers installation and imports. The API index is the compact reference for every public export.",
     "crumbs": [
       "Overview",
       "@ratmath/core"

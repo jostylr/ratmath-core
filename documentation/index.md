@@ -50,7 +50,7 @@ dependencies and accuracy contracts.
 ## Runtime and package shape
 
 - ECMAScript modules only
-- Node.js 18 or newer
+- Node.js 22 or newer
 - no runtime dependencies
 - named exports and a default namespace export
 - TypeScript declarations included
