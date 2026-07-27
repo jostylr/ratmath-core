@@ -40,11 +40,11 @@ export class BaseSystem {
    *                                     NOTE: Does NOT support range notation (e.g., "0-9").
    *                                     Use BaseParser from @ratmath/parser for range parsing.
    * @param {string} [name] - Optional human-readable name for the base system
-   * @throws {Error} If the character sequence is invalid or contains conflicts
+   * @throws {Error} If entries are not unique single Unicode characters or contain conflicts
    */
   constructor(characters, name) {
     if (typeof characters === "string") {
-      this.#characters = characters.split("");
+      this.#characters = [...characters];
     } else if (Array.isArray(characters)) {
       this.#characters = [...characters];
     } else {
@@ -53,6 +53,17 @@ export class BaseSystem {
 
     if (this.#characters.length < 2) {
       throw new Error("Base system must have at least 2 characters");
+    }
+
+    if (
+      this.#characters.some(
+        (character) =>
+          typeof character !== "string" || [...character].length !== 1,
+      )
+    ) {
+      throw new Error(
+        "Each base system character must be a single Unicode character",
+      );
     }
 
     this.#base = this.#characters.length;
@@ -92,12 +103,18 @@ export class BaseSystem {
    * Gets the character for a specific value
    * @param {number|bigint} value - The numeric value
    * @returns {string} The character representing the value
-   * @throws {Error} If the value is out of range
+   * @throws {Error} If the value is not a safe, in-range integer
    */
   getChar(value) {
     const i = Number(value);
-    if (i < 0 || i >= this.#characters.length) {
-      throw new Error(`Value ${value} is out of range for base ${this.#base}`);
+    if (
+      !Number.isSafeInteger(i) ||
+      i < 0 ||
+      i >= this.#characters.length
+    ) {
+      throw new Error(
+        `Value ${value} must be an in-range integer for base ${this.#base}`,
+      );
     }
     return this.#characters[i];
   }
@@ -246,12 +263,14 @@ export class BaseSystem {
       str = str.slice(1);
     }
 
+    if (str.length === 0) {
+      throw new Error("A minus sign must be followed by at least one digit");
+    }
+
     let result = 0n;
     const baseBigInt = BigInt(this.#base);
 
-    for (let i = 0; i < str.length; i++) {
-      const char = str[i];
-
+    for (const char of str) {
       if (!this.#charMap.has(char)) {
         throw new Error(
           `Invalid character '${char}' for ${this.#name} (base ${this.#base})`,

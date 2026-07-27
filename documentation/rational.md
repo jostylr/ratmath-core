@@ -134,7 +134,8 @@ returned expansion is partial.
 | `toContinuedFractionString()` | RiX `a0.~a1~...` representation |
 | `convergents(maxCount?)` | Successive rational convergents |
 | `getConvergent(index)` | Zero-based convergent; throws if out of range |
-| `bestApproximation(maxDenominator)` | Last convergent whose denominator does not exceed the bound |
+| `bestApproximation(maxDenominator)` | Closest value whose positive denominator does not exceed the bound |
+| `bestConvergent(maxDenominator)` | Last continued-fraction convergent within the bound |
 | `approximationError(target)` | Absolute difference from the target |
 | `Rational.fromContinuedFraction(coefficients)` | Rational from a finite coefficient array |
 | `Rational.fromContinuedFractionString(text)` | Rational from `.~` notation |
@@ -151,10 +152,18 @@ value.convergents().map((v) => v.toString());
 Rational.fromContinuedFraction([3n, 7n, 15n]).toString();
 // "333/106"
 
-new Rational(355, 113).bestApproximation(100n).toString();
-// "22/7"
+const pi = new Rational(355, 113);
+pi.bestApproximation(100n).toString(); // "311/99"
+pi.bestConvergent(100n).toString();    // "22/7"
 ```
 
 `Rational.DEFAULT_CF_LIMIT` is the default maximum coefficient/convergent
 count. Continued fractions here are finite because every `Rational` is exact
 and rational.
+
+`bestApproximation` minimizes ordinary absolute error among rational values
+whose denominator is at most the positive `bigint` bound. Its result may be a
+semiconvergent. `bestConvergent` expresses the related continued-fraction
+theorem: convergents are best approximations of the second kind, minimizing
+the denominator-weighted error `|q*x - p|` at the relevant denominator
+thresholds.

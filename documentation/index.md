@@ -19,8 +19,8 @@ const oneThird = parseDecimal("0.#3");
 oneThird.equals(new Rational(1, 3));          // true
 
 const tolerance = parseInterval("1.23[+-1]");
-tolerance.toString();                         // "129/100:131/100"
-tolerance.containsValue(new Rational(13, 10)); // true
+tolerance.toString();                         // "1229/1000:1231/1000"
+tolerance.containsValue(new Rational(123, 100)); // true
 ```
 
 ## What is included

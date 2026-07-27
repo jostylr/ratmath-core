@@ -132,6 +132,7 @@ export class Rational {
   getConvergent(index: number): Rational;
   approximationError(target: Rational): Rational;
   bestApproximation(maxDenominator: bigint): Rational;
+  bestConvergent(maxDenominator: bigint): Rational;
   bitLength(): number;
 
   static from(value: number | string | bigint | Rational): Rational;

@@ -1927,26 +1927,140 @@ export class Rational {
   }
 
   /**
-   * Find the best rational approximation within a denominator limit
+   * Find the closest rational approximation within a denominator limit.
+   * The result may be a continued-fraction semiconvergent.
    * @param {bigint} maxDenominator - Maximum allowed denominator
    * @returns {Rational} Best approximation within the limit
    */
   bestApproximation(maxDenominator) {
-    const cf = this.toContinuedFraction();
-
-    // Try each convergent until we exceed the denominator limit
-    let bestApprox = new Rational(cf[0], 1n);
-
-    const convergents = this.convergents();
-    for (const convergent of convergents) {
-      if (convergent.denominator <= maxDenominator) {
-        bestApprox = convergent;
-      } else {
-        break;
-      }
+    if (typeof maxDenominator !== "bigint" || maxDenominator < 1n) {
+      throw new Error("Maximum denominator must be a positive bigint");
     }
 
-    return bestApprox;
+    if (this.#denominator <= maxDenominator) {
+      return new Rational(this.#numerator, this.#denominator);
+    }
+
+    const negative = this.#numerator < 0n;
+    let numerator = negative ? -this.#numerator : this.#numerator;
+    let denominator = this.#denominator;
+
+    // Consecutive convergent recurrence, matching the limit_denominator
+    // construction. When the next convergent is too large, fill the remaining
+    // denominator budget with the corresponding semiconvergent.
+    let previousNumerator = 0n;
+    let previousDenominator = 1n;
+    let currentNumerator = 1n;
+    let currentDenominator = 0n;
+
+    while (denominator !== 0n) {
+      const coefficient = numerator / denominator;
+      const nextDenominator =
+        previousDenominator + coefficient * currentDenominator;
+
+      if (nextDenominator > maxDenominator) {
+        break;
+      }
+
+      [previousNumerator, currentNumerator] = [
+        currentNumerator,
+        previousNumerator + coefficient * currentNumerator,
+      ];
+      [previousDenominator, currentDenominator] = [
+        currentDenominator,
+        nextDenominator,
+      ];
+      [numerator, denominator] = [
+        denominator,
+        numerator - coefficient * denominator,
+      ];
+    }
+
+    const multiplier =
+      (maxDenominator - previousDenominator) / currentDenominator;
+    const semiconvergentNumerator =
+      previousNumerator + multiplier * currentNumerator;
+    const semiconvergentDenominator =
+      previousDenominator + multiplier * currentDenominator;
+
+    // Compare exact absolute errors without introducing floating point.
+    const targetNumerator = negative ? -this.#numerator : this.#numerator;
+    const semiconvergentError =
+      targetNumerator * semiconvergentDenominator -
+      semiconvergentNumerator * this.#denominator;
+    const convergentError =
+      targetNumerator * currentDenominator -
+      currentNumerator * this.#denominator;
+    const absoluteSemiconvergentError =
+      semiconvergentError < 0n ? -semiconvergentError : semiconvergentError;
+    const absoluteConvergentError =
+      convergentError < 0n ? -convergentError : convergentError;
+
+    const useConvergent =
+      absoluteConvergentError * semiconvergentDenominator <=
+      absoluteSemiconvergentError * currentDenominator;
+    const resultNumerator = useConvergent
+      ? currentNumerator
+      : semiconvergentNumerator;
+    const resultDenominator = useConvergent
+      ? currentDenominator
+      : semiconvergentDenominator;
+
+    return new Rational(
+      negative ? -resultNumerator : resultNumerator,
+      resultDenominator,
+    );
+  }
+
+  /**
+   * Find the last continued-fraction convergent within a denominator limit.
+   * This is the "best approximation of the second kind", minimizing the
+   * denominator-weighted error |q*x - p| among smaller denominators.
+   * @param {bigint} maxDenominator - Maximum allowed denominator
+   * @returns {Rational} Last convergent within the limit
+   */
+  bestConvergent(maxDenominator) {
+    if (typeof maxDenominator !== "bigint" || maxDenominator < 1n) {
+      throw new Error("Maximum denominator must be a positive bigint");
+    }
+
+    const negative = this.#numerator < 0n;
+    let numerator = negative ? -this.#numerator : this.#numerator;
+    let denominator = this.#denominator;
+    let previousNumerator = 0n;
+    let previousDenominator = 1n;
+    let currentNumerator = 1n;
+    let currentDenominator = 0n;
+
+    while (denominator !== 0n) {
+      const coefficient = numerator / denominator;
+      const nextNumerator =
+        previousNumerator + coefficient * currentNumerator;
+      const nextDenominator =
+        previousDenominator + coefficient * currentDenominator;
+
+      if (nextDenominator > maxDenominator) {
+        break;
+      }
+
+      [previousNumerator, currentNumerator] = [
+        currentNumerator,
+        nextNumerator,
+      ];
+      [previousDenominator, currentDenominator] = [
+        currentDenominator,
+        nextDenominator,
+      ];
+      [numerator, denominator] = [
+        denominator,
+        numerator - coefficient * denominator,
+      ];
+    }
+
+    return new Rational(
+      negative ? -currentNumerator : currentNumerator,
+      currentDenominator,
+    );
   }
 
   /**

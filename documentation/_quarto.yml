@@ -3,6 +3,7 @@ project:
   output-dir: _site
   resources:
     - .nojekyll
+    - CNAME
 
 website:
   title: "@ratmath/core"

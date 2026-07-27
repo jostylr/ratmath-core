@@ -21,7 +21,8 @@ balancedLooking.name;       // "ABC digits"
 
 The first character has value zero, the second value one, and so on. The
 constructor accepts a string or an array and requires at least two unique
-characters. It does **not** expand range syntax such as `"0-9a-f"`.
+single Unicode characters. It does **not** expand range syntax such as
+`"0-9a-f"`.
 
 `+ - * / ^ ! ( ) [ ] : . # ~` are in `BaseSystem.RESERVED_SYMBOLS` and cannot
 be digits because they conflict with RatMath/RiX notation. The `characters`
@@ -31,7 +32,7 @@ array and `charMap` getters return copies.
 
 | Method | Result |
 |---|---|
-| `getChar(value)` | Digit at an in-range numeric value |
+| `getChar(value)` | Digit at an in-range safe integer value; otherwise throws |
 | `toDecimal(text)` | Signed digit string converted to `bigint` |
 | `fromDecimal(value)` | `bigint` converted to a signed digit string |
 | `isValidString(text)` | Whether the optional-minus string contains only digits in the system |
@@ -47,6 +48,10 @@ BaseSystem.BINARY.fromDecimal(-10n);    // "-1010"
 BaseSystem.OCTAL.isValidString("789");  // false
 BaseSystem.HEXADECIMAL.getChar(15);     // "f"
 ```
+
+`toDecimal("-")` throws because a sign alone is not a numeral. Array entries
+containing more than one Unicode character and fractional, non-finite, or
+unsafe `getChar` indexes also throw.
 
 Roman numerals are exposed as a custom alphabet named `ROMAN`, but conversion
 is positional base-7 conversion; it does not implement subtractive Roman

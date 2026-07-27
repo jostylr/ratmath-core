@@ -74,7 +74,7 @@ examples, edge cases, and return types.
 | Class | Public members |
 |---|---|
 | `Integer` | `value`; `add`, `subtract`, `multiply`, `divide`, `modulo`, `negate`, `pow`; comparisons; `abs`, `sign`, sign/parity predicates; `gcd`, `lcm`; `toString`, `toBase`, `toNumber`, `toRational`; `E`, `factorial`, `doubleFactorial`, `bitLength`; static `zero`, `one`, `from`, `fromRational` |
-| `Rational` | `numerator`, `denominator`; arithmetic, comparison, `abs`; fraction/mixed/decimal/base/scientific formatters; period metadata; continued-fraction conversion and convergents; `E`, `bitLength`; static construction helpers and formatting limits |
+| `Rational` | `numerator`, `denominator`; arithmetic, comparison, `abs`; fraction/mixed/decimal/base/scientific formatters; period metadata; continued fractions, convergents, and bounded approximations; `E`, `bitLength`; static construction helpers and formatting limits |
 | `RationalInterval` | `start`, `end`, `isAscending`, `low`, `high`; arithmetic, `pow`, `mpow`; containment/set operations; interval formatters; `mediant`, `midpoint`, `shortestDecimal`, `randomRational`, `E`, `bitLength`; static `zero`, `one`, `unitInterval`, `point`, `fromString` |
 | `Fraction` | `numerator`, `denominator`, `isInfinite`; unreduced arithmetic, comparisons, `scale`, `reduce`, `E`; mediant/Farey operations; Stern–Brocot navigation; static conversion and relationship helpers |
 | `FractionInterval` | `low`, `high`; `mediantSplit`, `partitionWithMediants`, `partitionWith`; conversion, string/equality, `E`; static `fromRationalInterval` |

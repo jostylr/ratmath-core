@@ -19,8 +19,8 @@ export class Fraction {
    * @param {number|string|bigint} numerator - The numerator, or a string like "3/4"
    * @param {number|bigint|undefined} denominator - The denominator (optional if numerator is a string)
    * @param {Object} options - Optional configuration
-   * @param {boolean} options.allowInfinite - Allow infinite fractions (±1/0) for Stern-Brocot tree
-   * @throws {Error} If denominator is zero or if the input format is invalid
+   * @param {boolean} options.allowInfinite - Allow a nonzero numerator over zero
+   * @throws {Error} If the input is 0/0, or has a zero denominator without allowInfinite
    * @example
    * // Create from numerator and denominator
    * const frac1 = new Fraction(1, 2);
@@ -56,14 +56,18 @@ export class Fraction {
       this.#denominator = BigInt(denominator);
     }
 
-    // Check for zero denominator
+    // Zero denominators represent signed infinity only when explicitly
+    // enabled. 0/0 is never a valid Fraction.
     if (this.#denominator === 0n) {
-      // Allow infinite fractions only for ±1/0 in Stern-Brocot tree context
-      if (options.allowInfinite && (this.#numerator === 1n || this.#numerator === -1n)) {
-        // Valid infinite fraction for Stern-Brocot tree boundaries
+      if (this.#numerator === 0n) {
+        throw new Error("The indeterminate fraction 0/0 is not allowed");
+      }
+      if (options.allowInfinite) {
         this._isInfinite = true;
       } else {
-        throw new Error("Denominator cannot be zero");
+        throw new Error(
+          "Denominator cannot be zero unless allowInfinite is true",
+        );
       }
     } else {
       this._isInfinite = false;
@@ -88,10 +92,21 @@ export class Fraction {
 
   /**
    * Checks if this fraction represents infinity
-   * @returns {boolean} True if this is an infinite fraction (±1/0)
+   * @returns {boolean} True if this is a nonzero fraction over zero
    */
   get isInfinite() {
     return this._isInfinite || false;
+  }
+
+  /**
+   * Constructs a result while preserving nonzero zero-denominator forms.
+   * The constructor still rejects an indeterminate 0/0 result.
+   * @private
+   */
+  static #fromComponents(numerator, denominator) {
+    return new Fraction(numerator, denominator, {
+      allowInfinite: denominator === 0n,
+    });
   }
 
   /**
@@ -111,7 +126,10 @@ export class Fraction {
       throw new Error("Addition only supported for equal denominators");
     }
     
-    return new Fraction(this.#numerator + other.numerator, this.#denominator);
+    return Fraction.#fromComponents(
+      this.#numerator + other.numerator,
+      this.#denominator,
+    );
   }
 
   /**
@@ -131,7 +149,10 @@ export class Fraction {
       throw new Error("Subtraction only supported for equal denominators");
     }
     
-    return new Fraction(this.#numerator - other.numerator, this.#denominator);
+    return Fraction.#fromComponents(
+      this.#numerator - other.numerator,
+      this.#denominator,
+    );
   }
 
   /**
@@ -145,7 +166,7 @@ export class Fraction {
    * const product = a.multiply(b); // 3/8
    */
   multiply(other) {
-    return new Fraction(
+    return Fraction.#fromComponents(
       this.#numerator * other.numerator,
       this.#denominator * other.denominator
     );
@@ -167,7 +188,7 @@ export class Fraction {
       throw new Error("Division by zero");
     }
     
-    return new Fraction(
+    return Fraction.#fromComponents(
       this.#numerator * other.denominator,
       this.#denominator * other.numerator
     );
@@ -201,13 +222,13 @@ export class Fraction {
     
     if (n < 0n) {
       // For negative exponents, swap numerator and denominator and compute the absolute value of the power
-      return new Fraction(
+      return Fraction.#fromComponents(
         this.#denominator ** -n,
         this.#numerator ** -n
       );
     }
     
-    return new Fraction(
+    return Fraction.#fromComponents(
       this.#numerator ** n,
       this.#denominator ** n
     );
@@ -224,7 +245,7 @@ export class Fraction {
    */
   scale(factor) {
     const scaleFactor = BigInt(factor);
-    return new Fraction(
+    return Fraction.#fromComponents(
       this.#numerator * scaleFactor,
       this.#denominator * scaleFactor
     );
@@ -251,6 +272,69 @@ export class Fraction {
   }
 
   /**
+   * Compares the mathematical values of two fractions, including signed
+   * infinities and finite fractions with negative denominators.
+   * @private
+   */
+  static #compareValues(left, right) {
+    if (left.isInfinite && right.isInfinite) {
+      const leftSign = left.numerator < 0n ? -1 : 1;
+      const rightSign = right.numerator < 0n ? -1 : 1;
+      return leftSign < rightSign ? -1 : leftSign > rightSign ? 1 : 0;
+    }
+
+    if (left.isInfinite) {
+      return left.numerator < 0n ? -1 : 1;
+    }
+
+    if (right.isInfinite) {
+      return right.numerator < 0n ? 1 : -1;
+    }
+
+    let leftNumerator = left.numerator;
+    let leftDenominator = left.denominator;
+    let rightNumerator = right.numerator;
+    let rightDenominator = right.denominator;
+
+    if (leftDenominator < 0n) {
+      leftNumerator = -leftNumerator;
+      leftDenominator = -leftDenominator;
+    }
+    if (rightDenominator < 0n) {
+      rightNumerator = -rightNumerator;
+      rightDenominator = -rightDenominator;
+    }
+
+    const leftProduct = leftNumerator * rightDenominator;
+    const rightProduct = rightNumerator * leftDenominator;
+    return leftProduct < rightProduct ? -1 : leftProduct > rightProduct ? 1 : 0;
+  }
+
+  /**
+   * Returns the multiplicative inverse of value modulo modulus.
+   * The caller must supply coprime inputs and modulus > 1.
+   * @private
+   */
+  static #modInverse(value, modulus) {
+    let oldR = ((value % modulus) + modulus) % modulus;
+    let r = modulus;
+    let oldS = 1n;
+    let s = 0n;
+
+    while (r !== 0n) {
+      const quotient = oldR / r;
+      [oldR, r] = [r, oldR - quotient * r];
+      [oldS, s] = [s, oldS - quotient * s];
+    }
+
+    if (oldR !== 1n) {
+      throw new Error("A modular inverse does not exist");
+    }
+
+    return ((oldS % modulus) + modulus) % modulus;
+  }
+
+  /**
    * Returns a reduced version of this fraction
    * 
    * @returns {Fraction} A new Fraction in lowest terms
@@ -259,6 +343,12 @@ export class Fraction {
    * const reduced = f.reduce(); // 2/3
    */
   reduce() {
+    if (this.isInfinite) {
+      return new Fraction(this.#numerator < 0n ? -1n : 1n, 0n, {
+        allowInfinite: true,
+      });
+    }
+
     // Handle special cases
     if (this.#numerator === 0n) {
       return new Fraction(0, 1);
@@ -275,7 +365,7 @@ export class Fraction {
       return new Fraction(-reducedNum, -reducedDen);
     }
     
-    return new Fraction(reducedNum, reducedDen);
+    return Fraction.#fromComponents(reducedNum, reducedDen);
   }
 
   /**
@@ -292,10 +382,7 @@ export class Fraction {
    * const med = Fraction.mediant(a, b); // 3/5
    */
   static mediant(a, b) {
-    return new Fraction(
-      a.numerator + b.numerator,
-      a.denominator + b.denominator
-    );
+    return a.mediant(b);
   }
 
   /**
@@ -308,6 +395,9 @@ export class Fraction {
    * const r = f.toRational(); // 2/3
    */
   toRational() {
+    if (this.isInfinite) {
+      throw new Error("Cannot convert an infinite Fraction to Rational");
+    }
     return new Rational(this.#numerator, this.#denominator);
   }
 
@@ -371,10 +461,7 @@ export class Fraction {
    * a.lessThan(b); // true
    */
   lessThan(other) {
-    // a/b < c/d if and only if ad < bc
-    const leftSide = this.#numerator * other.denominator;
-    const rightSide = this.#denominator * other.numerator;
-    return leftSide < rightSide;
+    return Fraction.#compareValues(this, other) < 0;
   }
 
   /**
@@ -389,10 +476,7 @@ export class Fraction {
    * a.lessThanOrEqual(b); // true
    */
   lessThanOrEqual(other) {
-    // a/b ≤ c/d if and only if ad ≤ bc
-    const leftSide = this.#numerator * other.denominator;
-    const rightSide = this.#denominator * other.numerator;
-    return leftSide <= rightSide;
+    return Fraction.#compareValues(this, other) <= 0;
   }
 
   /**
@@ -407,10 +491,7 @@ export class Fraction {
    * a.greaterThan(b); // true
    */
   greaterThan(other) {
-    // a/b > c/d if and only if ad > bc
-    const leftSide = this.#numerator * other.denominator;
-    const rightSide = this.#denominator * other.numerator;
-    return leftSide > rightSide;
+    return Fraction.#compareValues(this, other) > 0;
   }
 
   /**
@@ -425,10 +506,7 @@ export class Fraction {
    * a.greaterThanOrEqual(b); // true
    */
   greaterThanOrEqual(other) {
-    // a/b ≥ c/d if and only if ad ≥ bc
-    const leftSide = this.#numerator * other.denominator;
-    const rightSide = this.#denominator * other.numerator;
-    return leftSide >= rightSide;
+    return Fraction.#compareValues(this, other) >= 0;
   }
 
   /**
@@ -454,11 +532,11 @@ export class Fraction {
     if (exp >= 0n) {
       // Positive exponent: multiply numerator by 10^exp
       const newNumerator = this.#numerator * (10n ** exp);
-      return new Fraction(newNumerator, this.#denominator);
+      return Fraction.#fromComponents(newNumerator, this.#denominator);
     } else {
       // Negative exponent: multiply denominator by 10^(-exp)
       const newDenominator = this.#denominator * (10n ** (-exp));
-      return new Fraction(this.#numerator, newDenominator);
+      return Fraction.#fromComponents(this.#numerator, newDenominator);
     }
   }
 
@@ -498,23 +576,29 @@ export class Fraction {
         throw new Error("Mediant would result in 0/0");
       }
       
-      return new Fraction(newNum, newDen);
+      return Fraction.#fromComponents(newNum, newDen);
     }
     
     // Both are finite - standard mediant
     const newNum = this.#numerator + other.numerator;
     const newDen = this.#denominator + other.denominator;
-    return new Fraction(newNum, newDen);
+    return Fraction.#fromComponents(newNum, newDen);
   }
 
   /**
-   * Finds the Farey parents (neighbors) of this fraction.
-   * Returns the unique pair [a/b, c/d] where this fraction is their mediant
-   * and |ad - bc| = 1 (Farey adjacency condition).
+   * Finds canonical generalized Farey parents of this fraction.
+   * For a reduced fraction, the result is its usual Farey-neighbor pair.
+   * For an unreduced fraction with component gcd g, the reduced parents are
+   * lifted with balanced denominators so their component mediant is the
+   * normalized input representation and their determinant has magnitude g.
    * 
    * This extends the Farey sequence concept beyond [0,1] to all rationals.
-   * For integers, one parent will be an infinite fraction.
+   * Reduced integers have one infinite parent. Unreduced integers generally
+   * have two finite lifted parents.
    * 
+   * A negative input denominator is sign-normalized before constructing the
+   * parents, so their mediant has a positive denominator.
+   *
    * @returns {{left: Fraction, right: Fraction}} The Farey parent fractions
    * @example
    * const frac = new Fraction(3, 5);
@@ -526,51 +610,91 @@ export class Fraction {
       throw new Error("Cannot find Farey parents of infinite fraction");
     }
 
-    // Handle simple cases
-    if (this.#numerator === 0n && this.#denominator === 1n) {
-      // 0/1 has special Farey parents involving infinity
-      const left = new Fraction(-1n, 0n, { allowInfinite: true });
-      const right = new Fraction(1n, 0n, { allowInfinite: true });
-      return { left, right };
-    }
-    
-    // Use Stern-Brocot tree approach to find the actual Farey neighbors
-    // Navigate the tree until we find this fraction, tracking the boundaries
-    let leftBound = new Fraction(-1n, 0n, { allowInfinite: true });
-    let rightBound = new Fraction(1n, 0n, { allowInfinite: true });
-    let current = new Fraction(0n, 1n);
-    
-    // Navigate to find the fraction
-    while (!current.equals(this)) {
-      if (this.lessThan(current)) {
-        // Go left
-        rightBound = current;
-        current = leftBound.mediant(current);
-      } else {
-        // Go right  
-        leftBound = current;
-        current = current.mediant(rightBound);
-      }
-    }
-    
-    // At this point, leftBound and rightBound are the Farey parents
-    return { left: leftBound, right: rightBound };
-  }
+    // Farey ordering uses positive denominators. Preserve the scale while
+    // normalizing the sign, so 6/-10 is treated as -6/10.
+    const normalizedNumerator =
+      this.#denominator < 0n ? -this.#numerator : this.#numerator;
+    const normalizedDenominator =
+      this.#denominator < 0n ? -this.#denominator : this.#denominator;
+    const scale = Fraction.#gcd(
+      normalizedNumerator,
+      normalizedDenominator,
+    );
+    const reducedNumerator = normalizedNumerator / scale;
+    const reducedDenominator = normalizedDenominator / scale;
 
-  /**
-   * Extended Euclidean Algorithm helper
-   * @private
-   */
-  _extendedGcd(a, b) {
-    if (b === 0n) {
-      return { gcd: a, x: 1n, y: 0n };
+    // The canonical parents of zero are the two Stern-Brocot boundaries.
+    // For a scaled zero, use the closest balanced finite lift instead.
+    if (reducedNumerator === 0n) {
+      if (scale === 1n) {
+        return {
+          left: new Fraction(-1n, 0n, { allowInfinite: true }),
+          right: new Fraction(1n, 0n, { allowInfinite: true }),
+        };
+      }
+
+      const leftDenominator = scale / 2n;
+      return {
+        left: new Fraction(-1n, leftDenominator),
+        right: new Fraction(1n, scale - leftDenominator),
+      };
     }
-    
-    const result = this._extendedGcd(b, a % b);
-    const x = result.y;
-    const y = result.x - (a / b) * result.y;
-    
-    return { gcd: result.gcd, x, y };
+
+    let leftNumerator;
+    let leftDenominator;
+    let rightNumerator;
+    let rightDenominator;
+
+    if (reducedDenominator === 1n) {
+      if (reducedNumerator > 0n) {
+        leftNumerator = reducedNumerator - 1n;
+        leftDenominator = 1n;
+        rightNumerator = 1n;
+        rightDenominator = 0n;
+      } else {
+        leftNumerator = -1n;
+        leftDenominator = 0n;
+        rightNumerator = reducedNumerator + 1n;
+        rightDenominator = 1n;
+      }
+    } else {
+      leftDenominator = Fraction.#modInverse(
+        reducedNumerator,
+        reducedDenominator,
+      );
+      leftNumerator =
+        (reducedNumerator * leftDenominator - 1n) /
+        reducedDenominator;
+      rightNumerator = reducedNumerator - leftNumerator;
+      rightDenominator = reducedDenominator - leftDenominator;
+    }
+
+    // Adding a copy of the reduced target to either parent preserves its
+    // value-side and increases the outer determinant magnitude by one.
+    // Choose k so the two resulting denominators are as balanced as possible;
+    // this maximizes the smaller denominator and keeps both parents close.
+    let leftCopies =
+      (scale * reducedDenominator -
+        2n * leftDenominator +
+        reducedDenominator) /
+      (2n * reducedDenominator);
+    if (leftCopies < 0n) {
+      leftCopies = 0n;
+    } else if (leftCopies > scale - 1n) {
+      leftCopies = scale - 1n;
+    }
+    const rightCopies = scale - 1n - leftCopies;
+
+    return {
+      left: Fraction.#fromComponents(
+        leftNumerator + leftCopies * reducedNumerator,
+        leftDenominator + leftCopies * reducedDenominator,
+      ),
+      right: Fraction.#fromComponents(
+        rightNumerator + rightCopies * reducedNumerator,
+        rightDenominator + rightCopies * reducedDenominator,
+      ),
+    };
   }
 
   /**
@@ -586,60 +710,10 @@ export class Fraction {
    * const other = Fraction.mediantPartner(endpoint, mediant); // 1/1
    */
   static mediantPartner(endpoint, mediant) {
-    if (endpoint.isInfinite || mediant.isInfinite) {
-      throw new Error("Cannot compute mediant partner with infinite fractions");
-    }
-
-    // Given: endpoint = p/q, mediant = a/b
-    // Need to find: other = r/s such that (p+r)/(q+s) = a/b
-    // This gives us: b(p+r) = a(q+s)
-    // Expanding: bp + br = aq + as
-    // Solving for r/s: br = aq + as - bp = a(q+s) - bp
-    //                  r = (aq + as - bp)/b = a(q+s)/b - p
-    // Similarly: s can be found from the constraint
-
-    const p = endpoint.numerator;
-    const q = endpoint.denominator;
-    const a = mediant.numerator;
-    const b = mediant.denominator;
-
-    // From mediant equation: (p+r)/(q+s) = a/b
-    // Cross multiply: b(p+r) = a(q+s)
-    // Expand: bp + br = aq + as
-    // Rearrange: br - as = aq - bp
-    // We need another constraint. Use the fact that we want integer solutions.
-    
-    // Let's use a different approach: if mediant = (p+r)/(q+s) = a/b
-    // Then: p+r = a*(q+s)/b and q+s must be chosen so this gives integer r
-    
-    // Try the simplest case where the mediant is the actual mediant
-    // This means a*(q+s) = b*(p+r), and we can solve for r,s
-    
-    // From the mediant property, if we know p/q and want (p+r)/(q+s) = a/b:
-    // Cross multiply: b(p+r) = a(q+s)
-    // Let's assume s = 1 for simplicity and solve for r:
-    // b(p+r) = a(q+1)
-    // bp + br = aq + a
-    // br = aq + a - bp
-    // r = (aq + a - bp)/b = a(q+1)/b - p
-    
-    // For this to be an integer, we need a(q+1) to be divisible by b
-    // Let's try a more systematic approach using continued fractions theory
-    
-    // Simple case: assume the other endpoint has denominator 1
-    const s = 1n;
-    const numerator = a * (q + s) - b * p;
-    
-    if (numerator % b !== 0n) {
-      // Try a different approach - use the fact that for Farey sequence,
-      // if a/b is mediant of p/q and r/s, then r = a*2 - p, s = b*2 - q
-      const r = a * 2n - p;
-      const s_calculated = b * 2n - q;
-      return new Fraction(r, s_calculated);
-    }
-    
-    const r = numerator / b;
-    return new Fraction(r, s);
+    return Fraction.#fromComponents(
+      mediant.numerator - endpoint.numerator,
+      mediant.denominator - endpoint.denominator,
+    );
   }
 
   /**
@@ -661,11 +735,6 @@ export class Fraction {
       return false;
     }
     
-    // Handle cases with infinite endpoints
-    if (left.isInfinite && right.isInfinite) {
-      return false; // Can't have mediant of two infinities
-    }
-
     try {
       const computedMediant = left.mediant(right);
       return mediant.equals(computedMediant);
@@ -676,7 +745,8 @@ export class Fraction {
 
   /**
    * Verifies that three fractions form a valid Farey triple.
-   * This checks both the mediant condition and the Farey adjacency condition |ad - bc| = 1.
+   * For a middle fraction with component gcd g, this checks both the exact
+   * mediant condition and the generalized adjacency condition |ad - bc| = g.
    * 
    * @param {Fraction} left - The left fraction  
    * @param {Fraction} mediant - The middle fraction
@@ -694,19 +764,31 @@ export class Fraction {
       return false;
     }
 
-    // Check Farey adjacency between left and right: |ad - bc| = 1
-    if (!left.isInfinite && !right.isInfinite) {
-      const a = left.numerator;
-      const b = left.denominator;
-      const c = right.numerator;
-      const d = right.denominator;
-      
-      const determinant = a * d - b * c;
-      return determinant === 1n || determinant === -1n;
+    // The reduced zero root is the sole exceptional pair: its two boundary
+    // parents both have denominator zero, so their determinant is zero.
+    if (
+      mediant.numerator === 0n &&
+      mediant.denominator === 1n &&
+      left.denominator === 0n &&
+      right.denominator === 0n
+    ) {
+      return (
+        left.numerator === -1n &&
+        right.numerator === 1n
+      ) || (
+        left.numerator === 1n &&
+        right.numerator === -1n
+      );
     }
 
-    // Handle infinite fractions - they are automatically adjacent in Farey sense
-    return left.isInfinite || right.isInfinite;
+    const determinant =
+      left.numerator * right.denominator -
+      left.denominator * right.numerator;
+    const magnitude = determinant < 0n ? -determinant : determinant;
+    return magnitude === Fraction.#gcd(
+      mediant.numerator,
+      mediant.denominator,
+    );
   }
 
   // ===== STERN-BROCOT TREE SUPPORT =====

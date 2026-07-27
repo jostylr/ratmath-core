@@ -725,21 +725,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="odd">
 <td><code>bestApproximation(maxDenominator)</code></td>
-<td>Last convergent whose denominator does not exceed the bound</td>
+<td>Closest value whose positive denominator does not exceed the bound</td>
 </tr>
 <tr class="even">
+<td><code>bestConvergent(maxDenominator)</code></td>
+<td>Last continued-fraction convergent within the bound</td>
+</tr>
+<tr class="odd">
 <td><code>approximationError(target)</code></td>
 <td>Absolute difference from the target</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>Rational.fromContinuedFraction(coefficients)</code></td>
 <td>Rational from a finite coefficient array</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>Rational.fromContinuedFractionString(text)</code></td>
 <td>Rational from <code>.~</code> notation</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>Rational.convergentsFromCF(input, maxCount?)</code></td>
 <td>Convergents from an array or string</td>
 </tr>
@@ -755,9 +759,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>Rational<span class="op">.</span><span class="fu">fromContinuedFraction</span>([<span class="dv">3</span>n<span class="op">,</span> <span class="dv">7</span>n<span class="op">,</span> <span class="dv">15</span>n])<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span></span>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">// "333/106"</span></span>
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="kw">new</span> <span class="fu">Rational</span>(<span class="dv">355</span><span class="op">,</span> <span class="dv">113</span>)<span class="op">.</span><span class="fu">bestApproximation</span>(<span class="dv">100</span>n)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co">// "22/7"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pi <span class="op">=</span> <span class="kw">new</span> <span class="fu">Rational</span>(<span class="dv">355</span><span class="op">,</span> <span class="dv">113</span>)<span class="op">;</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>pi<span class="op">.</span><span class="fu">bestApproximation</span>(<span class="dv">100</span>n)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span> <span class="co">// "311/99"</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>pi<span class="op">.</span><span class="fu">bestConvergent</span>(<span class="dv">100</span>n)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span>    <span class="co">// "22/7"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><code>Rational.DEFAULT_CF_LIMIT</code> is the default maximum coefficient/convergent count. Continued fractions here are finite because every <code>Rational</code> is exact and rational.</p>
+<p><code>bestApproximation</code> minimizes ordinary absolute error among rational values whose denominator is at most the positive <code>bigint</code> bound. Its result may be a semiconvergent. <code>bestConvergent</code> expresses the related continued-fraction theorem: convergents are best approximations of the second kind, minimizing the denominator-weighted error <code>|q*x - p|</code> at the relevant denominator thresholds.</p>
 
 
 </section>

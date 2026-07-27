@@ -66,7 +66,8 @@ piApproximation.toContinuedFraction(); // [3n, 7n, 16n]
 piApproximation.convergents().map((value) => value.toString());
 // ["3", "22/7", "355/113"]
 
-piApproximation.bestApproximation(100n).toString(); // "22/7"
+piApproximation.bestApproximation(100n).toString(); // "311/99"
+piApproximation.bestConvergent(100n).toString();    // "22/7"
 ```
 
 ## Parse and calculate with uncertainty
@@ -74,12 +75,12 @@ piApproximation.bestApproximation(100n).toString(); // "22/7"
 ```js
 import { parseInterval, parseRational } from "@ratmath/core";
 
-const measured = parseInterval("1.23[+-1]"); // [1.29, 1.31]
+const measured = parseInterval("1.23[+-1]"); // [1.229, 1.231]
 const scale = parseRational("3/2");
 const result = measured.multiply(scale);
 
-result.toString();           // "387/200:393/200"
-result.toRepeatingDecimal(); // "1.935#0:1.965#0"
+result.toString();           // "3687/2000:3693/2000"
+result.toRepeatingDecimal(); // "1.8435#0:1.8465#0"
 ```
 
 ## Pointwise versus independent powers

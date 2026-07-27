@@ -21,12 +21,20 @@ Fraction.fromRational(new Rational(3, 5)).toString(); // "3/5"
 ```
 
 The read-only properties are `numerator`, `denominator`, and `isInfinite`.
-Ordinary construction rejects a zero denominator. The special values `-1/0`
-and `1/0` may be constructed with `{ allowInfinite: true }` for
-Stern–Brocot boundaries; most arithmetic methods are not intended for them.
+Ordinary construction rejects a zero denominator. Any nonzero `a/0` may be
+constructed with `{ allowInfinite: true }`; its sign determines negative or
+positive infinity. `0/0` is always rejected.
 
-For finite ordering operations, use positive denominators or call `reduce()`
-first.
+```js
+const positiveInfinity = new Fraction(2, 0, { allowInfinite: true });
+const negativeInfinity = new Fraction(-3, 0, { allowInfinite: true });
+
+positiveInfinity.isInfinite; // true
+positiveInfinity.reduce().toString(); // "1/0"
+```
+
+The canonical Stern–Brocot boundaries are `-1/0` and `1/0`. `toRational()`
+throws for every infinite fraction because `Rational` is finite-only.
 
 ## Representation-preserving arithmetic
 
@@ -50,9 +58,15 @@ new Fraction(5, 4).E(2).toString();                         // "500/4"
 ```
 
 `toString()` preserves the components (omitting `/1`), `toRational()` reduces,
-and `equals(other)` tests representation equality. `lessThan`,
-`lessThanOrEqual`, `greaterThan`, and `greaterThanOrEqual` compare by cross
-multiplication.
+and `equals(other)` tests representation equality. The four ordering methods
+compare mathematical values, including finite values with negative
+denominators and signed infinities. Thus `1/-2` is less than `0/1`, while
+`1/0` and `2/0` compare as the same positive infinity even though `equals`
+reports different component representations.
+
+Arithmetic preserves a nonzero result over zero. An operation that would
+produce `0/0`, such as multiplying zero by infinity or adding opposite
+infinities with a common zero denominator, throws.
 
 ## Mediants and Farey relationships
 
@@ -60,10 +74,10 @@ multiplication.
 |---|---|
 | `mediant(other)` | `(a+c)/(b+d)`, with special tree-boundary handling |
 | `Fraction.mediant(a,b)` | Static finite-fraction mediant |
-| `fareyParents()` | Neighboring bounds whose mediant is this reduced fraction |
-| `Fraction.mediantPartner(endpoint, mediant)` | Solves for a compatible other endpoint |
+| `fareyParents()` | Canonical or generalized neighbors whose component mediant is this representation |
+| `Fraction.mediantPartner(endpoint, mediant)` | Exact component partner `(c-a)/(d-b)` |
 | `Fraction.isMediantTriple(left,middle,right)` | Whether `middle` is exactly the component-wise mediant |
-| `Fraction.isFareyTriple(left,middle,right)` | Mediant triple whose outer values are Farey neighbors |
+| `Fraction.isFareyTriple(left,middle,right)` | Mediant triple with outer determinant equal to the middle component gcd |
 
 ```js
 const left = new Fraction(1, 3);
@@ -77,9 +91,27 @@ Fraction.isFareyTriple(left, middle, right);   // true
 const parents = new Fraction(3, 5).fareyParents();
 parents.left.toString();  // "1/2"
 parents.right.toString(); // "2/3"
+
+const lifted = new Fraction(6, 10).fareyParents();
+lifted.left.toString();                 // "4/7"
+lifted.right.toString();                // "2/3"
+lifted.left.mediant(lifted.right).toString(); // "6/10"
 ```
 
-Tree algorithms expect a reduced finite fraction. Check
+For reduced `p/q`, the outer determinant has magnitude `1`. For an unreduced
+representation `gp/gq`, `fareyParents()` balances the lifted parent
+denominators as closely as possible; the determinant has magnitude `g` and
+the component sums are exactly `gp` and `gq`. Zero has the boundary parents
+`-1/0` and `1/0`; a scaled zero uses balanced finite parents. Inputs with a
+negative denominator are first sign-normalized, so the returned mediant is
+the equivalent positive-denominator representation.
+
+`mediantPartner(a/b, c/d)` returns `(c-a)/(d-b)`, the unique component pair
+that makes its mediant with `a/b` exactly `c/d`. A nonzero result over zero is
+allowed; identical endpoint and middle components would yield `0/0` and
+throw.
+
+Tree navigation algorithms expect a reduced finite fraction. Check
 `isSternBrocotValid()` before navigating values from untrusted sources.
 
 ## Stern–Brocot navigation

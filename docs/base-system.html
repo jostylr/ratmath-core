@@ -479,7 +479,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>balancedLooking<span class="op">.</span><span class="at">characters</span><span class="op">;</span> <span class="co">// ["a", "b", "c"]</span></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>balancedLooking<span class="op">.</span><span class="at">charMap</span><span class="op">.</span><span class="fu">get</span>(<span class="st">"c"</span>)<span class="op">;</span> <span class="co">// 2</span></span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>balancedLooking<span class="op">.</span><span class="at">name</span><span class="op">;</span>       <span class="co">// "ABC digits"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The first character has value zero, the second value one, and so on. The constructor accepts a string or an array and requires at least two unique characters. It does <strong>not</strong> expand range syntax such as <code>"0-9a-f"</code>.</p>
+<p>The first character has value zero, the second value one, and so on. The constructor accepts a string or an array and requires at least two unique single Unicode characters. It does <strong>not</strong> expand range syntax such as <code>"0-9a-f"</code>.</p>
 <p><code>+ - * / ^ ! ( ) [ ] : . # ~</code> are in <code>BaseSystem.RESERVED_SYMBOLS</code> and cannot be digits because they conflict with RatMath/RiX notation. The <code>characters</code> array and <code>charMap</code> getters return copies.</p>
 </section>
 <section id="conversion-and-inspection" class="level2">
@@ -498,7 +498,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td><code>getChar(value)</code></td>
-<td>Digit at an in-range numeric value</td>
+<td>Digit at an in-range safe integer value; otherwise throws</td>
 </tr>
 <tr class="even">
 <td><code>toDecimal(text)</code></td>
@@ -538,6 +538,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="at">BINARY</span><span class="op">.</span><span class="fu">fromDecimal</span>(<span class="op">-</span><span class="dv">10</span>n)<span class="op">;</span>    <span class="co">// "-1010"</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="at">OCTAL</span><span class="op">.</span><span class="fu">isValidString</span>(<span class="st">"789"</span>)<span class="op">;</span>  <span class="co">// false</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="at">HEXADECIMAL</span><span class="op">.</span><span class="fu">getChar</span>(<span class="dv">15</span>)<span class="op">;</span>     <span class="co">// "f"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>toDecimal("-")</code> throws because a sign alone is not a numeral. Array entries containing more than one Unicode character and fractional, non-finite, or unsafe <code>getChar</code> indexes also throw.</p>
 <p>Roman numerals are exposed as a custom alphabet named <code>ROMAN</code>, but conversion is positional base-7 conversion; it does not implement subtractive Roman numeral grammar.</p>
 </section>
 <section id="presets" class="level2">
