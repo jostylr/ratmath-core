@@ -220,10 +220,7 @@ function parseOffset(value) {
 function scaledOffset(value, decimalPlaces, hasPoint) {
   const offset = parseOffset(value);
   if (!hasPoint) return offset;
-  const scalePower = value.startsWith("#")
-    ? decimalPlaces
-    : decimalPlaces + 1;
-  return offset.divide(new Rational(10n ** BigInt(scalePower)));
+  return offset.divide(new Rational(10n ** BigInt(decimalPlaces)));
 }
 
 function parseUncertainty(input) {
@@ -235,6 +232,12 @@ function parseUncertainty(input) {
   const shape = decimalShape(match[1]);
   const body = match[2].trim();
   const base = parseDecimalValue(shape.normalized);
+
+  if (body.includes(",")) {
+    throw new Error(
+      "Decimal interval notation requires ':' between bracketed values",
+    );
+  }
 
   if (body.startsWith("+-") || body.startsWith("-+")) {
     const offsetText = body.slice(2).trim();
@@ -251,7 +254,7 @@ function parseUncertainty(input) {
     return new RationalInterval(base.subtract(offset), base.add(offset));
   }
 
-  const parts = body.split(/\s*[:,]\s*/);
+  const parts = body.split(/\s*:\s*/);
   if (
     parts.length > 2 ||
     parts.length === 0 ||

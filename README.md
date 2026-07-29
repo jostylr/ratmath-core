@@ -72,15 +72,20 @@ decimal, so `"1.25#0"` and `"1.25"` are both exactly `5/4`.
 Compact, relative, symmetric, and repeating-endpoint intervals are supported:
 
 ```js
-parseInterval("1.23[56,67]"); // 1.2356:1.2367
-parseInterval("1.23[+5,-6]"); // 1.224:1.235
-parseInterval("1.3[+-1]");    // 1.29:1.31
-parseInterval("0.[#3,#6]");   // 1/3:2/3
+parseInterval("1.23[56:67]");    // 1.2356:1.2367
+parseInterval("1.23[+5:-6]");    // 1.17:1.28
+parseInterval("1.3[+-1]");       // 1.2:1.4
+parseInterval("1.2[+-0.1]");     // 1.19:1.21
+parseInterval("0.[#3:#6]");      // 1/3:2/3
 ```
 
-For a decimal base value, relative offsets use the next decimal place.
-Accordingly, `1.23[+5,-6]` means `1.23 + 0.005` and `1.23 - 0.006`.
-For an integer base value, offsets are applied directly.
+Unsigned bracket values append digits to the base. Signed offsets instead use
+the base value's last visible digit as their unit. Thus `1.23[+5:-6]` means
+`1.23 + 5 × 0.01` and `1.23 - 6 × 0.01`. Decimal offsets use that same unit:
+`1.2[+-0.1]` applies `0.1 × 0.1`, or `0.01`, in each direction. For an
+integer base value, the last-visible-digit unit is `1`.
+
+When a bracket contains two values, colon is the required separator.
 
 `parseInterval("3/4")` creates the point interval `3/4:3/4`.
 
@@ -94,12 +99,12 @@ value.toMixedString();             // "-2..1/4"
 value.toRepeatingDecimal();        // "-2.25#0"
 value.toContinuedFractionString(); // "-3.~1~3"
 
-const interval = parseInterval("1.23[+5,-6]");
+const interval = parseInterval("1.23[+0.5:-0.6]");
 
 interval.toString();                 // "153/125:247/200"
 interval.toMixedString();            // "1..28/125:1..47/200"
 interval.toRepeatingDecimal();       // "1.224#0:1.235#0"
-interval.relativeDecimalInterval();  // "1.23[+5,-6]"
+interval.relativeDecimalInterval();  // "1.23[+0.5:-0.6]"
 interval.compactedDecimalInterval(); // a compact range when possible
 ```
 

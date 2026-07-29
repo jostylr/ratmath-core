@@ -615,8 +615,8 @@ export class RationalInterval {
 
   /**
    * Exports this interval as a compacted decimal interval notation
-   * Finds a common base and expresses the interval as base[low_uncertainty,high_uncertainty]
-   * @returns {string} Compacted decimal interval string (e.g., "1.2356:1.2367" becomes "1.23[56,67]")
+   * Finds a common base and expresses the interval as base[low_uncertainty:high_uncertainty]
+   * @returns {string} Compacted decimal interval string (e.g., "1.2356:1.2367" becomes "1.23[56:67]")
    */
   compactedDecimalInterval() {
     // Convert both endpoints to decimal strings
@@ -657,13 +657,13 @@ export class RationalInterval {
       return `${startStr}:${endStr}`;
     }
 
-    return `${commonPrefix}[${startSuffix},${endSuffix}]`;
+    return `${commonPrefix}[${startSuffix}:${endSuffix}]`;
   }
 
   /**
    * Exports this interval as a relative midpoint decimal interval notation
    * Expresses the interval as midpoint[+-offset] where midpoint is the center of the interval
-   * @returns {string} Relative midpoint decimal interval string (e.g., "1.224:1.235" becomes "1.2295[+-550]")
+   * @returns {string} Relative midpoint decimal interval string (e.g., "1.224:1.235" becomes "1.2295[+-55]")
    */
   relativeMidDecimalInterval() {
     // Calculate the midpoint based on actual bounds
@@ -681,7 +681,7 @@ export class RationalInterval {
     const scaleFactor =
       decimalPlaces === 0
         ? Rational.one
-        : new Rational(10).pow(decimalPlaces + 1);
+        : new Rational(10).pow(decimalPlaces);
     const scaledOffsetStart = offsetStart.multiply(scaleFactor);
     const scaledOffsetEnd = offsetEnd.multiply(scaleFactor);
 
@@ -699,14 +699,14 @@ export class RationalInterval {
       scaledOffsetStart.compareTo(Rational.zero) > 0 ? "+" : "";
     const endSign =
       scaledOffsetEnd.compareTo(Rational.zero) > 0 ? "+" : "";
-    return `${midpointStr}[${startSign}${offStartStr},${endSign}${offEndStr}]`;
+    return `${midpointStr}[${startSign}${offStartStr}:${endSign}${offEndStr}]`;
   }
 
   /**
    * Exports this interval as a relative decimal interval notation using the shortest precise decimal
    * Finds the shortest decimal number within the interval (closest to midpoint if tied, lower if still tied)
-   * and expresses the interval relative to that decimal using next decimal place convention
-   * @returns {string} Relative decimal interval string (e.g., "1.224:1.235" becomes "1.23[+5,-6]")
+   * and expresses the interval in units of the base decimal's last visible digit
+   * @returns {string} Relative decimal interval string (e.g., "1.224:1.235" becomes "1.23[+0.5:-0.6]")
    */
   relativeDecimalInterval() {
     // Find the shortest precise decimal within the interval
@@ -726,12 +726,12 @@ export class RationalInterval {
     let scaledOffsetStart, scaledOffsetEnd;
 
     if (decimalPlaces === 0) {
-      // Integer base: new parser applies offsets directly, so export them directly
+      // Integer base: offsets are expressed directly in units of one
       scaledOffsetStart = offsetStart;
       scaledOffsetEnd = offsetEnd;
     } else {
-      // Decimal base: new parser scales offsets, so export them scaled
-      const scaleFactor = new Rational(10).pow(decimalPlaces + 1);
+      // Decimal base: express offsets in units of the last visible decimal place
+      const scaleFactor = new Rational(10).pow(decimalPlaces);
       scaledOffsetStart = offsetStart.multiply(scaleFactor);
       scaledOffsetEnd = offsetEnd.multiply(scaleFactor);
     }
@@ -760,7 +760,7 @@ export class RationalInterval {
       const s1 = "+" + sorted[0].v.abs().toDecimal();
       const s2 = "-" + sorted[1].v.abs().toDecimal();
 
-      return `${decimalStr}[${s1},${s2}]`;
+      return `${decimalStr}[${s1}:${s2}]`;
     }
   }
 

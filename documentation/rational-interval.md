@@ -99,12 +99,12 @@ type.
 ```js
 import { parseInterval } from "@ratmath/core";
 
-const range = parseInterval("1.23[+5,-6]");
+const range = parseInterval("1.224:1.235");
 
 range.toString();                 // "153/125:247/200"
 range.toRepeatingDecimal();       // "1.224#0:1.235#0"
-range.relativeDecimalInterval();  // "1.23[+5,-6]"
-range.relativeMidDecimalInterval(); // "1.2295[+-550]"
+range.relativeDecimalInterval();  // "1.23[+0.5:-0.6]"
+range.relativeMidDecimalInterval(); // "1.2295[+-55]"
 ```
 
 These compact forms target human-readable RiX notation. Fraction and repeating

@@ -608,27 +608,33 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td>Compact suffixes</td>
-<td><code>1.23[56,67]</code></td>
+<td><code>1.23[56:67]</code></td>
 <td><code>1.2356:1.2367</code></td>
 </tr>
 <tr class="even">
 <td>Relative offsets</td>
-<td><code>1.23[+5,-6]</code></td>
-<td><code>1.224:1.235</code></td>
+<td><code>1.23[+5:-6]</code></td>
+<td><code>1.17:1.28</code></td>
 </tr>
 <tr class="odd">
 <td>Symmetric offset</td>
 <td><code>1.3[+-1]</code></td>
-<td><code>1.29:1.31</code></td>
+<td><code>1.2:1.4</code></td>
 </tr>
 <tr class="even">
+<td>Fractional offset</td>
+<td><code>1.2[+-0.1]</code></td>
+<td><code>1.19:1.21</code></td>
+</tr>
+<tr class="odd">
 <td>Repeating endpoints</td>
-<td><code>0.[#3,#6]</code></td>
+<td><code>0.[#3:#6]</code></td>
 <td><code>1/3:2/3</code></td>
 </tr>
 </tbody>
 </table>
-<p>For a decimal base, a relative offset without a decimal point is scaled at the next decimal place. Thus <code>1.23[+5,-6]</code> means <code>1.23 + 0.005</code> and <code>1.23 - 0.006</code>. For an integer base, offsets are applied directly.</p>
+<p>Unsigned values append digits to the decimal base. Signed offsets use the base’s last visible digit as their unit. If the base has <code>d</code> fractional digits, an offset <code>x</code> contributes <code>x × 10^-d</code>. Thus <code>1.23[+5:-6]</code> means <code>1.23 + 5 × 0.01</code> and <code>1.23 - 6 × 0.01</code>. Likewise, <code>1.2[+-0.1]</code> applies <code>0.1 × 0.1 = 0.01</code> in each direction. For an integer base, the unit is <code>1</code>.</p>
+<p>When a bracket contains two values, colon is the required separator.</p>
 <p>The returned interval stores the endpoints in their written order as <code>start</code> and <code>end</code>, while <code>low</code> and <code>high</code> are always mathematically ordered.</p>
 </section>
 <section id="rejected-input" class="level2">

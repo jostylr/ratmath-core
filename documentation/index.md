@@ -19,7 +19,7 @@ const oneThird = parseDecimal("0.#3");
 oneThird.equals(new Rational(1, 3));          // true
 
 const tolerance = parseInterval("1.23[+-1]");
-tolerance.toString();                         // "1229/1000:1231/1000"
+tolerance.toString();                         // "61/50:31/25"
 tolerance.containsValue(new Rational(123, 100)); // true
 ```
 

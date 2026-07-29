@@ -3,12 +3,12 @@
  * Shows how intervals can be converted to human-readable decimal uncertainty format and back
  */
 
-import { Rational, RationalInterval, parseRepeatingDecimal } from '../index.js';
+import { Rational, RationalInterval, parseInterval } from '../index.js';
 
 console.log('🔄 RELATIVE DECIMAL INTERVAL ROUNDTRIP DEMO 🔄\n');
 
 console.log('This demo shows how rational intervals can be converted to relative decimal');
-console.log('notation (like 1.23[+5,-6]) and back to rational intervals.\n');
+console.log('notation (like 1.23[+0.5:-0.6]) and back to rational intervals.\n');
 
 console.log('IMPORTANT: The roundtrip may not preserve exact rational values because');
 console.log('the relative decimal notation uses the SHORTEST precise decimal, which');
@@ -84,7 +84,7 @@ testCases.forEach((testCase, index) => {
   console.log(`Decimal:     ${decimalForm}`);
   
   // Convert back to rational interval
-  const roundtrip = parseRepeatingDecimal(decimalForm);
+  const roundtrip = parseInterval(decimalForm);
   console.log(`Roundtrip:   [${roundtrip.low.toDecimal()}, ${roundtrip.high.toDecimal()}]`);
   
   // Check for true mathematical exactness using rational equals
@@ -116,7 +116,7 @@ console.log('• Functional equivalence is maintained even when exact rationals 
 console.log('• This makes the notation ideal for display and human-readable output');
 
 console.log('\n📊 OFFSET CONVENTION EXAMPLES:');
-console.log('• 85[+83,-73]  → 85 + 8.3 = 93.3, 85 - 7.3 = 77.7');
-console.log('• 1.23[+5,-6]  → 1.23 + 0.005 = 1.235, 1.23 - 0.006 = 1.224');
-console.log('• 1.25[+-25]   → 1.25 ± 0.025 = [1.225, 1.275]');
-console.log('• Base precision determines offset scale (next decimal place)');
+console.log('• 85[+8.3:-7.3]    → 85 + 8.3 = 93.3, 85 - 7.3 = 77.7');
+console.log('• 1.23[+0.5:-0.6]  → 1.23 + 0.005 = 1.235, 1.23 - 0.006 = 1.224');
+console.log('• 1.25[+-2.5]       → 1.25 ± 0.025 = [1.225, 1.275]');
+console.log('• Base precision determines the last-visible-digit offset unit');

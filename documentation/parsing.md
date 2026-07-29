@@ -92,14 +92,20 @@ Decimal bracket notation provides shorter uncertainty forms:
 
 | Form | Example | Result |
 |---|---|---|
-| Compact suffixes | `1.23[56,67]` | `1.2356:1.2367` |
-| Relative offsets | `1.23[+5,-6]` | `1.224:1.235` |
-| Symmetric offset | `1.3[+-1]` | `1.29:1.31` |
-| Repeating endpoints | `0.[#3,#6]` | `1/3:2/3` |
+| Compact suffixes | `1.23[56:67]` | `1.2356:1.2367` |
+| Relative offsets | `1.23[+5:-6]` | `1.17:1.28` |
+| Symmetric offset | `1.3[+-1]` | `1.2:1.4` |
+| Fractional offset | `1.2[+-0.1]` | `1.19:1.21` |
+| Repeating endpoints | `0.[#3:#6]` | `1/3:2/3` |
 
-For a decimal base, a relative offset without a decimal point is scaled at the
-next decimal place. Thus `1.23[+5,-6]` means `1.23 + 0.005` and
-`1.23 - 0.006`. For an integer base, offsets are applied directly.
+Unsigned values append digits to the decimal base. Signed offsets use the
+base's last visible digit as their unit. If the base has `d` fractional digits,
+an offset `x` contributes `x × 10^-d`. Thus `1.23[+5:-6]` means
+`1.23 + 5 × 0.01` and `1.23 - 6 × 0.01`. Likewise, `1.2[+-0.1]`
+applies `0.1 × 0.1 = 0.01` in each direction. For an integer base, the unit is
+`1`.
+
+When a bracket contains two values, colon is the required separator.
 
 The returned interval stores the endpoints in their written order as `start`
 and `end`, while `low` and `high` are always mathematically ordered.

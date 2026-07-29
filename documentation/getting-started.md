@@ -87,7 +87,7 @@ import { parseNumber, parseRational } from "@ratmath/core";
 
 parseNumber("1_000");        // Integer
 parseNumber("-2..1/4");      // Rational
-parseNumber("0.[#3,#6]");    // RationalInterval
+parseNumber("0.[#3:#6]");    // RationalInterval
 parseRational("3.~7~15");    // Rational
 ```
 

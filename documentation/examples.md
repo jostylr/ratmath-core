@@ -75,12 +75,12 @@ piApproximation.bestConvergent(100n).toString();    // "22/7"
 ```js
 import { parseInterval, parseRational } from "@ratmath/core";
 
-const measured = parseInterval("1.23[+-1]"); // [1.229, 1.231]
+const measured = parseInterval("1.23[+-1]"); // [1.22, 1.24]
 const scale = parseRational("3/2");
 const result = measured.multiply(scale);
 
-result.toString();           // "3687/2000:3693/2000"
-result.toRepeatingDecimal(); // "1.8435#0:1.8465#0"
+result.toString();           // "183/100:93/50"
+result.toRepeatingDecimal(); // "1.83#0:1.86#0"
 ```
 
 ## Pointwise versus independent powers
