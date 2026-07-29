@@ -645,7 +645,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>range<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span>                 <span class="co">// "153/125:247/200"</span></span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>range<span class="op">.</span><span class="fu">toRepeatingDecimal</span>()<span class="op">;</span>       <span class="co">// "1.224#0:1.235#0"</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>range<span class="op">.</span><span class="fu">relativeDecimalInterval</span>()<span class="op">;</span>  <span class="co">// "1.23[+5,-6]"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>range<span class="op">.</span><span class="fu">relativeDecimalInterval</span>()<span class="op">;</span>  <span class="co">// "1.23[+5,-6]"</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>range<span class="op">.</span><span class="fu">relativeMidDecimalInterval</span>()<span class="op">;</span> <span class="co">// "1.2295[+-550]"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>These compact forms target human-readable RiX notation. Fraction and repeating decimal endpoint output are the simplest choices for durable exact serialization.</p>
 </section>
 <section id="selecting-values" class="level2">

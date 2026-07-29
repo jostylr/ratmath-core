@@ -663,7 +663,7 @@ export class RationalInterval {
   /**
    * Exports this interval as a relative midpoint decimal interval notation
    * Expresses the interval as midpoint[+-offset] where midpoint is the center of the interval
-   * @returns {string} Relative midpoint decimal interval string (e.g., "1.224:1.235" becomes "1.2295[+-0.0055]")
+   * @returns {string} Relative midpoint decimal interval string (e.g., "1.224:1.235" becomes "1.2295[+-550]")
    */
   relativeMidDecimalInterval() {
     // Calculate the midpoint based on actual bounds
@@ -675,18 +675,31 @@ export class RationalInterval {
 
     // Convert to decimal strings
     const midpointStr = midpoint.toDecimal();
+    const decimalPlaces = midpointStr.includes(".")
+      ? midpointStr.split(".")[1].length
+      : 0;
+    const scaleFactor =
+      decimalPlaces === 0
+        ? Rational.one
+        : new Rational(10).pow(decimalPlaces + 1);
+    const scaledOffsetStart = offsetStart.multiply(scaleFactor);
+    const scaledOffsetEnd = offsetEnd.multiply(scaleFactor);
 
     if (offsetStart.equals(offsetEnd.negate())) {
       // Symmetric
-      const offsetStr = offsetEnd.abs().toDecimal();
+      const offsetStr = scaledOffsetEnd.abs().toDecimal();
       return `${midpointStr}[+-${offsetStr}]`;
     }
 
     // Asymmetric (though shouldn't happen strictly speaking unless we implement custom betweenness offsets)
-    const offStartStr = offsetStart.toDecimal();
-    const offEndStr = offsetEnd.toDecimal();
+    const offStartStr = scaledOffsetStart.toDecimal();
+    const offEndStr = scaledOffsetEnd.toDecimal();
 
-    return `${midpointStr}[${offStartStr > 0 ? '+' : ''}${offStartStr},${offEndStr > 0 ? '+' : ''}${offEndStr}]`;
+    const startSign =
+      scaledOffsetStart.compareTo(Rational.zero) > 0 ? "+" : "";
+    const endSign =
+      scaledOffsetEnd.compareTo(Rational.zero) > 0 ? "+" : "";
+    return `${midpointStr}[${startSign}${offStartStr},${endSign}${offEndStr}]`;
   }
 
   /**

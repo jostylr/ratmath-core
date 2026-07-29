@@ -90,6 +90,16 @@ describe("number-only parsing", () => {
     expect(oneSided.high.equals(new Rational("1.235"))).toBe(true);
   });
 
+  it("round-trips relative midpoint decimal interval output", () => {
+    const original = new RationalInterval(
+      new Rational("1.2356"),
+      new Rational("1.2367"),
+    );
+    const text = original.relativeMidDecimalInterval();
+    expect(text).toBe("1.23615[+-550]");
+    expect(parseInterval(text).equals(original)).toBe(true);
+  });
+
   it("parses decimal-point ranges with repeating endpoints", () => {
     const value = parseInterval("0.[#3,#6]");
     expect(value.low.equals(new Rational(1n, 3n))).toBe(true);
