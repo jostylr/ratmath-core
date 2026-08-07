@@ -91,5 +91,9 @@ describe("Fraction Stern-Brocot navigation", () => {
     expect(() => new Fraction(1, 502).sternBrocotPath()).toThrow(
       "path too long",
     );
+    expect(new Fraction(1, 502).sternBrocotPath(502)).toHaveLength(502);
+    expect(() => new Fraction(1, 2).sternBrocotPath(-1)).toThrow(
+      "nonnegative safe integer",
+    );
   });
 });

@@ -60,10 +60,10 @@ x.lessThan(new Rational(3, 4));       // true
 
 | Method | Result |
 |---|---|
-| `toString(base?)` | Reduced fraction, or an integer when denominator is one |
+| `toString(base?, options?)` | Reduced fraction, or radix expansion when a base is supplied |
 | `toMixedString()` | RiX mixed form such as `-2..1/4` |
 | `toNumber()` | JavaScript `number`; potentially inexact |
-| `toDecimal()` | Display decimal with at most 20 fractional digits, including for longer terminating expansions |
+| `toDecimal(maxDigits?)` | Display decimal with a configurable fractional-digit limit |
 
 ```js
 const x = new Rational(-9, 4);
@@ -73,6 +73,11 @@ x.toMixedString(); // "-2..1/4"
 x.toNumber();      // -2.25
 x.toDecimal();     // "-2.25"
 ```
+
+`Rational.DEFAULT_DECIMAL_DIGITS` is the mutable default for `toDecimal()`
+(20 initially). `toDecimal(maxDigits)` overrides it for one call. This method
+is display-oriented; use a fraction or complete repeating expansion for exact
+interchange.
 
 ## Repeating decimal output
 
@@ -98,9 +103,13 @@ x.computeDecimalMetadata();
 new Rational(12345).toScientificNotation(); // "1.2345E4"
 ```
 
+`Rational.DEFAULT_SCIENTIFIC_PRECISION` is the mutable default precision for
+scientific display (11 initially); the second method argument overrides it.
+
 `Rational.MAX_PERIOD_DIGITS` is the mutable global default for decimal-period
 output and metadata (30 initially). Explicit method arguments override it.
-`Rational.MAX_PERIOD_CHECK` limits period-length discovery work.
+`Rational.MAX_PERIOD_CHECK` limits period-length discovery work and must be a
+positive safe integer. Scientific period diagnostics report its current value.
 `onLimit` is `"error"` (default), `"null"`, or `"trunc"`. Truncated output
 uses `#` to mark where repetition begins and ends in `...` to show that the
 period is incomplete; it is informative rather than parseable. Output with
@@ -118,7 +127,7 @@ and `ceil`.
 | Method | Result |
 |---|---|
 | `toBase(system)` | Integer or numerator/denominator digits; no radix expansion |
-| `toRepeatingBase(system)` | Exact radix expansion with `#` before the repeating block |
+| `toRepeatingBase(system, options?)` | Radix expansion with `#` before a complete repeating block |
 | `toRepeatingBaseWithPeriod(system, options?)` | `{ baseStr, period, limitHit }` |
 | `periodModulo(system, limit?)` | Multiplicative-order period length, or `0` when terminating; throws if the iteration limit is exceeded |
 
@@ -135,7 +144,11 @@ third.toRepeatingBaseWithPeriod(BaseSystem.BINARY);
 
 `toRepeatingBaseWithPeriod` accepts `useRepeatNotation` (default `true`) and
 `limit`. If the digit-generation limit is reached, `limitHit` is `true` and the
-returned expansion is partial.
+returned expansion is partial and ends in `...`. `toRepeatingBase` accepts the
+same options but returns only the string. `Rational.DEFAULT_BASE_LIMIT` is the
+mutable global default (1,000 initially), and
+`Rational.DEFAULT_PERIOD_MODULO_LIMIT` similarly controls `periodModulo`
+(1,000,000 initially). Explicit method limits override both defaults.
 
 ## Continued fractions
 
@@ -179,6 +192,14 @@ pi.bestConvergent(100n).toString();    // "22/7"
 `Rational.DEFAULT_CF_LIMIT` is the default maximum coefficient/convergent
 count. Continued fractions here are finite because every `Rational` is exact
 and rational.
+
+If a coefficient array reaches its limit before the rational's expansion is
+complete, it is a prefix and represents the corresponding convergent.
+`toContinuedFractionString()` makes this condition visible with a trailing
+`~...`; that informative form is deliberately rejected by the exact parser.
+Increase `maxTerms` until no ellipsis is present for an exact round trip. This
+also covers the boundary where long form needs one more term than canonical
+form.
 
 The default expansion is canonical: except for an integer-only expansion, its
 last coefficient is greater than `1`. The long alternative replaces the final

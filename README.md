@@ -117,10 +117,10 @@ interval.relativeDecimalInterval();  // "1.23[+0.5:-0.6]"
 interval.compactedDecimalInterval(); // a compact range when possible
 ```
 
-Repeating-decimal and continued-fraction output is exact and can be parsed
-again. `toRepeatingDecimal()` allows periods up to 30 digits by default and
-throws if a longer period would be required. Pass a larger limit for exact
-interchange, or choose an explicit over-limit policy:
+Repeating-decimal and continued-fraction output without an ellipsis is exact
+and can be parsed again. `toRepeatingDecimal()` allows periods up to 30 digits
+by default and throws if a longer period would be required. Pass a larger
+limit for exact interchange, or choose an explicit over-limit policy:
 
 ```js
 new Rational(1, 97).toRepeatingDecimal(100);          // exact `#` period
@@ -131,16 +131,26 @@ new Rational(1, 97).toRepeatingDecimal(30, "null");  // null
 Continued fractions are canonical by default. `{ long: true }` selects the
 alternative finite expansion ending in `1`; `convergents({ intermediates:
 true })` includes every intermediate convergent along each coefficient run.
+Coefficient and convergent arrays stop at `Rational.DEFAULT_CF_LIMIT` unless a
+larger `maxTerms` or `maxCount` is supplied. An incomplete
+`toContinuedFractionString()` ends in `~...`, making the limited prefix visible
+and deliberately non-parseable as an exact value.
 
 `Rational.MAX_PERIOD_DIGITS` sets the mutable global default (initially 30) for
 repeating-decimal output and decimal metadata; an explicit method limit still
-overrides it.
+overrides it. The other mutable defaults are `MAX_PERIOD_CHECK` (period-length
+discovery), `DEFAULT_DECIMAL_DIGITS` (`toDecimal()`), `DEFAULT_BASE_LIMIT`
+(arbitrary-base radix output), `DEFAULT_SCIENTIFIC_PRECISION`,
+`DEFAULT_PERIOD_MODULO_LIMIT`, and `DEFAULT_CF_LIMIT`. Formatting and traversal
+defaults have explicit per-call overrides; `MAX_PERIOD_CHECK` is a mutable
+global guard on period-discovery work.
 
 In truncated output, `#` still marks the start of the repeating section and
 the trailing `...` says that only a prefix of its period is shown. Such output
 is informative but is not parseable as an exact value. `#` output without an
 ellipsis contains the complete period and round-trips exactly. `toDecimal()`
-is display-oriented and limits output to 20 fractional digits.
+is display-oriented and uses `DEFAULT_DECIMAL_DIGITS` (20 initially), which can
+also be overridden with `toDecimal(maxDigits)`.
 
 Intervals can work on a fixed denominator grid without enumerating fractions:
 
@@ -152,7 +162,8 @@ range.randomRational(10, "error", () => 0).toString(); // "2/5"
 
 Omitting the grid denominator uses the LCM of the endpoint denominators.
 `"mid"`, `"null"`, and `"error"` control what happens when a grid misses the
-interval.
+interval. An injected random source must return values in `[0, 1)` and vary
+between calls when rejection sampling needs another candidate.
 
 ## Fractions and bases
 

@@ -176,7 +176,9 @@ export class Integer {
    * @throws {Error} If this integer is zero and exponent is negative
    */
   pow(exponent) {
-    const exp = exponent instanceof Integer ? exponent.value : BigInt(exponent);
+    const exp = exponent instanceof Integer
+      ? exponent.value
+      : toExactBigInt(exponent, "Exponent");
 
     if (exp === 0n) {
       if (this.#value === 0n) {
@@ -458,7 +460,7 @@ export class Integer {
    * new Integer(3).E(4)        // 30000 (Integer: 3 * 10^4)
    */
   E(exponent) {
-    const exp = BigInt(exponent);
+    const exp = toExactBigInt(exponent, "Exponent");
 
     if (exp >= 0n) {
       // Non-negative exponent: result is an integer

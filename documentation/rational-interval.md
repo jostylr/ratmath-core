@@ -140,4 +140,7 @@ The denominator is a grid denominator, not a maximum. A result may reduce to
 a smaller divisor. If omitted, the endpoint-denominator LCM is used. Empty
 grids support `"mid"`, `"null"`, and `"error"` (default). `randomRational`
 uses `Math.random` unless a third-argument random function is supplied, so the
-default is neither deterministic nor cryptographically secure.
+default is neither deterministic nor cryptographically secure. An injected
+source must return values in `[0, 1)` and vary between calls if rejection
+sampling asks for another candidate; a repeating rejected value throws rather
+than looping indefinitely.

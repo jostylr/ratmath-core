@@ -36,6 +36,11 @@ export interface BaseExpansion {
   limitHit: boolean;
 }
 
+export interface BaseExpansionOptions {
+  useRepeatNotation?: boolean;
+  limit?: number;
+}
+
 export interface ContinuedFractionOptions {
   maxTerms?: number;
   long?: boolean;
@@ -95,6 +100,10 @@ export class Rational {
   static one: Rational;
   static MAX_PERIOD_DIGITS: number;
   static MAX_PERIOD_CHECK: number;
+  static DEFAULT_DECIMAL_DIGITS: number;
+  static DEFAULT_SCIENTIFIC_PRECISION: number;
+  static DEFAULT_BASE_LIMIT: number;
+  static DEFAULT_PERIOD_MODULO_LIMIT: number;
   static DEFAULT_CF_LIMIT: number;
 
   constructor(
@@ -124,11 +133,14 @@ export class Rational {
   trunc(): bigint;
   round(mode?: RoundingMode): bigint;
   roundTo(places: number, mode?: RoundingMode): Rational;
-  toString(base?: number | BaseSystem): string;
-  toRepeatingBase(baseSystem: BaseSystem): string;
+  toString(base?: number | BaseSystem, options?: BaseExpansionOptions): string;
+  toRepeatingBase(
+    baseSystem: BaseSystem,
+    options?: BaseExpansionOptions,
+  ): string;
   toRepeatingBaseWithPeriod(
     baseSystem: BaseSystem,
-    options?: { useRepeatNotation?: boolean; limit?: number },
+    options?: BaseExpansionOptions,
   ): BaseExpansion;
   periodModulo(baseSystem: BaseSystem, limit?: number): number;
   toBase(baseSystem: BaseSystem): string;
@@ -150,7 +162,7 @@ export class Rational {
     periodLength: number,
     digitsRequested: number,
   ): string;
-  toDecimal(): string;
+  toDecimal(maxDigits?: number): string;
   E(exponent: number | bigint): Rational;
   toScientificNotation(
     useRepeatNotation?: boolean,
@@ -247,6 +259,8 @@ export class RationalInterval {
 }
 
 export class Fraction {
+  static DEFAULT_STERN_BROCOT_PATH_LIMIT: number;
+
   constructor(
     numerator: number | string | bigint,
     denominator?: number | string | bigint,
@@ -281,7 +295,7 @@ export class Fraction {
   fareyParents(): { left: Fraction; right: Fraction };
   sternBrocotParent(): Fraction | null;
   sternBrocotChildren(): { left: Fraction; right: Fraction };
-  sternBrocotPath(): SternBrocotDirection[];
+  sternBrocotPath(maxLength?: number): SternBrocotDirection[];
   isSternBrocotValid(): boolean;
   sternBrocotDepth(): number;
   sternBrocotAncestors(): Fraction[];

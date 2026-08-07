@@ -573,6 +573,40 @@ describe("Rational", () => {
       expect(value.getConvergent(1000).equals(value)).toBe(true);
     });
 
+    it("visibly marks incomplete continued-fraction strings at limit boundaries", () => {
+      const canonical = Rational.fromContinuedFraction(
+        Array.from({ length: 1001 }, () => 2n),
+      );
+      const canonicalPrefix = canonical.toContinuedFractionString();
+      expect(canonicalPrefix.endsWith("~...")).toBe(true);
+      expect(() => Rational.fromContinuedFractionString(canonicalPrefix)).toThrow();
+      expect(
+        Rational.fromContinuedFractionString(
+          canonical.toContinuedFractionString(1001),
+        ).equals(canonical),
+      ).toBe(true);
+
+      const longBoundary = Rational.fromContinuedFraction(
+        Array.from({ length: 1000 }, () => 2n),
+      );
+      expect(
+        longBoundary.toContinuedFractionString({ long: true }).endsWith("~..."),
+      ).toBe(true);
+      expect(
+        Rational.fromContinuedFractionString(
+          longBoundary.toContinuedFractionString({
+            maxTerms: 1001,
+            long: true,
+          }),
+        ).equals(longBoundary),
+      ).toBe(true);
+
+      expect(new Rational(3).toContinuedFractionString({
+        maxTerms: 1,
+        long: true,
+      })).toBe("2.~...");
+    });
+
     it("rejects invalid continued-fraction counts and indexes", () => {
       const value = new Rational(355, 113);
       const invalidCounts = [0, -1, 1.5, NaN, Infinity];

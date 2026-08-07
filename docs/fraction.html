@@ -627,7 +627,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td><code>{ left, right }</code> children</td>
 </tr>
 <tr class="odd">
-<td><code>sternBrocotPath()</code></td>
+<td><code>sternBrocotPath(maxLength?)</code></td>
 <td>Array of <code>"L"</code> and <code>"R"</code> directions from the root</td>
 </tr>
 <tr class="even">
@@ -655,6 +655,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>Fraction<span class="op">.</span><span class="fu">fromSternBrocotPath</span>(path)<span class="op">.</span><span class="fu">equals</span>(value)<span class="op">;</span> <span class="co">// true</span></span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>value<span class="op">.</span><span class="fu">sternBrocotDepth</span>()<span class="op">;</span>                         <span class="co">// 4</span></span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>value<span class="op">.</span><span class="fu">sternBrocotParent</span>()<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span>             <span class="co">// "2/3"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>Fraction.DEFAULT_STERN_BROCOT_PATH_LIMIT</code> is the mutable default path-length guard (500 initially). Pass <code>maxLength</code> to override it for one traversal.</p>
 
 
 </section>

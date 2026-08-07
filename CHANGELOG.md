@@ -50,5 +50,15 @@
 - Reject signs on mixed-number numerator and denominator components.
 - Improve validation for fractions, bases, Farey operations, and interval
   notation.
+- Reject unsafe JavaScript-number exponents across exact power and `E`
+  operations instead of converting an already-rounded value to `bigint`.
+- Mark incomplete continued-fraction strings with `~...`, including the long
+  form boundary, so a limited prefix cannot masquerade as an exact value.
+- Expose mutable, per-call-overridable defaults for ordinary decimal digits,
+  scientific precision, arbitrary-base digits, modular-period work,
+  continued-fraction work, and Stern–Brocot path traversal.
+- Keep the frozen powers-of-five optimization private, validate boolean
+  formatting flags, report the active period-discovery limit, and stop
+  non-varying injected random sources from looping indefinitely.
 - Make all retained examples executable and enforce line/function coverage
   thresholds in CI.

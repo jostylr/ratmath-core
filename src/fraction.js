@@ -13,6 +13,7 @@ import { toExactBigInt } from './bigint.js';
 export class Fraction {
   #numerator;
   #denominator;
+  static DEFAULT_STERN_BROCOT_PATH_LIMIT = 500;
 
   /**
    * Creates a new Fraction.
@@ -207,7 +208,7 @@ export class Fraction {
    * const reciprocal = f.pow(-1); // 3/2
    */
   pow(exponent) {
-    const n = BigInt(exponent);
+    const n = toExactBigInt(exponent, "Exponent");
     
     // Handle special cases
     if (n === 0n) {
@@ -527,7 +528,7 @@ export class Fraction {
    * new Fraction(1, 3).E(3)        // 1000/3 (1/3 * 10^3)
    */
   E(exponent) {
-    const exp = BigInt(exponent);
+    const exp = toExactBigInt(exponent, "Exponent");
     
     // Apply 10^exponent by modifying numerator or denominator
     if (exp >= 0n) {
@@ -861,13 +862,17 @@ export class Fraction {
   /**
    * Generates the Stern-Brocot tree path from root (0/1) to this fraction.
    * Returns an array of 'L' and 'R' directions.
-   * 
-   * @returns {Array<string>} Array of 'L'/'R' directions from root
+   *
+   * @param {number} [maxLength=Fraction.DEFAULT_STERN_BROCOT_PATH_LIMIT]
+   * @returns {Array<"L"|"R">}
    * @example
    * const frac = new Fraction(3, 5);
-   * const path = frac.sternBrocotPath(); // ['R', 'R', 'L', 'L', 'R'] or similar
+   * const path = frac.sternBrocotPath(); // ['R', 'L', 'R', 'L']
    */
-  sternBrocotPath() {
+  sternBrocotPath(maxLength = Fraction.DEFAULT_STERN_BROCOT_PATH_LIMIT) {
+    if (!Number.isSafeInteger(maxLength) || maxLength < 0) {
+      throw new RangeError("Stern-Brocot path limit must be a nonnegative safe integer");
+    }
     if (this.isInfinite) {
       throw new Error("Infinite fractions don't have tree paths");
     }
@@ -901,8 +906,8 @@ export class Fraction {
         current = current.mediant(right);
       }
       
-      // Safety check to prevent infinite loops (increased limit for very long paths)
-      if (path.length > 500) {
+      // Safety check to prevent unexpectedly expensive traversals.
+      if (path.length > maxLength) {
         throw new Error("Stern-Brocot path too long - this may indicate a bug in the algorithm");
       }
     }

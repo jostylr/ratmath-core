@@ -80,6 +80,7 @@ function randomBigIntBelow(limit, random) {
   const bitCount = limit.toString(2).length;
   const chunks = Math.ceil(bitCount / 53);
   const mask = (1n << BigInt(bitCount)) - 1n;
+  const rejectedCandidates = new Set();
   while (true) {
     let candidate = 0n;
     for (let i = 0; i < chunks; i += 1) {
@@ -88,6 +89,12 @@ function randomBigIntBelow(limit, random) {
     }
     candidate &= mask;
     if (candidate < limit) return candidate;
+    if (rejectedCandidates.has(candidate)) {
+      throw new RangeError(
+        "Random source repeatedly produced a rejected value; it must vary between calls",
+      );
+    }
+    rejectedCandidates.add(candidate);
   }
 }
 
@@ -393,7 +400,7 @@ export class RationalInterval {
    * @throws {Error} If raising to the power would involve division by zero or 0^0
    */
   pow(exponent) {
-    const n = BigInt(exponent);
+    const n = toExactBigInt(exponent, "Exponent");
     const zero = Rational.zero;
 
     // Special case for exponent 0
@@ -478,18 +485,7 @@ export class RationalInterval {
    * @throws {Error} If raising to the power would involve division by zero or 0^0
    */
   mpow(exponent) {
-    // Handle different types of exponent input
-    let n;
-    if (typeof exponent === 'bigint') {
-      n = exponent;
-    } else if (typeof exponent === 'number') {
-      n = BigInt(exponent);
-    } else if (typeof exponent === 'string') {
-      n = BigInt(exponent);
-    } else {
-      // Handle other types by converting to BigInt
-      n = BigInt(exponent);
-    }
+    const n = toExactBigInt(exponent, "Exponent");
 
     const zero = Rational.zero;
 
@@ -1113,7 +1109,7 @@ export class RationalInterval {
    * new RationalInterval("1/3", "2/3").E(3) // [1000/3, 2000/3]
    */
   E(exponent) {
-    const exp = BigInt(exponent);
+    const exp = toExactBigInt(exponent, "Exponent");
 
     // Create 10^exponent as a rational
     let powerOf10;

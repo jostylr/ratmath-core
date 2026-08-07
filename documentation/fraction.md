@@ -123,7 +123,7 @@ fractions `-1/0` and `1/0`, so it covers negative and positive rationals.
 |---|---|
 | `sternBrocotParent()` | Parent fraction, or `null` at `0/1` |
 | `sternBrocotChildren()` | `{ left, right }` children |
-| `sternBrocotPath()` | Array of `"L"` and `"R"` directions from the root |
+| `sternBrocotPath(maxLength?)` | Array of `"L"` and `"R"` directions from the root |
 | `Fraction.fromSternBrocotPath(path)` | Fraction at a direction path |
 | `isSternBrocotValid()` | Finite, reduced, positive-denominator tree value |
 | `sternBrocotDepth()` | Number of steps from the root |
@@ -138,3 +138,6 @@ Fraction.fromSternBrocotPath(path).equals(value); // true
 value.sternBrocotDepth();                         // 4
 value.sternBrocotParent().toString();             // "2/3"
 ```
+
+`Fraction.DEFAULT_STERN_BROCOT_PATH_LIMIT` is the mutable default path-length
+guard (500 initially). Pass `maxLength` to override it for one traversal.

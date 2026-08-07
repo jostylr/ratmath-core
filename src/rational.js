@@ -9,6 +9,14 @@
 import { BaseSystem } from "./base-system.js";
 import { toExactBigInt } from "./bigint.js";
 
+const POWERS_OF_5 = Object.freeze({
+  16: 5n ** 16n,
+  8: 5n ** 8n,
+  4: 5n ** 4n,
+  2: 5n ** 2n,
+  1: 5n,
+});
+
 /** Helper function to compute bit length of a BigInt */
 const bitLength = function (int) {
   if (int === 0n) return 0;
@@ -98,15 +106,10 @@ export class Rational {
   // Class variables for decimal computation
   static MAX_PERIOD_DIGITS = 30;
   static MAX_PERIOD_CHECK = 10000000; // 10^7
-
-  // Precomputed powers of 5 for efficient factor counting
-  static POWERS_OF_5 = {
-    16: 5n ** 16n, // 152587890625
-    8: 5n ** 8n, // 390625
-    4: 5n ** 4n, // 625
-    2: 5n ** 2n, // 25
-    1: 5n, // 5
-  };
+  static DEFAULT_DECIMAL_DIGITS = 20;
+  static DEFAULT_SCIENTIFIC_PRECISION = 11;
+  static DEFAULT_BASE_LIMIT = 1000;
+  static DEFAULT_PERIOD_MODULO_LIMIT = 1000000;
 
   static zero = new Rational(0, 1);
   static one = new Rational(1, 1);
@@ -488,7 +491,7 @@ export class Rational {
    * @throws {Error} If this rational is zero and exponent is negative, or if 0^0
    */
   pow(exponent) {
-    const n = BigInt(exponent);
+    const n = toExactBigInt(exponent, "Exponent");
 
     // Handle special cases
     if (n === 0n) {
@@ -657,9 +660,10 @@ export class Rational {
    * Converts this rational to a string in the format "numerator/denominator"
    * or just "numerator" if denominator is 1. Optionally converts to a specific base.
    * @param {number|BaseSystem} [base] - The base to convert to (default: 10)
+   * @param {object} [options] - Radix-expansion options when a base is supplied
    * @returns {string} String representation of this rational
    */
-  toString(base) {
+  toString(base, options) {
     if (base === undefined) {
       if (this.#denominator === 1n) {
         return this.#numerator.toString();
@@ -677,7 +681,7 @@ export class Rational {
       return this.toString();
     }
 
-    return this.toRepeatingBase(baseSystem);
+    return this.toRepeatingBase(baseSystem, options);
   }
 
   /**
@@ -685,10 +689,11 @@ export class Rational {
    * e.g., 1/3 in base 10 -> "0.#3"
    * e.g., 1/3 in base 2 -> "0.#01"
    * @param {BaseSystem} baseSystem - The base system to use
+   * @param {object} [options] - Radix-expansion options
    * @returns {string} String representation with specialized repeating notation
    */
-  toRepeatingBase(baseSystem) {
-    return this.toRepeatingBaseWithPeriod(baseSystem).baseStr;
+  toRepeatingBase(baseSystem, options) {
+    return this.toRepeatingBaseWithPeriod(baseSystem, options).baseStr;
   }
 
   /**
@@ -696,7 +701,7 @@ export class Rational {
    * @param {BaseSystem} baseSystem - The base system to use
    * @param {Object} [options] - Configuration options
    * @param {boolean} [options.useRepeatNotation=true] - Whether to use {c~n} notation for identical digits
-   * @param {number} [options.limit=1000] - Hard limit on number of digits to compute
+   * @param {number} [options.limit=Rational.DEFAULT_BASE_LIMIT] - Hard limit on digits to compute
    * @returns {Object} { baseStr: string, period: number, limitHit: boolean }
    */
   toRepeatingBaseWithPeriod(baseSystem, options = {}) {
@@ -704,7 +709,16 @@ export class Rational {
       throw new Error("Argument must be a BaseSystem");
     }
 
-    const { useRepeatNotation = true, limit = 1000 } = options;
+    if (options === null || typeof options !== "object" || Array.isArray(options)) {
+      throw new TypeError("Base-expansion options must be an object");
+    }
+    const {
+      useRepeatNotation = true,
+      limit = Rational.DEFAULT_BASE_LIMIT,
+    } = options;
+    if (typeof useRepeatNotation !== "boolean") {
+      throw new TypeError("Base-expansion useRepeatNotation option must be a boolean");
+    }
     if (!Number.isSafeInteger(limit) || limit < 1) {
       throw new RangeError("Base-expansion limit must be a positive safe integer");
     }
@@ -802,11 +816,11 @@ export class Rational {
    * NOTE: This is computationally expensive for large denominators.
    * 
    * @param {BaseSystem} baseSystem - The base system
-   * @param {number} [limit=1000000] - Iteration limit to prevent infinite loops (though mathematically guaranteed to end)
+   * @param {number} [limit=Rational.DEFAULT_PERIOD_MODULO_LIMIT] - Iteration limit
    * @returns {number} The period length
    * @throws {Error} If limit is exceeded
    */
-  periodModulo(baseSystem, limit = 1000000) {
+  periodModulo(baseSystem, limit = Rational.DEFAULT_PERIOD_MODULO_LIMIT) {
     if (!(baseSystem instanceof BaseSystem)) {
       throw new Error("Argument must be a BaseSystem");
     }
@@ -915,7 +929,7 @@ export class Rational {
 
   /**
    * Converts this rational to its repeating decimal string representation
-   * @param {number} limit - Maximum repeating-period digits (default: 30)
+   * @param {number} limit - Maximum repeating-period digits (default: Rational.MAX_PERIOD_DIGITS)
    * @param {"trunc"|"null"|"error"} onLimit - Over-limit behavior
    * @returns {string|null} Repeating decimal string (e.g., "1/3" becomes "0.#3")
    */
@@ -930,6 +944,12 @@ export class Rational {
    * @returns {object} Object with decimal string, period, and truncation information
    */
   toRepeatingDecimalWithPeriod(options = true, legacyLimit, legacyOnLimit) {
+    if (
+      typeof options !== "boolean" &&
+      (options === null || typeof options !== "object" || Array.isArray(options))
+    ) {
+      throw new TypeError("Repeating-decimal options must be a boolean or an object");
+    }
     const normalized = typeof options === "boolean"
       ? {
           useRepeatNotation: options,
@@ -943,6 +963,9 @@ export class Rational {
         };
     const { useRepeatNotation, limit, onLimit } = normalized;
 
+    if (typeof useRepeatNotation !== "boolean") {
+      throw new TypeError("Repeating-decimal useRepeatNotation option must be a boolean");
+    }
     if (!Number.isSafeInteger(limit) || limit < 1) {
       throw new RangeError("Repeating-decimal limit must be a positive safe integer");
     }
@@ -1047,11 +1070,11 @@ export class Rational {
 
     // Use precomputed powers for efficient factoring
     const powers = [
-      { exp: 16, value: Rational.POWERS_OF_5["16"] },
-      { exp: 8, value: Rational.POWERS_OF_5["8"] },
-      { exp: 4, value: Rational.POWERS_OF_5["4"] },
-      { exp: 2, value: Rational.POWERS_OF_5["2"] },
-      { exp: 1, value: Rational.POWERS_OF_5["1"] },
+      { exp: 16, value: POWERS_OF_5["16"] },
+      { exp: 8, value: POWERS_OF_5["8"] },
+      { exp: 4, value: POWERS_OF_5["4"] },
+      { exp: 2, value: POWERS_OF_5["2"] },
+      { exp: 1, value: POWERS_OF_5["1"] },
     ];
 
     for (const { exp, value } of powers) {
@@ -1179,11 +1202,16 @@ export class Rational {
       return;
     }
 
+    const maxPeriodCheck = Rational.MAX_PERIOD_CHECK;
+    if (!Number.isSafeInteger(maxPeriodCheck) || maxPeriodCheck < 1) {
+      throw new RangeError("Maximum period check must be a positive safe integer");
+    }
+
     // Find period length using multiplicative order of 10 modulo reducedDen
     let periodLength = 1;
     let remainder = 10n % reducedDen;
 
-    while (remainder !== 1n && periodLength < Rational.MAX_PERIOD_CHECK) {
+    while (remainder !== 1n && periodLength < maxPeriodCheck) {
       periodLength++;
       remainder = (remainder * 10n) % reducedDen;
     }
@@ -1232,7 +1260,7 @@ export class Rational {
     // Compute breakdown of initial segment and period digits
     this.#computeDecimalPartBreakdown();
     this.#maxPeriodDigitsComputed = maxPeriodDigits;
-    this.#maxPeriodCheckComputed = Rational.MAX_PERIOD_CHECK;
+    this.#maxPeriodCheckComputed = maxPeriodCheck;
   }
 
   /**
@@ -1391,9 +1419,13 @@ export class Rational {
    * Converts this rational to a standard decimal string representation
    * For terminating decimals, returns the exact decimal. For repeating decimals,
    * returns an approximation with sufficient precision.
+   * @param {number} [maxDigits=Rational.DEFAULT_DECIMAL_DIGITS] - Maximum fractional digits
    * @returns {string} Decimal string representation
    */
-  toDecimal() {
+  toDecimal(maxDigits = Rational.DEFAULT_DECIMAL_DIGITS) {
+    if (!Number.isSafeInteger(maxDigits) || maxDigits < 1) {
+      throw new RangeError("Decimal digit limit must be a positive safe integer");
+    }
     // Handle special cases
     if (this.#numerator === 0n) {
       return "0";
@@ -1414,8 +1446,6 @@ export class Rational {
 
     // Calculate decimal digits
     const digits = [];
-    const maxDigits = 20; // Limit precision for practical output
-
     for (let i = 0; i < maxDigits && remainder !== 0n; i++) {
       remainder *= 10n;
       const digit = remainder / den;
@@ -1448,7 +1478,7 @@ export class Rational {
    * new Rational(1, 3).E(3)     // Same as 1/3 * 10^3 = 1000/3
    */
   E(exponent) {
-    const exp = BigInt(exponent);
+    const exp = toExactBigInt(exponent, "Exponent");
 
     // Create 10^exponent as a rational
     let powerOf10;
@@ -1486,7 +1516,7 @@ export class Rational {
 
     // Add period length info
     if (this.#periodLength === -1) {
-      info.push("period: >10^7");
+      info.push(`period: >${Rational.MAX_PERIOD_CHECK.toLocaleString()}`);
     } else if (this.#periodLength > 0) {
       info.push(`period: ${this.#periodLength}`);
     }
@@ -1497,20 +1527,26 @@ export class Rational {
   /**
    * Converts this rational to scientific notation using decimal metadata for efficiency
    * @param {boolean} useRepeatNotation - Whether to use {0~15} notation in mantissa (default: true)
-   * @param {number} precision - Number of significant digits in mantissa (default: 11)
+   * @param {number} precision - Number of significant digits in mantissa (default: Rational.DEFAULT_SCIENTIFIC_PRECISION)
    * @param {boolean} showPeriodInfo - Whether to append period info for repeating decimals (default: false)
    * @returns {string} Scientific notation string (e.g., "6.57130E-6" or "6.57130E-6 {period: 42}")
    */
   toScientificNotation(
     useRepeatNotation = true,
-    precision = 11,
+    precision = Rational.DEFAULT_SCIENTIFIC_PRECISION,
     showPeriodInfo = false,
   ) {
-    if (this.#numerator === 0n) {
-      return "0";
+    if (typeof useRepeatNotation !== "boolean") {
+      throw new TypeError("Scientific-notation useRepeatNotation must be a boolean");
+    }
+    if (typeof showPeriodInfo !== "boolean") {
+      throw new TypeError("Scientific-notation showPeriodInfo must be a boolean");
     }
     if (!Number.isSafeInteger(precision) || precision < 1) {
       throw new RangeError("Scientific-notation precision must be a positive safe integer");
+    }
+    if (this.#numerator === 0n) {
+      return "0";
     }
 
     this.#computeWholePart();
@@ -1612,7 +1648,7 @@ export class Rational {
     return new Rational(value);
   }
 
-  // Class constant for continued fraction limits
+  // Mutable default for continued-fraction limits
   static DEFAULT_CF_LIMIT = 1000;
 
   static #continuedFractionArray(cfArray) {
@@ -1762,6 +1798,69 @@ export class Rational {
     return new Rational(p_curr, q_curr);
   }
 
+  #continuedFractionResult(maxTerms, long) {
+    if (this.#denominator === 1n) {
+      const completeCoefficients = long
+        ? [this.#numerator - 1n, 1n]
+        : [this.#numerator];
+      return {
+        coefficients: completeCoefficients.slice(0, maxTerms),
+        complete: completeCoefficients.length <= maxTerms,
+      };
+    }
+
+    const coefficients = [];
+    let numerator = this.#numerator;
+    let denominator = this.#denominator;
+    const negative = numerator < 0n;
+    if (negative) numerator = -numerator;
+
+    let integerPart = numerator / denominator;
+    if (negative) {
+      integerPart = -integerPart;
+      if (numerator % denominator !== 0n) {
+        integerPart -= 1n;
+        numerator = denominator - (numerator % denominator);
+      } else {
+        numerator %= denominator;
+      }
+    } else {
+      numerator %= denominator;
+    }
+    coefficients.push(integerPart);
+
+    while (numerator !== 0n && coefficients.length < maxTerms) {
+      coefficients.push(denominator / numerator);
+      const remainder = denominator % numerator;
+      denominator = numerator;
+      numerator = remainder;
+    }
+
+    if (numerator !== 0n) {
+      return { coefficients, complete: false };
+    }
+
+    if (
+      coefficients.length > 1 &&
+      coefficients[coefficients.length - 1] === 1n
+    ) {
+      coefficients[coefficients.length - 2] += 1n;
+      coefficients.pop();
+    }
+
+    if (!long) {
+      return { coefficients, complete: true };
+    }
+
+    const longCoefficients = coefficients.slice();
+    longCoefficients[longCoefficients.length - 1] -= 1n;
+    longCoefficients.push(1n);
+    return {
+      coefficients: longCoefficients.slice(0, maxTerms),
+      complete: longCoefficients.length <= maxTerms,
+    };
+  }
+
   /**
    * Convert this Rational to continued fraction coefficients
    * @param {number|{maxTerms?: number, long?: boolean}} options - Term limit or output options
@@ -1775,95 +1874,33 @@ export class Rational {
     if (!Number.isSafeInteger(maxTerms) || maxTerms < 1) {
       throw new RangeError("Continued-fraction term limit must be a positive safe integer");
     }
-    if (this.#denominator === 0n) {
-      throw new Error("Cannot convert infinite value to continued fraction");
-    }
-
-    if (this.#denominator === 1n) {
-      const integerCf = long
-        ? [this.#numerator - 1n, 1n]
-        : [this.#numerator];
-      return integerCf.slice(0, maxTerms);
-    }
-
-    // Use Euclidean algorithm
-    const cf = [];
-    let num = this.#numerator;
-    let den = this.#denominator;
-
-    // Handle negative numbers by making the first term negative
-    const isNeg = num < 0n;
-    if (isNeg) {
-      num = -num;
-    }
-
-    // Extract integer part
-    let intPart = num / den;
-    if (isNeg) {
-      intPart = -intPart;
-      // For negative numbers, we need floor division
-      if (num % den !== 0n) {
-        intPart = intPart - 1n;
-        num = den - (num % den);
-      } else {
-        num = num % den;
-      }
-    } else {
-      num = num % den;
-    }
-
-    cf.push(intPart);
-
-    // Continue with Euclidean algorithm
-    let termCount = 1;
-    while (num !== 0n && termCount < maxTerms) {
-      // Swap and divide: den/num = quotient + remainder/num
-      const quotient = den / num;
-      cf.push(quotient);
-
-      const remainder = den % num;
-      den = num;
-      num = remainder;
-
-      termCount++;
-    }
-
-    const complete = num === 0n;
-
-    // Only a complete expansion has a terminal coefficient to canonicalize.
-    if (complete && cf.length > 1 && cf[cf.length - 1] === 1n) {
-      // Replace last two terms [a, 1] with [a+1]
-      const secondLast = cf[cf.length - 2];
-      cf[cf.length - 2] = secondLast + 1n;
-      cf.pop();
-    }
-
-    if (!long || !complete) {
-      return cf;
-    }
-
-    const longCf = cf.slice();
-    longCf[longCf.length - 1] -= 1n;
-    longCf.push(1n);
-    return longCf.slice(0, maxTerms);
+    return this.#continuedFractionResult(maxTerms, long).coefficients;
   }
 
   /**
    * Convert to continued fraction string representation
-   * @returns {string} String in format "3.~7~15~1~292"
+   * @returns {string} String in format "3.~7~15"; a trailing "~..." marks a limited prefix
    */
   toContinuedFractionString(options) {
-    const cf = this.toContinuedFraction(options);
+    const { maxTerms, long } = continuedFractionOptions(
+      options,
+      Rational.DEFAULT_CF_LIMIT,
+    );
+    if (!Number.isSafeInteger(maxTerms) || maxTerms < 1) {
+      throw new RangeError("Continued-fraction term limit must be a positive safe integer");
+    }
+    const { coefficients: cf, complete } =
+      this.#continuedFractionResult(maxTerms, long);
 
     if (cf.length === 1) {
-      // Integer case
-      return `${cf[0]}.~0`;
+      return complete ? `${cf[0]}.~0` : `${cf[0]}.~...`;
     }
 
     const intPart = cf[0];
     const cfTerms = cf.slice(1);
 
-    return `${intPart}.~${cfTerms.join('~')}`;
+    const suffix = complete ? "" : "~...";
+    return `${intPart}.~${cfTerms.join('~')}${suffix}`;
   }
 
   /**

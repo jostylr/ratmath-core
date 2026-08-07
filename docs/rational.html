@@ -578,8 +578,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>toString(base?)</code></td>
-<td>Reduced fraction, or an integer when denominator is one</td>
+<td><code>toString(base?, options?)</code></td>
+<td>Reduced fraction, or radix expansion when a base is supplied</td>
 </tr>
 <tr class="even">
 <td><code>toMixedString()</code></td>
@@ -590,8 +590,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>JavaScript <code>number</code>; potentially inexact</td>
 </tr>
 <tr class="even">
-<td><code>toDecimal()</code></td>
-<td>Display decimal with at most 20 fractional digits, including for longer terminating expansions</td>
+<td><code>toDecimal(maxDigits?)</code></td>
+<td>Display decimal with a configurable fractional-digit limit</td>
 </tr>
 </tbody>
 </table>
@@ -601,6 +601,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>x<span class="op">.</span><span class="fu">toMixedString</span>()<span class="op">;</span> <span class="co">// "-2..1/4"</span></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>x<span class="op">.</span><span class="fu">toNumber</span>()<span class="op">;</span>      <span class="co">// -2.25</span></span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>x<span class="op">.</span><span class="fu">toDecimal</span>()<span class="op">;</span>     <span class="co">// "-2.25"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>Rational.DEFAULT_DECIMAL_DIGITS</code> is the mutable default for <code>toDecimal()</code> (20 initially). <code>toDecimal(maxDigits)</code> overrides it for one call. This method is display-oriented; use a fraction or complete repeating expansion for exact interchange.</p>
 </section>
 <section id="repeating-decimal-output" class="level2">
 <h2 class="anchored" data-anchor-id="repeating-decimal-output">Repeating decimal output</h2>
@@ -649,7 +650,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">// periodLength: 1, isTerminating: false</span></span>
 <span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="kw">new</span> <span class="fu">Rational</span>(<span class="dv">12345</span>)<span class="op">.</span><span class="fu">toScientificNotation</span>()<span class="op">;</span> <span class="co">// "1.2345E4"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>Rational.MAX_PERIOD_DIGITS</code> is the mutable global default for decimal-period output and metadata (30 initially). Explicit method arguments override it. <code>Rational.MAX_PERIOD_CHECK</code> limits period-length discovery work. <code>onLimit</code> is <code>"error"</code> (default), <code>"null"</code>, or <code>"trunc"</code>. Truncated output uses <code>#</code> to mark where repetition begins and ends in <code>...</code> to show that the period is incomplete; it is informative rather than parseable. Output with <code>#</code> and no ellipsis contains the complete period. For exact interchange, use <code>toString()</code> or choose a <code>toRepeatingDecimal</code> limit large enough for the reported period.</p>
+<p><code>Rational.DEFAULT_SCIENTIFIC_PRECISION</code> is the mutable default precision for scientific display (11 initially); the second method argument overrides it.</p>
+<p><code>Rational.MAX_PERIOD_DIGITS</code> is the mutable global default for decimal-period output and metadata (30 initially). Explicit method arguments override it. <code>Rational.MAX_PERIOD_CHECK</code> limits period-length discovery work and must be a positive safe integer. Scientific period diagnostics report its current value. <code>onLimit</code> is <code>"error"</code> (default), <code>"null"</code>, or <code>"trunc"</code>. Truncated output uses <code>#</code> to mark where repetition begins and ends in <code>...</code> to show that the period is incomplete; it is informative rather than parseable. Output with <code>#</code> and no ellipsis contains the complete period. For exact interchange, use <code>toString()</code> or choose a <code>toRepeatingDecimal</code> limit large enough for the reported period.</p>
 <p>Exact rounding is available through <code>floor()</code>, <code>ceil()</code>, <code>trunc()</code>, <code>round(mode?)</code>, and <code>roundTo(places, mode?)</code>. Integer rounding methods return <code>bigint</code>; supported modes are <code>half-even</code>, <code>half-up</code>, <code>toward-zero</code>, <code>floor</code>, and <code>ceil</code>.</p>
 </section>
 <section id="arbitrary-base-output" class="level2">
@@ -671,8 +673,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>Integer or numerator/denominator digits; no radix expansion</td>
 </tr>
 <tr class="even">
-<td><code>toRepeatingBase(system)</code></td>
-<td>Exact radix expansion with <code>#</code> before the repeating block</td>
+<td><code>toRepeatingBase(system, options?)</code></td>
+<td>Radix expansion with <code>#</code> before a complete repeating block</td>
 </tr>
 <tr class="odd">
 <td><code>toRepeatingBaseWithPeriod(system, options?)</code></td>
@@ -692,7 +694,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>third<span class="op">.</span><span class="fu">toRepeatingBase</span>(BaseSystem<span class="op">.</span><span class="at">BINARY</span>)<span class="op">;</span> <span class="co">// "0.#01"</span></span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>third<span class="op">.</span><span class="fu">toRepeatingBaseWithPeriod</span>(BaseSystem<span class="op">.</span><span class="at">BINARY</span>)<span class="op">;</span></span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">// { baseStr: "0.#01", period: 2, limitHit: false }</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>toRepeatingBaseWithPeriod</code> accepts <code>useRepeatNotation</code> (default <code>true</code>) and <code>limit</code>. If the digit-generation limit is reached, <code>limitHit</code> is <code>true</code> and the returned expansion is partial.</p>
+<p><code>toRepeatingBaseWithPeriod</code> accepts <code>useRepeatNotation</code> (default <code>true</code>) and <code>limit</code>. If the digit-generation limit is reached, <code>limitHit</code> is <code>true</code> and the returned expansion is partial and ends in <code>...</code>. <code>toRepeatingBase</code> accepts the same options but returns only the string. <code>Rational.DEFAULT_BASE_LIMIT</code> is the mutable global default (1,000 initially), and <code>Rational.DEFAULT_PERIOD_MODULO_LIMIT</code> similarly controls <code>periodModulo</code> (1,000,000 initially). Explicit method limits override both defaults.</p>
 </section>
 <section id="continued-fractions" class="level2">
 <h2 class="anchored" data-anchor-id="continued-fractions">Continued fractions</h2>
@@ -772,6 +774,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>pi<span class="op">.</span><span class="fu">bestApproximation</span>(<span class="dv">100</span>n)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span> <span class="co">// "311/99"</span></span>
 <span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>pi<span class="op">.</span><span class="fu">bestConvergent</span>(<span class="dv">100</span>n)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span>    <span class="co">// "22/7"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><code>Rational.DEFAULT_CF_LIMIT</code> is the default maximum coefficient/convergent count. Continued fractions here are finite because every <code>Rational</code> is exact and rational.</p>
+<p>If a coefficient array reaches its limit before the rational’s expansion is complete, it is a prefix and represents the corresponding convergent. <code>toContinuedFractionString()</code> makes this condition visible with a trailing <code>~...</code>; that informative form is deliberately rejected by the exact parser. Increase <code>maxTerms</code> until no ellipsis is present for an exact round trip. This also covers the boundary where long form needs one more term than canonical form.</p>
 <p>The default expansion is canonical: except for an integer-only expansion, its last coefficient is greater than <code>1</code>. The long alternative replaces the final coefficient <code>a</code> with <code>a - 1, 1</code>; an integer <code>[a]</code> therefore has long form <code>[a - 1, 1]</code>. With <code>intermediates: true</code>, <code>convergents()</code> includes the fractions encountered while stepping through each coefficient run, including the principal endpoints. Combining <code>long</code> and <code>intermediates</code> applies that walk to the long expansion.</p>
 <p>These choices are derived from the rational’s value. A <code>Rational</code> does not retain the coefficients used to construct it. When the convergents of a specific supplied representation are wanted, use <code>Rational.convergentsFromCF(input, maxCount?)</code>; for example, the explicit noncanonical input <code>[1n, 2n, 1n]</code> produces <code>1</code>, <code>3/2</code>, and <code>4/3</code>.</p>
 <p><code>bestApproximation</code> minimizes ordinary absolute error among rational values whose denominator is at most the positive <code>bigint</code> bound. Its result may be a semiconvergent. <code>bestConvergent</code> expresses the related continued-fraction theorem: convergents are best approximations of the second kind, minimizing the denominator-weighted error <code>|q*x - p|</code> at the relevant denominator thresholds.</p>
