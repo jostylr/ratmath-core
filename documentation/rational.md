@@ -63,7 +63,7 @@ x.lessThan(new Rational(3, 4));       // true
 | `toString(base?)` | Reduced fraction, or an integer when denominator is one |
 | `toMixedString()` | RiX mixed form such as `-2..1/4` |
 | `toNumber()` | JavaScript `number`; potentially inexact |
-| `toDecimal()` | Terminating decimal or a display truncation of at most 20 fractional digits |
+| `toDecimal()` | Display decimal with at most 20 fractional digits, including for longer terminating expansions |
 
 ```js
 const x = new Rational(-9, 4);

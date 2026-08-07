@@ -144,6 +144,22 @@ describe("number-only parsing", () => {
     );
   });
 
+  it("round-trips terminating bases and offsets beyond 20 decimal places", () => {
+    const unit = 10n ** 21n;
+    const fromZero = new RationalInterval(Rational.zero, new Rational(1n, unit));
+    const fromZeroText = fromZero.relativeDecimalInterval();
+    expect(fromZeroText).toBe("0[+0.000000000000000000001:-0]");
+    expect(parseInterval(fromZeroText).equals(fromZero)).toBe(true);
+
+    const narrow = new RationalInterval(
+      new Rational(1n, unit),
+      new Rational(2n, unit),
+    );
+    const narrowText = narrow.relativeDecimalInterval();
+    expect(narrowText).toBe("0.000000000000000000001[+1:-0]");
+    expect(parseInterval(narrowText).equals(narrow)).toBe(true);
+  });
+
   it("formats wide relative intervals without enumerating their integers", () => {
     const wide = new RationalInterval(0n, 10n ** 100n);
     const text = wide.relativeDecimalInterval();

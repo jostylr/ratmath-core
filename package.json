@@ -22,6 +22,7 @@
   "sideEffects": false,
   "scripts": {
     "test": "bun test",
+    "test:coverage": "bun test --coverage",
     "test:pack": "npm pack --dry-run",
     "prepublishOnly": "bun test && npm run test:pack",
     "docs:build": "bash scripts/build-docs.sh"

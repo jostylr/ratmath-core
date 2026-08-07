@@ -15,8 +15,44 @@ function hasTerminatingDecimal(value) {
   return denominator === 1n;
 }
 
+function exactTerminatingDecimal(value) {
+  if (!hasTerminatingDecimal(value)) return null;
+
+  const isNegative = value.numerator < 0n;
+  const numerator = isNegative ? -value.numerator : value.numerator;
+  let denominator = value.denominator;
+  let twos = 0;
+  let fives = 0;
+
+  while (denominator % 2n === 0n) {
+    denominator /= 2n;
+    twos += 1;
+  }
+  while (denominator % 5n === 0n) {
+    denominator /= 5n;
+    fives += 1;
+  }
+
+  const decimalPlaces = Math.max(twos, fives);
+  const scale = 10n ** BigInt(decimalPlaces);
+  const scaled = numerator * (scale / value.denominator);
+  const integerPart = scaled / scale;
+  const sign = isNegative ? "-" : "";
+
+  if (decimalPlaces === 0) return sign + integerPart.toString();
+
+  const fractionalPart = (scaled % scale)
+    .toString()
+    .padStart(decimalPlaces, "0")
+    .replace(/0+$/, "");
+
+  return fractionalPart.length === 0
+    ? sign + integerPart.toString()
+    : `${sign}${integerPart}.${fractionalPart}`;
+}
+
 function exactOffsetString(value) {
-  return hasTerminatingDecimal(value) ? value.toDecimal() : value.toString();
+  return exactTerminatingDecimal(value) ?? value.toString();
 }
 
 export class RationalInterval {
@@ -734,7 +770,10 @@ export class RationalInterval {
     const offsetEnd = this.#end.subtract(shortestDecimal);
 
     // Determine the scale factor based on decimal places in the base number
-    const decimalStr = shortestDecimal.toDecimal();
+    const decimalStr = exactTerminatingDecimal(shortestDecimal);
+    if (decimalStr === null) {
+      throw new Error("Shortest decimal search returned a non-terminating value");
+    }
     const decimalPlaces = decimalStr.includes(".")
       ? decimalStr.split(".")[1].length
       : 0;

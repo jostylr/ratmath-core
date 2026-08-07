@@ -17,6 +17,9 @@
   terminating point values beyond 50 digits.
 - Avoid enumerating every integer in wide intervals when selecting a compact
   relative-decimal base.
-- Preserve exact asymmetric and repeating offsets in relative interval output.
+- Preserve exact asymmetric, repeating, and long terminating offsets in
+  relative interval output.
+- Accept `bigint` denominator bounds in the published `randomRational()`
+  TypeScript signature.
 - Improve validation for fractions, bases, Farey operations, and interval
   notation.

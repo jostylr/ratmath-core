@@ -117,8 +117,9 @@ interval.compactedDecimalInterval(); // a compact range when possible
 ```
 
 Repeating-decimal and continued-fraction output is exact and can be parsed
-again. `toDecimal()` is intended for display and limits non-terminating output
-to 20 digits; use `toRepeatingDecimal()` for exact round trips.
+again. `toDecimal()` is intended for display and limits output to 20
+fractional digits, including longer terminating expansions; use
+`toRepeatingDecimal()` for exact round trips.
 
 ## Fractions and bases
 

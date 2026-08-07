@@ -183,7 +183,7 @@ export class RationalInterval {
   mediant(): Rational;
   midpoint(): Rational;
   shortestDecimal(base?: number | bigint): Rational | null;
-  randomRational(maxDenominator?: number): Rational;
+  randomRational(maxDenominator?: number | bigint): Rational;
   E(exponent: number | bigint): RationalInterval;
   bitLength(): number;
 

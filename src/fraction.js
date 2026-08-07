@@ -908,7 +908,7 @@ export class Fraction {
    * @param {Array<string>} path - Array of 'L'/'R' directions
    * @returns {Fraction} The fraction at the end of the path
    * @example
-   * const frac = Fraction.fromSternBrocotPath(['R', 'R']); // 1/1
+   * const frac = Fraction.fromSternBrocotPath(['R', 'R']); // 2/1
    */
   static fromSternBrocotPath(path) {
     // Start at root 0/1 with tree boundaries -1/0 and 1/0
@@ -974,7 +974,7 @@ export class Fraction {
   /**
    * Returns array of all ancestors of this fraction up to the root.
    * 
-   * @returns {Array<Fraction>} Array of ancestor fractions, ending with root (1/1)
+   * @returns {Array<Fraction>} Array of ancestor fractions, ending with root (0/1)
    */
   sternBrocotAncestors() {
     if (this.isInfinite) {
@@ -990,7 +990,7 @@ export class Fraction {
       ancestors.push(Fraction.fromSternBrocotPath(partialPath));
     }
     
-    // Reverse so that root (1/1) comes last as expected by tests
+    // Reverse so that root (0/1) comes last
     ancestors.reverse();
     
     return ancestors;

@@ -546,6 +546,14 @@ describe("RationalInterval", () => {
         expect(random.equals(new Rational(1, 2))).toBe(true);
       });
 
+      it("accepts a bigint denominator bound", () => {
+        const interval = new RationalInterval("1/3", "2/3");
+        const random = interval.randomRational(10n);
+
+        expect(interval.containsValue(random)).toBe(true);
+        expect(random.denominator).toBeLessThanOrEqual(10n);
+      });
+
       it("throws error for invalid maxDenominator", () => {
         const interval = new RationalInterval("1/2", "3/4");
         expect(() => interval.randomRational(0)).toThrow(
