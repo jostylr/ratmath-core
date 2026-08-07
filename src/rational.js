@@ -53,8 +53,7 @@ export class Rational {
   #maxPeriodDigitsComputed;
 
   // Class variables for decimal computation
-  static DEFAULT_PERIOD_DIGITS = 30;
-  static MAX_PERIOD_DIGITS = 1000;
+  static MAX_PERIOD_DIGITS = 30;
   static MAX_PERIOD_CHECK = 10000000; // 10^7
 
   // Precomputed powers of 5 for efficient factor counting
@@ -115,30 +114,21 @@ export class Rational {
     if (typeof numerator === "string") {
       // Check for mixed number notation with double dot
       if (numerator.includes("..")) {
-        const mixedParts = numerator.trim().split("..");
-        if (mixedParts.length !== 2) {
+        const mixed = numerator.trim().match(/^([+-]?)(\d+)\.\.(\d+)\/(\d+)$/);
+        if (!mixed) {
           throw new Error("Invalid mixed number format. Use 'a..b/c'");
         }
 
-        const wholeText = mixedParts[0].trim();
-        const isNegative = wholeText.startsWith("-");
-        const wholePart = BigInt(wholeText);
-        const fractionParts = mixedParts[1].split("/");
-
-        if (fractionParts.length !== 2) {
-          throw new Error("Invalid fraction in mixed number. Use 'a..b/c'");
+        const sign = mixed[1] === "-" ? -1n : 1n;
+        const wholePart = BigInt(mixed[2]);
+        const fracNumerator = BigInt(mixed[3]);
+        const fracDenominator = BigInt(mixed[4]);
+        if (fracDenominator === 0n) {
+          throw new Error("Denominator cannot be zero");
         }
 
-        const fracNumerator = BigInt(fractionParts[0]);
-        const fracDenominator = BigInt(fractionParts[1]);
-
-        // Calculate equivalent improper fraction: whole + numerator/denominator
-        const absWhole = isNegative ? -wholePart : wholePart;
-
-        // (absWhole * denominator + numerator) with appropriate sign
-        this.#numerator = isNegative
-          ? -(absWhole * fracDenominator + fracNumerator)
-          : wholePart * fracDenominator + fracNumerator;
+        this.#numerator =
+          sign * (wholePart * fracDenominator + fracNumerator);
         this.#denominator = fracDenominator;
       } else {
         // Check if it's a decimal string like "1.23" or contains repeat notation
@@ -880,7 +870,7 @@ export class Rational {
    * @param {"trunc"|"null"|"error"} onLimit - Over-limit behavior
    * @returns {string|null} Repeating decimal string (e.g., "1/3" becomes "0.#3")
    */
-  toRepeatingDecimal(limit = Rational.DEFAULT_PERIOD_DIGITS, onLimit = "error") {
+  toRepeatingDecimal(limit = Rational.MAX_PERIOD_DIGITS, onLimit = "error") {
     const result = this.toRepeatingDecimalWithPeriod({ limit, onLimit });
     return result.decimal;
   }
@@ -894,12 +884,12 @@ export class Rational {
     const normalized = typeof options === "boolean"
       ? {
           useRepeatNotation: options,
-          limit: legacyLimit ?? Rational.DEFAULT_PERIOD_DIGITS,
+          limit: legacyLimit ?? Rational.MAX_PERIOD_DIGITS,
           onLimit: legacyOnLimit ?? "error",
         }
       : {
           useRepeatNotation: options?.useRepeatNotation ?? true,
-          limit: options?.limit ?? Rational.DEFAULT_PERIOD_DIGITS,
+          limit: options?.limit ?? Rational.MAX_PERIOD_DIGITS,
           onLimit: options?.onLimit ?? "error",
         };
     const { useRepeatNotation, limit, onLimit } = normalized;
@@ -1040,36 +1030,33 @@ export class Rational {
 
   /**
    * Efficiently computes leading zeros in the repeating part
-   * @param {bigint} reducedDen - Denominator with factors of 2 and 5 removed
-   * @param {number} initialSegmentLength - Length of non-repeating part
+   * @param {bigint} periodRemainder - Remainder at the start of the repeating part
    * @returns {number} Number of leading zeros in the repeating part
    * @private
    */
-  #computeLeadingZerosInPeriod(reducedDen, initialSegmentLength) {
-    // Adjust the numerator by multiplying by 10^k where k is the non-repeating length
-    let adjustedNumerator =
-      this.#remainder * 10n ** BigInt(initialSegmentLength);
+  #computeLeadingZerosInPeriod(periodRemainder) {
+    if (periodRemainder * 10n >= this.#denominator) return 0;
 
-    // Count how many times we multiply by 10 until adjusted numerator >= reduced denominator
-    let leadingZeros = 0;
-    while (
-      adjustedNumerator < reducedDen &&
-      leadingZeros < Rational.MAX_PERIOD_CHECK
+    // If the first nonzero digit occurs at decimal position n, the period has
+    // n - 1 leading zeros. Decimal digit lengths locate n to within one place,
+    // and one exact comparison resolves that final place without enumerating
+    // either the zeros or the period.
+    let firstNonzeroPosition =
+      this.#denominator.toString().length - periodRemainder.toString().length;
+    if (
+      periodRemainder * 10n ** BigInt(firstNonzeroPosition) < this.#denominator
     ) {
-      // Limit to prevent infinite loops
-      adjustedNumerator *= 10n;
-      leadingZeros++;
+      firstNonzeroPosition += 1;
     }
-
-    return leadingZeros;
+    return Math.max(0, firstNonzeroPosition - 1);
   }
 
   /**
    * Computes decimal representation metadata with caching and efficient algorithms
-   * @param {number} maxPeriodDigits - Maximum number of period digits to compute (default: class DEFAULT_PERIOD_DIGITS)
+   * @param {number} maxPeriodDigits - Maximum number of period digits to compute (default: class MAX_PERIOD_DIGITS)
    * @private
    */
-  #computeDecimalMetadata(maxPeriodDigits = Rational.DEFAULT_PERIOD_DIGITS) {
+  #computeDecimalMetadata(maxPeriodDigits = Rational.MAX_PERIOD_DIGITS) {
     // Return cached values if already computed with sufficient digits
     if (
       this.#periodLength !== undefined &&
@@ -1154,12 +1141,6 @@ export class Rational {
       periodLength >= Rational.MAX_PERIOD_CHECK ? -1 : periodLength;
     this.#isTerminating = false;
 
-    // Compute leading zeros in period efficiently
-    this.#leadingZerosInPeriod = this.#computeLeadingZerosInPeriod(
-      reducedDen,
-      initialSegmentLength,
-    );
-
     // Compute initial non-repeating segment
     const initialDigits = [];
     let currentRemainder = this.#remainder;
@@ -1170,6 +1151,11 @@ export class Rational {
       initialDigits.push(digit.toString());
       currentRemainder = currentRemainder % this.#denominator;
     }
+
+    // Compute the exact leading-zero count from the remainder at the period
+    // boundary, independently of how many period digits will be stored.
+    this.#leadingZerosInPeriod =
+      this.#computeLeadingZerosInPeriod(currentRemainder);
 
     // Compute period digits using simplified ternary logic
     const periodDigitsToCompute =
@@ -1217,21 +1203,9 @@ export class Rational {
     this.#initialSegmentLeadingZeros = leadingZeros;
     this.#initialSegmentRest = initialSegment.substring(leadingZeros);
 
-    // Break down period digits - compute leading zeros directly from the period digits
+    // Break down the stored period prefix using the exact leading-zero count.
     const periodDigits = this.#periodDigits || "";
-    let periodLeadingZeros = 0;
-
-    for (let i = 0; i < periodDigits.length; i++) {
-      if (periodDigits[i] === "0") {
-        periodLeadingZeros++;
-      } else {
-        break;
-      }
-    }
-
-    // Override the computed leading zeros with the actual count from period digits
-    this.#leadingZerosInPeriod = periodLeadingZeros;
-    this.#periodDigitsRest = periodDigits.substring(periodLeadingZeros);
+    this.#periodDigitsRest = periodDigits.substring(this.#leadingZerosInPeriod);
   }
 
   /**
@@ -1239,7 +1213,10 @@ export class Rational {
    * @param {number} maxPeriodDigits - Maximum number of period digits to compute
    * @returns {object} Object containing decimal metadata
    */
-  computeDecimalMetadata(maxPeriodDigits = Rational.DEFAULT_PERIOD_DIGITS) {
+  computeDecimalMetadata(maxPeriodDigits = Rational.MAX_PERIOD_DIGITS) {
+    if (!Number.isSafeInteger(maxPeriodDigits) || maxPeriodDigits < 1) {
+      throw new RangeError("Maximum period digits must be a positive safe integer");
+    }
     if (this.#numerator === 0n) {
       return {
         initialSegment: "",
@@ -1250,16 +1227,17 @@ export class Rational {
     }
 
     this.#computeDecimalMetadata(maxPeriodDigits);
+    const periodDigits = this.#periodDigits.slice(0, maxPeriodDigits);
 
     return {
       wholePart: this.#wholePart,
       initialSegment: this.#initialSegment,
       initialSegmentLeadingZeros: this.#initialSegmentLeadingZeros,
       initialSegmentRest: this.#initialSegmentRest,
-      periodDigits: this.#periodDigits,
+      periodDigits,
       periodLength: this.#periodLength,
       leadingZerosInPeriod: this.#leadingZerosInPeriod,
-      periodDigitsRest: this.#periodDigitsRest,
+      periodDigitsRest: periodDigits.substring(this.#leadingZerosInPeriod),
       isTerminating: this.#isTerminating,
     };
   }
@@ -1527,14 +1505,7 @@ export class Rational {
       firstDigit = whole[0];
       exponent = whole.length - 1;
       const wholeTail = whole.slice(1);
-      if (!this.#isTerminating && this.#initialSegment.length === 0) {
-        const stream = wholeTail + period.repeat(
-          Math.ceil((period.length + wholeTail.length) / period.length) + 1,
-        );
-        scientificPeriod = stream.slice(0, period.length);
-      } else {
-        nonRepeatingTail = wholeTail + this.#initialSegment;
-      }
+      nonRepeatingTail = wholeTail + this.#initialSegment;
     } else if (this.#initialSegmentRest !== "") {
       const index = this.#initialSegmentLeadingZeros;
       firstDigit = this.#initialSegment[index];
@@ -1545,6 +1516,22 @@ export class Rational {
       firstDigit = period[index];
       exponent = -(this.#initialSegment.length + index + 1);
       scientificPeriod = period.slice(index + 1) + period.slice(0, index + 1);
+    }
+
+    // Moving the decimal point can put integer or initial-segment digits before
+    // the original period. Move the repeat marker left only while those digits
+    // actually match the cycle when traced backward, rotating the period at
+    // each step. This preserves compact forms such as 3.#3E1 for 100/3 without
+    // changing values such as 98/3, which must remain 3.2#6E1.
+    if (!this.#isTerminating) {
+      while (
+        nonRepeatingTail.length > 0 &&
+        nonRepeatingTail.at(-1) === scientificPeriod.at(-1)
+      ) {
+        nonRepeatingTail = nonRepeatingTail.slice(0, -1);
+        scientificPeriod =
+          scientificPeriod.at(-1) + scientificPeriod.slice(0, -1);
+      }
     }
 
     if (this.#isTerminating) {

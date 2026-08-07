@@ -24,11 +24,37 @@ describe("signed string construction", () => {
     expect(new Rational("-.5").toString()).toBe("-1/2");
     expect(new Rational("-0..1/2").toString()).toBe("-1/2");
   });
+
+  test("requires unsigned mixed-number fraction components", () => {
+    expect(new Rational("+1..2/3").toString()).toBe("5/3");
+    for (const malformed of [
+      "1..-2/3",
+      "-1..-2/3",
+      "1..2/-3",
+      "-1..2/-3",
+    ]) {
+      expect(() => new Rational(malformed)).toThrow("Invalid mixed number format");
+    }
+  });
 });
 
 describe("bounded repeating-decimal serialization", () => {
-  test("publishes the 30-digit default limit", () => {
-    expect(Rational.DEFAULT_PERIOD_DIGITS).toBe(30);
+  test("publishes a configurable 30-digit global default limit", () => {
+    expect(Rational.MAX_PERIOD_DIGITS).toBe(30);
+
+    const originalLimit = Rational.MAX_PERIOD_DIGITS;
+    try {
+      const value = new Rational(1, 7);
+      value.computeDecimalMetadata(30);
+      Rational.MAX_PERIOD_DIGITS = 5;
+      expect(() => value.toRepeatingDecimal()).toThrow("exceeding limit 5");
+      expect(
+        value.toRepeatingDecimalWithPeriod({ onLimit: "trunc" }).decimal,
+      ).toBe("0.#14285...");
+      expect(value.computeDecimalMetadata().periodDigits).toBe("14285");
+    } finally {
+      Rational.MAX_PERIOD_DIGITS = originalLimit;
+    }
   });
 
   test("emits the complete 1/7 period and round-trips", () => {

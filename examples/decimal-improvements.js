@@ -106,12 +106,19 @@ for (const { rational, description } of sciExamples) {
   console.log(`    With repeats: ${rational.toScientificNotation(true)}`);
 }
 
-// Example 5: MAX_PERIOD_DIGITS Configuration
+// Example 5: MAX_PERIOD_DIGITS configuration
 console.log("\n⚙️  5. Period Computation Control");
 console.log("-".repeat(30));
 
 console.log(`MAX_PERIOD_DIGITS setting: ${Rational.MAX_PERIOD_DIGITS}`);
-console.log("This controls how many period digits are computed for very long periods.");
+console.log("This is the global default for decimal-period output and metadata.");
+
+const savedPeriodLimit = Rational.MAX_PERIOD_DIGITS;
+Rational.MAX_PERIOD_DIGITS = 10;
+console.log(
+  `Configured 1/97 preview: ${new Rational(1, 97).toRepeatingDecimal(undefined, "trunc")}`,
+);
+Rational.MAX_PERIOD_DIGITS = savedPeriodLimit;
 
 const longPeriodExample = new Rational(1, 97); // Prime denominator = long period
 const shortMeta = longPeriodExample.computeDecimalMetadata(10);

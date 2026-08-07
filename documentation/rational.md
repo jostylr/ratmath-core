@@ -89,7 +89,7 @@ const x = new Rational(1, 6);
 
 x.toRepeatingDecimal(); // "0.1#6"
 x.toRepeatingDecimalWithPeriod();
-// { decimal: "0.1#6", period: 1 }
+// { decimal: "0.1#6", period: 1, truncated: false }
 
 x.computeDecimalMetadata();
 // includes initialSegment: "1", periodDigits: "6",
@@ -98,8 +98,9 @@ x.computeDecimalMetadata();
 new Rational(12345).toScientificNotation(); // "1.2345E4"
 ```
 
-`Rational.DEFAULT_PERIOD_DIGITS`, `MAX_PERIOD_DIGITS`, and
-`MAX_PERIOD_CHECK` are the public limits used by these formatting operations.
+`Rational.MAX_PERIOD_DIGITS` is the mutable global default for decimal-period
+output and metadata (30 initially). Explicit method arguments override it.
+`Rational.MAX_PERIOD_CHECK` limits period-length discovery work.
 `onLimit` is `"error"` (default), `"null"`, or `"trunc"`. Truncated output
 uses `#` to mark where repetition begins and ends in `...` to show that the
 period is incomplete; it is informative rather than parseable. Output with

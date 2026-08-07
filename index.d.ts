@@ -82,7 +82,6 @@ export class Integer {
 export class Rational {
   static zero: Rational;
   static one: Rational;
-  static DEFAULT_PERIOD_DIGITS: number;
   static MAX_PERIOD_DIGITS: number;
   static MAX_PERIOD_CHECK: number;
   static DEFAULT_CF_LIMIT: number;
@@ -373,6 +372,7 @@ export class BaseSystem {
 }
 
 export class TypePromotion {
+  private constructor();
   static getTypeLevel(value: CoreNumber): 0 | 1 | 2;
   static integerToRational(integer: Integer): Rational;
   static rationalToInterval(rational: Rational): RationalInterval;

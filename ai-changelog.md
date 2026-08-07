@@ -299,7 +299,7 @@ Implemented major improvements to decimal representation and scientific notation
 **Key enhancements:**
 - **Enhanced Decimal Metadata**: Added detailed breakdown of decimal parts including separate tracking of leading zeros in initial segment and repeating period, plus the non-zero remainder portions
 - **Repeat Notation**: Introduced `{0~15}` syntax to compactly represent repeated digits (e.g., `0.{0~5}1` instead of `0.000001`), with parsing support in constructor
-- **MAX_PERIOD_DIGITS**: Added configurable class property (default 1000) to control maximum period computation length
+- **MAX_PERIOD_DIGITS**: Added configurable class property (default 30) for decimal-period output and metadata
 - **Improved Scientific Notation**: Completely rewrote scientific notation generation to use decimal metadata, fixing critical issue where very small numbers like `10!!/49!!` displayed as "0" instead of proper scientific notation like `6.5713094994E-29`
 - **Better Leading Zero Handling**: Fixed computation of leading zeros in repeating periods by analyzing actual period digits rather than mathematical approximation
 

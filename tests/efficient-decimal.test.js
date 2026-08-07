@@ -60,7 +60,7 @@ describe('Efficient Decimal Computation', () => {
     const metadata = fraction.computeDecimalMetadata();
 
     expect(metadata.periodLength).toBe(96);
-    expect(metadata.periodDigits).toHaveLength(Rational.DEFAULT_PERIOD_DIGITS);
+    expect(metadata.periodDigits).toHaveLength(Rational.MAX_PERIOD_DIGITS);
     expect(metadata.periodDigits).toStartWith('010309278350515463917525773195');
   });
 
@@ -69,7 +69,7 @@ describe('Efficient Decimal Computation', () => {
     const metadata = veryLargeResult.computeDecimalMetadata();
 
     expect(metadata.periodLength).toBe(-1);
-    expect(metadata.periodDigits).toHaveLength(Rational.DEFAULT_PERIOD_DIGITS);
+    expect(metadata.periodDigits).toHaveLength(Rational.MAX_PERIOD_DIGITS);
     expect(veryLargeResult.toRepeatingDecimal(30, 'null')).toBeNull();
   });
 
@@ -80,7 +80,7 @@ describe('Efficient Decimal Computation', () => {
     const metadata = result.computeDecimalMetadata();
 
     expect(metadata.periodLength).toBe(-1);
-    expect(metadata.periodDigits).toHaveLength(Rational.DEFAULT_PERIOD_DIGITS);
+    expect(metadata.periodDigits).toHaveLength(Rational.MAX_PERIOD_DIGITS);
   });
 
   test('extractPeriodSegment works correctly', () => {

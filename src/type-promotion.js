@@ -10,6 +10,10 @@ import { Rational } from './rational.js';
 import { RationalInterval } from './rational-interval.js';
 
 export class TypePromotion {
+  constructor() {
+    throw new TypeError("TypePromotion is a static utility class");
+  }
+
   /**
    * Determines the type level for promotion hierarchy
    * @param {Integer|Rational|RationalInterval} value - The value to check

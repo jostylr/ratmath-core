@@ -31,11 +31,16 @@
 - Recompute continued-fraction convergents when a later call requests more
   terms, instead of retaining a truncated first result.
 - Make repeating-decimal serialization exact by default, with a 30-digit
-  period limit and explicit `"trunc"`, `"null"`, or `"error"` behavior.
+  configurable global period limit and explicit `"trunc"`, `"null"`, or
+  `"error"` behavior.
 - Correct scientific notation so incomplete periods are visibly marked with
-  `...`; bounded repeating-decimal output retains `#` to locate the period.
+  `...`, exact repeating mantissas preserve non-periodic integer-tail digits,
+  and bounded repeating-decimal output retains `#` to locate the period.
+- Report the exact count of leading zeros in a period even when the stored
+  period prefix is shorter than that zero run.
 - Fix negative zero-whole-part strings such as `-0.5`, `-.5`, and
   `-0..1/2`.
+- Reject signs on mixed-number numerator and denominator components.
 - Improve validation for fractions, bases, Farey operations, and interval
   notation.
 - Make all retained examples executable and enforce line/function coverage

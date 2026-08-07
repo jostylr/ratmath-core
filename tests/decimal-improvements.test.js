@@ -47,8 +47,29 @@ test("Multiple leading zeros in initial segment", () => {
   expect(metadata.periodDigitsRest).toBe("3");
 });
 
-test("MAX_PERIOD_DIGITS class property exists and is 1000", () => {
-  expect(Rational.MAX_PERIOD_DIGITS).toBe(1000);
+test("MAX_PERIOD_DIGITS class property defaults to 30", () => {
+  expect(Rational.MAX_PERIOD_DIGITS).toBe(30);
+});
+
+test("Period leading-zero metadata is exact beyond the stored prefix", () => {
+  const value = new Rational(1n, 10n ** 40n - 1n);
+  const metadata = value.computeDecimalMetadata(30);
+
+  expect(metadata.periodLength).toBe(40);
+  expect(metadata.periodDigits).toBe("0".repeat(30));
+  expect(metadata.leadingZerosInPeriod).toBe(39);
+  expect(metadata.periodDigitsRest).toBe("");
+  expect(value.toScientificNotation(true, 11, true)).toContain(
+    "period starts: +39 zeros",
+  );
+});
+
+test("Period leading-zero metadata remains exact with an initial segment", () => {
+  const metadata = new Rational(1, 194).computeDecimalMetadata(1);
+
+  expect(metadata.initialSegment).toBe("0");
+  expect(metadata.periodDigits).toBe("0");
+  expect(metadata.leadingZerosInPeriod).toBe(1);
 });
 
 test("Repeat notation formatting works for leading zeros", () => {

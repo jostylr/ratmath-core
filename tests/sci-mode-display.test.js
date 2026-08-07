@@ -1,5 +1,14 @@
 import { test, expect } from "bun:test";
-import { Rational } from "../index.js";
+import { Rational, parseRepeatingDecimal } from "../index.js";
+
+function parseScientificNotation(value) {
+  if (value === "0") return Rational.zero;
+  const [mantissa, exponentText] = value.split("E");
+  const mantissaValue = mantissa.includes("#")
+    ? parseRepeatingDecimal(mantissa)
+    : new Rational(mantissa);
+  return mantissaValue.E(Number(exponentText));
+}
 
 test("SCI mode basic repeating decimal display", () => {
   const oneThird = new Rational(1n, 3n);
@@ -101,6 +110,44 @@ test("SCI mode large numbers with repeating decimals", () => {
   const thousandSevenths = new Rational(1000n, 7n);
   const sciResult = thousandSevenths.toScientificNotation(true, 10, false);
   expect(sciResult).toBe("1.#428571E2");
+});
+
+test("SCI mode preserves integer-tail digits that do not align with the period", () => {
+  const negative = new Rational(-98, 3);
+  const larger = new Rational(-499, 3);
+
+  expect(negative.toScientificNotation(false, 30, false)).toBe("-3.2#6E1");
+  expect(larger.toScientificNotation(false, 30, false)).toBe("-1.66#3E2");
+  expect(
+    parseScientificNotation(negative.toScientificNotation(false, 30, false))
+      .equals(negative),
+  ).toBe(true);
+  expect(
+    parseScientificNotation(larger.toScientificNotation(false, 30, false))
+      .equals(larger),
+  ).toBe(true);
+});
+
+test("every exact scientific expansion in a broad small-rational grid round-trips", () => {
+  const mismatches = [];
+  let exactCount = 0;
+
+  for (let denominator = 1; denominator <= 100; denominator += 1) {
+    for (let numerator = -250; numerator <= 250; numerator += 1) {
+      const value = new Rational(numerator, denominator);
+      const scientific = value.toScientificNotation(false, 30, false);
+      if (scientific.includes("...")) continue;
+
+      exactCount += 1;
+      const parsed = parseScientificNotation(scientific);
+      if (!parsed.equals(value)) {
+        mismatches.push({ value: value.toString(), scientific });
+      }
+    }
+  }
+
+  expect(exactCount).toBeGreaterThan(40_000);
+  expect(mismatches).toEqual([]);
 });
 
 test("SCI mode zero and whole numbers", () => {

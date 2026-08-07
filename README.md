@@ -127,6 +127,10 @@ new Rational(1, 97).toRepeatingDecimal(30, "trunc"); // visible `...` suffix
 new Rational(1, 97).toRepeatingDecimal(30, "null");  // null
 ```
 
+`Rational.MAX_PERIOD_DIGITS` sets the mutable global default (initially 30) for
+repeating-decimal output and decimal metadata; an explicit method limit still
+overrides it.
+
 In truncated output, `#` still marks the start of the repeating section and
 the trailing `...` says that only a prefix of its period is shown. Such output
 is informative but is not parseable as an exact value. `#` output without an

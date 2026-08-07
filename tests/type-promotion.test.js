@@ -11,6 +11,10 @@ describe("TypePromotion public API", () => {
   const rational = new Rational(3, 2);
   const interval = new RationalInterval(1, 2);
 
+  it("is a static-only utility class", () => {
+    expect(() => new TypePromotion()).toThrow("static utility class");
+  });
+
   it("identifies every level and rejects unknown values", () => {
     expect(TypePromotion.getTypeLevel(integer)).toBe(0);
     expect(TypePromotion.getTypeLevel(rational)).toBe(1);
