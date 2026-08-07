@@ -106,6 +106,7 @@ value.toString();                  // "-9/4"
 value.toMixedString();             // "-2..1/4"
 value.toRepeatingDecimal();        // "-2.25#0"
 value.toContinuedFractionString(); // "-3.~1~3"
+value.toContinuedFraction({ long: true }); // [-3n, 1n, 2n, 1n]
 
 const interval = parseInterval("1.23[+0.5:-0.6]");
 
@@ -126,6 +127,10 @@ new Rational(1, 97).toRepeatingDecimal(100);          // exact `#` period
 new Rational(1, 97).toRepeatingDecimal(30, "trunc"); // visible `...` suffix
 new Rational(1, 97).toRepeatingDecimal(30, "null");  // null
 ```
+
+Continued fractions are canonical by default. `{ long: true }` selects the
+alternative finite expansion ending in `1`; `convergents({ intermediates:
+true })` includes every intermediate convergent along each coefficient run.
 
 `Rational.MAX_PERIOD_DIGITS` sets the mutable global default (initially 30) for
 repeating-decimal output and decimal metadata; an explicit method limit still

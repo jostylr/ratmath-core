@@ -19,6 +19,8 @@
   policies, and injectable randomness for rational interval sampling.
 - Add exact rational rounding helpers, tagged JSON revival, and public type
   guards.
+- Add canonical/long finite continued-fraction output and optional intermediate
+  convergents along coefficient runs.
 
 ### Fixes
 
@@ -30,6 +32,11 @@
   relative interval output.
 - Recompute continued-fraction convergents when a later call requests more
   terms, instead of retaining a truncated first result.
+- Derive continued fractions from rational values without retaining constructor
+  provenance, preserve nonterminal `1` coefficients in limited prefixes, and
+  allow `getConvergent()` to access indices beyond the default count limit.
+- Recompute decimal metadata when the configurable period-discovery limit
+  changes.
 - Make repeating-decimal serialization exact by default, with a 30-digit
   configurable global period limit and explicit `"trunc"`, `"null"`, or
   `"error"` behavior.

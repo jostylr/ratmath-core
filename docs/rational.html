@@ -709,16 +709,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>toContinuedFraction(maxTerms?)</code></td>
-<td>Array of <code>bigint</code> coefficients</td>
+<td><code>toContinuedFraction(options?)</code></td>
+<td>Array of <code>bigint</code> coefficients; accepts a numeric term limit or <code>{ maxTerms, long }</code></td>
 </tr>
 <tr class="even">
-<td><code>toContinuedFractionString()</code></td>
-<td>RiX <code>a0.~a1~...</code> representation</td>
+<td><code>toContinuedFractionString(options?)</code></td>
+<td>RiX <code>a0.~a1~...</code> representation with the same options</td>
 </tr>
 <tr class="odd">
-<td><code>convergents(maxCount?)</code></td>
-<td>Successive rational convergents</td>
+<td><code>convergents(options?)</code></td>
+<td>Principal convergents; accepts a numeric count limit or <code>{ maxCount, long, intermediates }</code></td>
 </tr>
 <tr class="even">
 <td><code>getConvergent(index)</code></td>
@@ -757,13 +757,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>value<span class="op">.</span><span class="fu">convergents</span>()<span class="op">.</span><span class="fu">map</span>((v) <span class="kw">=&gt;</span> v<span class="op">.</span><span class="fu">toString</span>())<span class="op">;</span></span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">// ["3", "22/7", "333/106"]</span></span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>Rational<span class="op">.</span><span class="fu">fromContinuedFraction</span>([<span class="dv">3</span>n<span class="op">,</span> <span class="dv">7</span>n<span class="op">,</span> <span class="dv">15</span>n])<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">// "333/106"</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pi <span class="op">=</span> <span class="kw">new</span> <span class="fu">Rational</span>(<span class="dv">355</span><span class="op">,</span> <span class="dv">113</span>)<span class="op">;</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>pi<span class="op">.</span><span class="fu">bestApproximation</span>(<span class="dv">100</span>n)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span> <span class="co">// "311/99"</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>pi<span class="op">.</span><span class="fu">bestConvergent</span>(<span class="dv">100</span>n)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span>    <span class="co">// "22/7"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> fourThirds <span class="op">=</span> <span class="kw">new</span> <span class="fu">Rational</span>(<span class="dv">4</span><span class="op">,</span> <span class="dv">3</span>)<span class="op">;</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>fourThirds<span class="op">.</span><span class="fu">toContinuedFraction</span>()<span class="op">;</span>               <span class="co">// [1n, 3n]</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>fourThirds<span class="op">.</span><span class="fu">toContinuedFraction</span>({ <span class="dt">long</span><span class="op">:</span> <span class="kw">true</span> })<span class="op">;</span> <span class="co">// [1n, 2n, 1n]</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>fourThirds<span class="op">.</span><span class="fu">convergents</span>({ <span class="dt">long</span><span class="op">:</span> <span class="kw">true</span> })<span class="op">.</span><span class="fu">map</span>((v) <span class="kw">=&gt;</span> v<span class="op">.</span><span class="fu">toString</span>())<span class="op">;</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co">// ["1", "3/2", "4/3"]</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>fourThirds<span class="op">.</span><span class="fu">convergents</span>({ <span class="dt">intermediates</span><span class="op">:</span> <span class="kw">true</span> })<span class="op">.</span><span class="fu">map</span>((v) <span class="kw">=&gt;</span> v<span class="op">.</span><span class="fu">toString</span>())<span class="op">;</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co">// ["1", "2", "3/2", "4/3"]</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>Rational<span class="op">.</span><span class="fu">fromContinuedFraction</span>([<span class="dv">3</span>n<span class="op">,</span> <span class="dv">7</span>n<span class="op">,</span> <span class="dv">15</span>n])<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="co">// "333/106"</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pi <span class="op">=</span> <span class="kw">new</span> <span class="fu">Rational</span>(<span class="dv">355</span><span class="op">,</span> <span class="dv">113</span>)<span class="op">;</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>pi<span class="op">.</span><span class="fu">bestApproximation</span>(<span class="dv">100</span>n)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span> <span class="co">// "311/99"</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>pi<span class="op">.</span><span class="fu">bestConvergent</span>(<span class="dv">100</span>n)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span>    <span class="co">// "22/7"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><code>Rational.DEFAULT_CF_LIMIT</code> is the default maximum coefficient/convergent count. Continued fractions here are finite because every <code>Rational</code> is exact and rational.</p>
+<p>The default expansion is canonical: except for an integer-only expansion, its last coefficient is greater than <code>1</code>. The long alternative replaces the final coefficient <code>a</code> with <code>a - 1, 1</code>; an integer <code>[a]</code> therefore has long form <code>[a - 1, 1]</code>. With <code>intermediates: true</code>, <code>convergents()</code> includes the fractions encountered while stepping through each coefficient run, including the principal endpoints. Combining <code>long</code> and <code>intermediates</code> applies that walk to the long expansion.</p>
+<p>These choices are derived from the rational’s value. A <code>Rational</code> does not retain the coefficients used to construct it. When the convergents of a specific supplied representation are wanted, use <code>Rational.convergentsFromCF(input, maxCount?)</code>; for example, the explicit noncanonical input <code>[1n, 2n, 1n]</code> produces <code>1</code>, <code>3/2</code>, and <code>4/3</code>.</p>
 <p><code>bestApproximation</code> minimizes ordinary absolute error among rational values whose denominator is at most the positive <code>bigint</code> bound. Its result may be a semiconvergent. <code>bestConvergent</code> expresses the related continued-fraction theorem: convergents are best approximations of the second kind, minimizing the denominator-weighted error <code>|q*x - p|</code> at the relevant denominator thresholds.</p>
 
 

@@ -19,11 +19,12 @@ console.log('1. Creating Rationals from Continued Fractions\n');
 
 // Using coefficient array
 const piApprox = Rational.fromContinuedFraction([3, 7, 15, 1, 292]);
+const piCoefficients = piApprox.toContinuedFraction();
 console.log(`π approximation from [3, 7, 15, 1, 292]:`);
 console.log(`  Rational: ${piApprox.toString()}`);
 console.log(`  Decimal: ${piApprox.toDecimal().substring(0, 15)}`);
-console.log(`  CF coefficients stored: [${piApprox.cf.join(', ')}]`);
-console.log(`  Whole part: ${piApprox.wholePart}\n`);
+console.log(`  Canonical CF: [${piCoefficients.join(', ')}]`);
+console.log(`  Whole part: ${piCoefficients[0]}\n`);
 
 // Using CF string notation
 const goldenRatio = Rational.fromContinuedFractionString("1.~1~1~1~1~1");
@@ -109,6 +110,16 @@ convergents.forEach((conv, i) => {
     console.log(`  C${i}: ${conv.toString()} ≈ ${decimal}`);
 });
 console.log();
+
+const fourThirds = new Rational(4, 3);
+console.log(`Canonical 4/3 CF: [${fourThirds.toContinuedFraction().join(', ')}]`);
+console.log(`Long 4/3 CF: [${fourThirds.toContinuedFraction({ long: true }).join(', ')}]`);
+console.log(
+    `Long convergents: ${fourThirds.convergents({ long: true }).map(value => value.toString()).join(' → ')}`
+);
+console.log(
+    `With intermediates: ${fourThirds.convergents({ intermediates: true }).map(value => value.toString()).join(' → ')}\n`
+);
 
 // 6. Approximation Quality
 console.log('6. Approximation Quality\n');

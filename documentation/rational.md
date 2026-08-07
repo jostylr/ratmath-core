@@ -141,9 +141,9 @@ returned expansion is partial.
 
 | Method | Result |
 |---|---|
-| `toContinuedFraction(maxTerms?)` | Array of `bigint` coefficients |
-| `toContinuedFractionString()` | RiX `a0.~a1~...` representation |
-| `convergents(maxCount?)` | Successive rational convergents |
+| `toContinuedFraction(options?)` | Array of `bigint` coefficients; accepts a numeric term limit or `{ maxTerms, long }` |
+| `toContinuedFractionString(options?)` | RiX `a0.~a1~...` representation with the same options |
+| `convergents(options?)` | Principal convergents; accepts a numeric count limit or `{ maxCount, long, intermediates }` |
 | `getConvergent(index)` | Zero-based convergent; throws if out of range |
 | `bestApproximation(maxDenominator)` | Closest value whose positive denominator does not exceed the bound |
 | `bestConvergent(maxDenominator)` | Last continued-fraction convergent within the bound |
@@ -160,6 +160,14 @@ value.toContinuedFractionString(); // "3.~7~15"
 value.convergents().map((v) => v.toString());
 // ["3", "22/7", "333/106"]
 
+const fourThirds = new Rational(4, 3);
+fourThirds.toContinuedFraction();               // [1n, 3n]
+fourThirds.toContinuedFraction({ long: true }); // [1n, 2n, 1n]
+fourThirds.convergents({ long: true }).map((v) => v.toString());
+// ["1", "3/2", "4/3"]
+fourThirds.convergents({ intermediates: true }).map((v) => v.toString());
+// ["1", "2", "3/2", "4/3"]
+
 Rational.fromContinuedFraction([3n, 7n, 15n]).toString();
 // "333/106"
 
@@ -171,6 +179,20 @@ pi.bestConvergent(100n).toString();    // "22/7"
 `Rational.DEFAULT_CF_LIMIT` is the default maximum coefficient/convergent
 count. Continued fractions here are finite because every `Rational` is exact
 and rational.
+
+The default expansion is canonical: except for an integer-only expansion, its
+last coefficient is greater than `1`. The long alternative replaces the final
+coefficient `a` with `a - 1, 1`; an integer `[a]` therefore has long form
+`[a - 1, 1]`. With `intermediates: true`, `convergents()` includes the
+fractions encountered while stepping through each coefficient run, including
+the principal endpoints. Combining `long` and `intermediates` applies that
+walk to the long expansion.
+
+These choices are derived from the rational's value. A `Rational` does not
+retain the coefficients used to construct it. When the convergents of a
+specific supplied representation are wanted, use
+`Rational.convergentsFromCF(input, maxCount?)`; for example, the explicit
+noncanonical input `[1n, 2n, 1n]` produces `1`, `3/2`, and `4/3`.
 
 `bestApproximation` minimizes ordinary absolute error among rational values
 whose denominator is at most the positive `bigint` bound. Its result may be a

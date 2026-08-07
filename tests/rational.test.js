@@ -446,6 +446,22 @@ describe("Rational", () => {
       }
     });
 
+    it("recomputes cached period metadata when the discovery limit changes", () => {
+      const originalLimit = Rational.MAX_PERIOD_CHECK;
+      const value = new Rational(1, 7);
+      try {
+        Rational.MAX_PERIOD_CHECK = 5;
+        expect(value.computeDecimalMetadata(6).periodLength).toBe(-1);
+
+        Rational.MAX_PERIOD_CHECK = 6;
+        const metadata = value.computeDecimalMetadata(6);
+        expect(metadata.periodLength).toBe(6);
+        expect(metadata.periodDigits).toBe("142857");
+      } finally {
+        Rational.MAX_PERIOD_CHECK = originalLimit;
+      }
+    });
+
     it("parses continued-fraction strings and rejects malformed terms", () => {
       expect(Rational.fromContinuedFractionString("3.~7~15").toString()).toBe(
         "333/106",
@@ -473,7 +489,7 @@ describe("Rational", () => {
       );
     });
 
-    it("computes, limits, and indexes convergents without poisoning the cache", () => {
+    it("computes, limits, and indexes canonical convergents", () => {
       const value = new Rational(355, 113);
       expect(value.convergents(2).map((term) => term.toString())).toEqual([
         "3",
@@ -495,6 +511,68 @@ describe("Rational", () => {
       ).toEqual(["4"]);
     });
 
+    it("provides canonical and long finite expansions without retaining provenance", () => {
+      const value = Rational.fromContinuedFraction([1n, 2n, 1n]);
+
+      expect(value.toString()).toBe("4/3");
+      expect(value.toContinuedFraction()).toEqual([1n, 3n]);
+      expect(value.toContinuedFraction({ long: true })).toEqual([1n, 2n, 1n]);
+      expect(value.toContinuedFractionString({ long: true })).toBe("1.~2~1");
+      expect(value.convergents().map((term) => term.toString())).toEqual([
+        "1",
+        "4/3",
+      ]);
+      expect(
+        value.convergents({ long: true }).map((term) => term.toString()),
+      ).toEqual(["1", "3/2", "4/3"]);
+      expect(Object.hasOwn(value, "cf")).toBe(false);
+      expect(Object.hasOwn(value, "wholePart")).toBe(false);
+      expect(Object.hasOwn(value, "_convergents")).toBe(false);
+
+      const integer = new Rational(3);
+      expect(integer.toContinuedFraction({ long: true })).toEqual([2n, 1n]);
+      expect(
+        integer.convergents({ long: true }).map((term) => term.toString()),
+      ).toEqual(["2", "3"]);
+    });
+
+    it("includes intermediate convergents along each coefficient run", () => {
+      const value = new Rational(4, 3);
+
+      expect(
+        value.convergents({ intermediates: true }).map((term) => term.toString()),
+      ).toEqual(["1", "2", "3/2", "4/3"]);
+      expect(
+        value
+          .convergents({ long: true, intermediates: true })
+          .map((term) => term.toString()),
+      ).toEqual(["1", "2", "3/2", "4/3"]);
+      expect(
+        value
+          .convergents({ maxCount: 3, intermediates: true })
+          .map((term) => term.toString()),
+      ).toEqual(["1", "2", "3/2"]);
+    });
+
+    it("does not canonicalize a coefficient prefix ending in a nonterminal one", () => {
+      const value = Rational.fromContinuedFraction([1n, 2n, 1n, 5n]);
+
+      expect(value.toContinuedFraction(3)).toEqual([1n, 2n, 1n]);
+      expect(value.toContinuedFraction({ maxTerms: 3, long: true })).toEqual([
+        1n,
+        2n,
+        1n,
+      ]);
+    });
+
+    it("indexes convergents beyond the default count limit", () => {
+      const coefficients = Array.from({ length: 1001 }, () => 2n);
+      const value = Rational.fromContinuedFraction(coefficients);
+
+      expect(value.convergents().length).toBe(Rational.DEFAULT_CF_LIMIT);
+      expect(value.getConvergent(1000).equals(value)).toBe(true);
+    });
+
     it("rejects invalid continued-fraction counts and indexes", () => {
       const value = new Rational(355, 113);
       const invalidCounts = [0, -1, 1.5, NaN, Infinity];
@@ -511,6 +589,16 @@ describe("Rational", () => {
         );
       }
 
+      expect(() => value.toContinuedFraction({ long: "yes" })).toThrow(
+        "must be a boolean",
+      );
+      expect(() => value.convergents({ long: "yes" })).toThrow(
+        "must be a boolean",
+      );
+      expect(() => value.convergents({ intermediates: 1 })).toThrow(
+        "must be a boolean",
+      );
+
       for (const index of [1.5, NaN, Infinity]) {
         expect(() => value.getConvergent(index)).toThrow(
           "nonnegative safe integer",
@@ -525,6 +613,9 @@ describe("Rational", () => {
       expect(
         Rational.convergentsFromCF("3.~7~15", 2).map((term) => term.toString()),
       ).toEqual(["3", "22/7"]);
+      expect(
+        Rational.convergentsFromCF([1n, 2n, 1n]).map((term) => term.toString()),
+      ).toEqual(["1", "3/2", "4/3"]);
     });
 
     it("returns a nonnegative approximation error", () => {

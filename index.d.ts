@@ -36,6 +36,17 @@ export interface BaseExpansion {
   limitHit: boolean;
 }
 
+export interface ContinuedFractionOptions {
+  maxTerms?: number;
+  long?: boolean;
+}
+
+export interface ConvergentOptions {
+  maxCount?: number;
+  long?: boolean;
+  intermediates?: boolean;
+}
+
 export class Integer {
   static zero: Integer;
   static one: Integer;
@@ -146,9 +157,11 @@ export class Rational {
     precision?: number,
     showPeriodInfo?: boolean,
   ): string;
-  toContinuedFraction(maxTerms?: number): bigint[];
-  toContinuedFractionString(): string;
-  convergents(maxCount?: number): Rational[];
+  toContinuedFraction(options?: number | ContinuedFractionOptions): bigint[];
+  toContinuedFractionString(
+    options?: number | ContinuedFractionOptions,
+  ): string;
+  convergents(options?: number | ConvergentOptions): Rational[];
   getConvergent(index: number): Rational;
   approximationError(target: Rational): Rational;
   bestApproximation(maxDenominator: bigint): Rational;

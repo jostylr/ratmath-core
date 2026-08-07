@@ -66,6 +66,13 @@ piApproximation.toContinuedFraction(); // [3n, 7n, 16n]
 piApproximation.convergents().map((value) => value.toString());
 // ["3", "22/7", "355/113"]
 
+const fourThirds = new Rational(4, 3);
+fourThirds.toContinuedFraction({ long: true }); // [1n, 2n, 1n]
+fourThirds.convergents({ long: true }).map((value) => value.toString());
+// ["1", "3/2", "4/3"]
+fourThirds.convergents({ intermediates: true }).map((value) => value.toString());
+// ["1", "2", "3/2", "4/3"]
+
 piApproximation.bestApproximation(100n).toString(); // "311/99"
 piApproximation.bestConvergent(100n).toString();    // "22/7"
 ```
