@@ -1,6 +1,6 @@
 import { describe, expect, it, test } from "bun:test";
 import { BaseSystem } from "../src/base-system.js";
-import { Rational } from "../src/rational.js";
+import { parseRepeatingDecimal, Rational } from "../index.js";
 
 describe("Rational", () => {
   describe("static constants", () => {
@@ -384,10 +384,7 @@ describe("Rational", () => {
 
       testCases.forEach((original) => {
         const repeatingDecimal = original.toRepeatingDecimal();
-        // We can't easily test roundtrip without importing parseRepeatingDecimal
-        // but we can at least verify the format is correct
-        expect(typeof repeatingDecimal).toBe("string");
-        expect(repeatingDecimal.length).toBeGreaterThan(0);
+        expect(parseRepeatingDecimal(repeatingDecimal).equals(original)).toBe(true);
       });
     });
   });

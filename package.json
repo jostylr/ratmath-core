@@ -23,8 +23,9 @@
   "scripts": {
     "test": "bun test",
     "test:coverage": "bun test --coverage",
+    "test:examples": "bash scripts/test-examples.sh",
     "test:pack": "npm pack --dry-run",
-    "prepublishOnly": "bun test && npm run test:pack",
+    "prepublishOnly": "bun test && npm run test:examples && npm run test:pack",
     "docs:build": "bash scripts/build-docs.sh"
   },
   "keywords": [

@@ -91,7 +91,7 @@ type.
 |---|---|
 | `toString()` | `start:end` using fractions |
 | `toMixedString()` | `start:end` using RiX mixed fractions |
-| `toRepeatingDecimal(useRepeatNotation?)` | Exact decimal endpoints |
+| `toRepeatingDecimal(options?)` | Decimal endpoints with the Rational limit policy |
 | `compactedDecimalInterval()` | Common-prefix bracket form when possible |
 | `relativeMidDecimalInterval()` | Decimal midpoint with signed offsets |
 | `relativeDecimalInterval()` | A relative compact form based on an endpoint |
@@ -120,7 +120,8 @@ choices for durable exact serialization.
 | `mediant()` | Mediant of the reduced endpoint fractions |
 | `midpoint()` | Arithmetic midpoint |
 | `shortestDecimal(base?)` | A terminating base-`base` rational within the interval, or `null` |
-| `randomRational(maxDenominator?)` | Pseudorandom contained rational with bounded denominator |
+| `denominatorInterval(denominator?, onEmpty?)` | Contained portion of a fixed denominator grid |
+| `randomRational(denominator?, onEmpty?, random?)` | Uniformly sample a numerator on that grid |
 | `bitLength()` | Maximum bit length of the two endpoints |
 
 ```js
@@ -130,9 +131,13 @@ range.mediant().toString();       // "1/2"
 range.midpoint().toString();      // "1/2"
 range.shortestDecimal().toString(); // "1/2"
 
+const grid = range.denominatorInterval(100);
 const sample = range.randomRational(100);
 range.containsValue(sample);      // true
 ```
 
-`randomRational` uses `Math.random`, so it is neither deterministic nor
-cryptographically secure.
+The denominator is a grid denominator, not a maximum. A result may reduce to
+a smaller divisor. If omitted, the endpoint-denominator LCM is used. Empty
+grids support `"mid"`, `"null"`, and `"error"` (default). `randomRational`
+uses `Math.random` unless a third-argument random function is supplied, so the
+default is neither deterministic nor cryptographically secure.

@@ -599,6 +599,14 @@ export class BaseSystem {
 
     throw new Error("caseSensitive must be a boolean value");
   }
+
+  toJSON() {
+    return {
+      $ratmath: "BaseSystem",
+      characters: this.#characters,
+      name: this.#name,
+    };
+  }
 }
 
 // Standard base presets - defined after class to avoid circular reference

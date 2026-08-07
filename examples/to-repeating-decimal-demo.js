@@ -27,7 +27,7 @@ const basicFractions = [
 
 basicFractions.forEach(([num, den, description]) => {
   const rational = new Rational(num, den);
-  const decimal = rational.toRepeatingDecimal();
+  const decimal = rational.toRepeatingDecimal(1000);
   console.log(`${num}/${den}`.padEnd(8) + ` → ${decimal.padEnd(15)} (${description})`);
 });
 console.log();
@@ -53,7 +53,7 @@ const terminatingFractions = [
 
 terminatingFractions.forEach(([num, den, description]) => {
   const rational = new Rational(num, den);
-  const decimal = rational.toRepeatingDecimal();
+  const decimal = rational.toRepeatingDecimal(1000);
   console.log(`${num}/${den}`.padEnd(8) + ` → ${decimal.padEnd(15)} (${description})`);
 });
 console.log();
@@ -75,7 +75,7 @@ const mixedFractions = [
 
 mixedFractions.forEach(([num, den, description]) => {
   const rational = new Rational(num, den);
-  const decimal = rational.toRepeatingDecimal();
+  const decimal = rational.toRepeatingDecimal(1000);
   console.log(`${num}/${den}`.padEnd(8) + ` → ${decimal.padEnd(20)} (${description})`);
 });
 console.log();
@@ -96,7 +96,7 @@ const negativeFractions = [
 
 negativeFractions.forEach(([num, den, description]) => {
   const rational = new Rational(num, den);
-  const decimal = rational.toRepeatingDecimal();
+  const decimal = rational.toRepeatingDecimal(1000);
   console.log(`${num}/${den}`.padEnd(8) + ` → ${decimal.padEnd(15)} (${description})`);
 });
 console.log();
@@ -111,7 +111,7 @@ const integers = [0, 1, 2, 5, 10, 42, 100, -3, -15];
 
 integers.forEach(num => {
   const rational = new Rational(num);
-  const decimal = rational.toRepeatingDecimal();
+  const decimal = rational.toRepeatingDecimal(1000);
   console.log(`${num}`.padEnd(8) + ` → ${decimal.padEnd(15)} (integer)`);
 });
 console.log();
@@ -139,7 +139,7 @@ console.log('Original'.padEnd(15) + 'Decimal'.padEnd(20) + 'Roundtrip'.padEnd(15
 console.log('-'.repeat(65));
 
 roundtripTests.forEach(original => {
-  const decimal = original.toRepeatingDecimal();
+  const decimal = original.toRepeatingDecimal(1000);
   const roundtrip = parseRepeatingDecimal(decimal);
   const matches = original.equals(roundtrip);
   
@@ -170,7 +170,7 @@ const constants = [
 
 constants.forEach(([num, den, description]) => {
   const rational = new Rational(num, den);
-  const decimal = rational.toRepeatingDecimal();
+  const decimal = rational.toRepeatingDecimal(1000);
   const approx = rational.toNumber();
   
   console.log(`${description}:`);
@@ -197,7 +197,7 @@ const complexFractions = [
 
 complexFractions.forEach(([num, den, description]) => {
   const rational = new Rational(num, den);
-  const decimal = rational.toRepeatingDecimal();
+  const decimal = rational.toRepeatingDecimal(1000);
   
   // Extract repeating part to show its length
   const hashIndex = decimal.indexOf('#');
@@ -225,7 +225,7 @@ const largeFractions = [
 largeFractions.forEach(([num, den, description]) => {
   const rational = new Rational(num, den);
   const startTime = performance.now();
-  const decimal = rational.toRepeatingDecimal();
+  const decimal = rational.toRepeatingDecimal(1000, "trunc");
   const endTime = performance.now();
   
   console.log(`${description}:`);

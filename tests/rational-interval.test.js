@@ -422,7 +422,7 @@ describe("RationalInterval", () => {
         const interval = new RationalInterval("1/2", "3/2");
         const midpoint = interval.midpoint();
 
-        // Midpoint of 1/2 and 3/2 is (1/2 + 3/2)/2 = 2/2 / 2 = 1/2
+        // Midpoint of 1/2 and 3/2 is (1/2 + 3/2)/2 = 2/2 = 1
         expect(midpoint.equals(new Rational(1, 1))).toBe(true);
       });
 
@@ -533,18 +533,10 @@ describe("RationalInterval", () => {
         expect(interval.containsValue(random)).toBe(true);
       });
 
-      it("returns different values on multiple calls (probabilistically)", () => {
+      it("selects exact grid endpoints with an injected random source", () => {
         const interval = new RationalInterval("0", "1");
-        const values = new Set();
-
-        // Generate multiple random values
-        for (let i = 0; i < 10; i++) {
-          const random = interval.randomRational(50);
-          values.add(random.toString());
-        }
-
-        // Should have some variety (this is probabilistic, so we check for at least 2 different values)
-        expect(values.size).toBeGreaterThan(1);
+        expect(interval.randomRational(10, "error", () => 0).toString()).toBe("0");
+        expect(interval.randomRational(10, "error", () => 0.999).toString()).toBe("1");
       });
 
       it("works with point intervals", () => {
@@ -554,21 +546,21 @@ describe("RationalInterval", () => {
         expect(random.equals(new Rational(1, 2))).toBe(true);
       });
 
-      it("accepts a bigint denominator bound", () => {
+      it("accepts a bigint grid denominator", () => {
         const interval = new RationalInterval("1/3", "2/3");
         const random = interval.randomRational(10n);
 
         expect(interval.containsValue(random)).toBe(true);
-        expect(random.denominator).toBeLessThanOrEqual(10n);
+        expect(10n % random.denominator).toBe(0n);
       });
 
-      it("throws error for invalid maxDenominator", () => {
+      it("throws error for an invalid grid denominator", () => {
         const interval = new RationalInterval("1/2", "3/4");
         expect(() => interval.randomRational(0)).toThrow(
-          "maxDenominator must be positive",
+          "Grid denominator must be positive",
         );
         expect(() => interval.randomRational(-1)).toThrow(
-          "maxDenominator must be positive",
+          "Grid denominator must be positive",
         );
       });
     });

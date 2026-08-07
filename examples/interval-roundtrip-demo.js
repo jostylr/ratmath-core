@@ -3,7 +3,10 @@
  * Shows how intervals like [1/3, 1/2] can be converted to "0.#3:0.5#0" and back perfectly
  */
 
-import { Rational, RationalInterval, parseRepeatingDecimal } from '../index.js';
+import { Rational, RationalInterval, parseInterval } from '../index.js';
+
+const exactIntervalDecimal = (interval) =>
+  interval.toRepeatingDecimal({ limit: 1000 });
 
 console.log('🔄 INTERVAL ROUNDTRIP CONVERSION DEMO 🔄\n');
 
@@ -24,7 +27,7 @@ const basicIntervals = [
 
 basicIntervals.forEach(([[lowNum, lowDen], [highNum, highDen], description]) => {
   const interval = new RationalInterval(new Rational(lowNum, lowDen), new Rational(highNum, highDen));
-  const decimalInterval = interval.toRepeatingDecimal();
+  const decimalInterval = exactIntervalDecimal(interval);
   
   console.log(`${interval.toString().padEnd(12)} → ${decimalInterval.padEnd(20)} (${description})`);
 });
@@ -46,7 +49,7 @@ const terminatingIntervals = [
 
 terminatingIntervals.forEach(([[lowNum, lowDen], [highNum, highDen], description]) => {
   const interval = new RationalInterval(new Rational(lowNum, lowDen), new Rational(highNum, highDen));
-  const decimalInterval = interval.toRepeatingDecimal();
+  const decimalInterval = exactIntervalDecimal(interval);
   
   console.log(`${interval.toString().padEnd(12)} → ${decimalInterval.padEnd(20)} (${description})`);
 });
@@ -68,7 +71,7 @@ const mixedIntervals = [
 
 mixedIntervals.forEach(([[lowNum, lowDen], [highNum, highDen], description]) => {
   const interval = new RationalInterval(new Rational(lowNum, lowDen), new Rational(highNum, highDen));
-  const decimalInterval = interval.toRepeatingDecimal();
+  const decimalInterval = exactIntervalDecimal(interval);
   
   console.log(`${interval.toString().padEnd(15)} → ${decimalInterval.padEnd(25)} (${description})`);
 });
@@ -90,7 +93,7 @@ const negativeIntervals = [
 
 negativeIntervals.forEach(([[lowNum, lowDen], [highNum, highDen], description]) => {
   const interval = new RationalInterval(new Rational(lowNum, lowDen), new Rational(highNum, highDen));
-  const decimalInterval = interval.toRepeatingDecimal();
+  const decimalInterval = exactIntervalDecimal(interval);
   
   console.log(`${interval.toString().padEnd(18)} → ${decimalInterval.padEnd(25)} (${description})`);
 });
@@ -116,8 +119,8 @@ console.log('Original'.padEnd(20) + 'Decimal Interval'.padEnd(30) + 'Roundtrip'.
 console.log('-'.repeat(85));
 
 roundtripTests.forEach(original => {
-  const decimalInterval = original.toRepeatingDecimal();
-  const roundtrip = parseRepeatingDecimal(decimalInterval);
+  const decimalInterval = exactIntervalDecimal(original);
+  const roundtrip = parseInterval(decimalInterval);
   const matches = original.low.equals(roundtrip.low) && original.high.equals(roundtrip.high);
   
   console.log(
@@ -146,7 +149,7 @@ const pointIntervals = [
 pointIntervals.forEach(([num, den, description]) => {
   const point = new Rational(num, den);
   const interval = new RationalInterval(point, point);
-  const decimalInterval = interval.toRepeatingDecimal();
+  const decimalInterval = exactIntervalDecimal(interval);
   
   console.log(`${interval.toString().padEnd(20)} → ${decimalInterval.padEnd(25)} (${description})`);
 });
@@ -165,8 +168,8 @@ const sumInterval = new RationalInterval(third, sixth.add(third)); // [1/3, 1/2]
 
 console.log('Testing arithmetic consistency:');
 console.log(`1/3 to (1/6 + 1/3): ${sumInterval.toString()}`);
-console.log(`As decimals: ${sumInterval.toRepeatingDecimal()}`);
-console.log(`Roundtrip: ${parseRepeatingDecimal(sumInterval.toRepeatingDecimal()).toString()}`);
+console.log(`As decimals: ${exactIntervalDecimal(sumInterval)}`);
+console.log(`Roundtrip: ${parseInterval(exactIntervalDecimal(sumInterval)).toString()}`);
 console.log();
 
 // Test interval operations
@@ -175,9 +178,9 @@ const interval2 = new RationalInterval(new Rational(1, 6), new Rational(1, 4));
 const sum = interval1.add(interval2);
 
 console.log('Testing interval arithmetic:');
-console.log(`Interval 1: ${interval1.toString()} = ${interval1.toRepeatingDecimal()}`);
-console.log(`Interval 2: ${interval2.toString()} = ${interval2.toRepeatingDecimal()}`);
-console.log(`Sum: ${sum.toString()} = ${sum.toRepeatingDecimal()}`);
+console.log(`Interval 1: ${interval1.toString()} = ${exactIntervalDecimal(interval1)}`);
+console.log(`Interval 2: ${interval2.toString()} = ${exactIntervalDecimal(interval2)}`);
+console.log(`Sum: ${sum.toString()} = ${exactIntervalDecimal(sum)}`);
 console.log();
 
 // ============================================================================
@@ -195,7 +198,7 @@ const constants = [
 
 constants.forEach(([[lowNum, lowDen], [highNum, highDen], description]) => {
   const interval = new RationalInterval(new Rational(lowNum, lowDen), new Rational(highNum, highDen));
-  const decimalInterval = interval.toRepeatingDecimal();
+  const decimalInterval = exactIntervalDecimal(interval);
   
   console.log(`${description}:`);
   console.log(`  Interval: ${interval.toString()}`);
@@ -220,7 +223,7 @@ console.log('Large denominator interval:');
 console.log(`Interval: ${largeInterval.toString()}`);
 
 const startTime = performance.now();
-const largeDecimal = largeInterval.toRepeatingDecimal();
+const largeDecimal = exactIntervalDecimal(largeInterval);
 const endTime = performance.now();
 
 console.log(`Decimal: ${largeDecimal.length > 60 ? largeDecimal.substring(0, 57) + '...' : largeDecimal}`);
@@ -228,7 +231,7 @@ console.log(`Conversion time: ${(endTime - startTime).toFixed(2)}ms`);
 console.log();
 
 // Test roundtrip with the large interval
-const largeRoundtrip = parseRepeatingDecimal(largeDecimal);
+const largeRoundtrip = parseInterval(largeDecimal);
 const largeMatches = largeInterval.low.equals(largeRoundtrip.low) && largeInterval.high.equals(largeRoundtrip.high);
 console.log(`Large interval roundtrip: ${largeMatches ? '✅ Perfect match' : '❌ Failed'}`);
 console.log();
@@ -241,20 +244,20 @@ console.log('=' .repeat(65));
 
 console.log('Measurement uncertainty representation:');
 const measurement = new RationalInterval(new Rational(299, 100), new Rational(301, 100));
-console.log(`Measured value: ${measurement.toString()} = ${measurement.toRepeatingDecimal()}`);
+console.log(`Measured value: ${measurement.toString()} = ${exactIntervalDecimal(measurement)}`);
 console.log(`This represents a measurement of 3.00 ± 0.01`);
 console.log();
 
 console.log('Financial range calculations:');
 const priceRange = new RationalInterval(new Rational(9999, 100), new Rational(10001, 100));
-console.log(`Price range: ${priceRange.toString()} = ${priceRange.toRepeatingDecimal()}`);
+console.log(`Price range: ${priceRange.toString()} = ${exactIntervalDecimal(priceRange)}`);
 console.log(`This represents $99.99 to $100.01`);
 console.log();
 
 console.log('Mathematical approximation bounds:');
 const piRange = new RationalInterval(new Rational(22, 7), new Rational(355, 113));
 console.log(`π bounds: ${piRange.toString()}`);
-console.log(`As decimals: ${piRange.toRepeatingDecimal()}`);
+console.log(`As decimals: ${exactIntervalDecimal(piRange)}`);
 console.log(`Actual π ≈ 3.14159265359...`);
 console.log(`Range width: ${piRange.high.subtract(piRange.low).toString()}`);
 

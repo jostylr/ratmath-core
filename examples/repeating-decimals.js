@@ -2,7 +2,7 @@
  * Examples demonstrating repeating decimal parsing and conversion to exact rationals
  */
 
-import { parseRepeatingDecimal, Rational, Parser } from '../index.js';
+import { parseRepeatingDecimal, Rational } from '../index.js';
 
 console.log('=== Repeating Decimal Examples ===\n');
 
@@ -63,24 +63,8 @@ console.log('3.14159#26535 =', complex2.toString());
 console.log('As decimal:', complex2.toNumber());
 console.log();
 
-// Integration with Parser expressions
-console.log('7. Integration with Parser Expressions:');
-try {
-  const expr1 = Parser.parse('0.#3 + 0.#6');
-  console.log('Expression: 0.#3 + 0.#6 =', expr1.toString());
-  
-  const expr2 = Parser.parse('1.23#45 * 2');
-  console.log('Expression: 1.23#45 * 2 =', expr2.toString());
-  
-  const expr3 = Parser.parse('0.#3 : 0.#6');
-  console.log('Interval: 0.#3 : 0.#6 =', expr3.toString());
-} catch (error) {
-  console.log('Parser integration error:', error.message);
-}
-console.log();
-
 // Common fractions as repeating decimals
-console.log('8. Common Fractions as Repeating Decimals:');
+console.log('7. Common Fractions as Repeating Decimals:');
 const fractions = [
   ['1/3', '0.#3'],
   ['1/6', '0.1#6'],

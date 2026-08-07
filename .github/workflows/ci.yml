@@ -5,6 +5,8 @@ on:
     paths:
       - "src/**"
       - "tests/**"
+      - "examples/**"
+      - "scripts/**"
       - "index.js"
       - "index.d.ts"
       - "package.json"
@@ -14,6 +16,8 @@ on:
     paths:
       - "src/**"
       - "tests/**"
+      - "examples/**"
+      - "scripts/**"
       - "index.js"
       - "index.d.ts"
       - "package.json"
@@ -46,6 +50,9 @@ jobs:
 
       - name: Test core
         run: bun test --coverage
+
+      - name: Test examples
+        run: npm run test:examples
 
       - name: Pack and test clean Node and browser consumers
         shell: bash

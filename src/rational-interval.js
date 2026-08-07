@@ -55,6 +55,42 @@ function exactOffsetString(value) {
   return exactTerminatingDecimal(value) ?? value.toString();
 }
 
+function gcd(a, b) {
+  while (b !== 0n) [a, b] = [b, a % b];
+  return a < 0n ? -a : a;
+}
+
+function lcm(a, b) {
+  return (a / gcd(a, b)) * b;
+}
+
+function randomBigIntBelow(limit, random) {
+  const draw = () => {
+    const value = random();
+    if (!Number.isFinite(value) || value < 0 || value >= 1) {
+      throw new RangeError("Random source must return a finite number in [0, 1)");
+    }
+    return value;
+  };
+
+  if (limit <= 9007199254740992n) {
+    return BigInt(Math.floor(draw() * Number(limit)));
+  }
+
+  const bitCount = limit.toString(2).length;
+  const chunks = Math.ceil(bitCount / 53);
+  const mask = (1n << BigInt(bitCount)) - 1n;
+  while (true) {
+    let candidate = 0n;
+    for (let i = 0; i < chunks; i += 1) {
+      candidate = (candidate << 53n) |
+        BigInt(Math.floor(draw() * 9007199254740992));
+    }
+    candidate &= mask;
+    if (candidate < limit) return candidate;
+  }
+}
+
 export class RationalInterval {
   #start;
   #end;
@@ -650,14 +686,15 @@ export class RationalInterval {
 
   /**
    * Converts this rational interval to its repeating decimal string representation
-   * @param {boolean} useRepeatNotation - Whether to use compact repeat notation (default: true)
-   * @returns {string} Repeating decimal interval string (e.g., "1/3:1/2" becomes "0.#3:0.5#0")
+   * @param {boolean|object} options - Compact-notation flag or Rational decimal options
+   * @returns {string|null} Repeating decimal interval string (e.g., "1/3:1/2" becomes "0.#3:0.5#0")
    */
-  toRepeatingDecimal(useRepeatNotation = true) {
+  toRepeatingDecimal(options = true) {
     const startDecimal =
-      this.#start.toRepeatingDecimalWithPeriod(useRepeatNotation).decimal;
+      this.#start.toRepeatingDecimalWithPeriod(options).decimal;
     const endDecimal =
-      this.#end.toRepeatingDecimalWithPeriod(useRepeatNotation).decimal;
+      this.#end.toRepeatingDecimalWithPeriod(options).decimal;
+    if (startDecimal === null || endDecimal === null) return null;
     return `${startDecimal}:${endDecimal}`;
   }
 
@@ -975,52 +1012,70 @@ export class RationalInterval {
   }
 
   /**
-   * Generates a uniformly random rational number from the closed interval.
-   * The randomness is uniform over all reduced fractions with denominators up to maxDenominator.
-   *
-   * @param {number|bigint} maxDenominator - Maximum denominator to consider (default: 1000)
-   * @returns {Rational} A random rational number from the interval
-   * @throws {Error} If maxDenominator is not a positive integer
+   * Returns the portion of this interval on a fixed denominator grid.
+   * With no denominator, uses the LCM of the endpoint denominators.
+   * @param {number|bigint|undefined} denominator - Fixed grid denominator
+   * @param {"mid"|"null"|"error"} onEmpty - Empty-grid behavior
+   * @returns {RationalInterval|null} Grid-aligned bounds or the selected fallback
    */
-  randomRational(maxDenominator = 1000) {
-    const maxDenom = BigInt(maxDenominator);
-
-    if (maxDenom <= 0n) {
-      throw new Error("maxDenominator must be positive");
+  denominatorInterval(denominator, onEmpty = "error") {
+    const gridDenominator = denominator === undefined
+      ? lcm(this.#low.denominator, this.#high.denominator)
+      : toExactBigInt(denominator, "Grid denominator");
+    if (gridDenominator <= 0n) {
+      throw new RangeError("Grid denominator must be positive");
+    }
+    if (!new Set(["mid", "null", "error"]).has(onEmpty)) {
+      throw new TypeError('onEmpty must be "mid", "null", or "error"');
     }
 
-    // Collect all valid rationals in reduced form within the interval
-    const validRationals = [];
-
-    // Check each denominator from 1 to maxDenominator
-    for (let denom = 1n; denom <= maxDenom; denom++) {
-      // For this denominator, find the range of valid numerators
-      const minNum = this.#ceilRational(
-        this.#low.multiply(new Rational(denom)),
+    const first = this.#ceilRational(
+      this.#low.multiply(new Rational(gridDenominator)),
+    ).numerator;
+    const last = this.#floorRational(
+      this.#high.multiply(new Rational(gridDenominator)),
+    ).numerator;
+    if (first <= last) {
+      return new RationalInterval(
+        new Rational(first, gridDenominator),
+        new Rational(last, gridDenominator),
       );
-      const maxNum = this.#floorRational(
-        this.#high.multiply(new Rational(denom)),
-      );
-
-      // Add all valid rationals with this denominator
-      for (let num = minNum.numerator; num <= maxNum.numerator; num++) {
-        const candidate = new Rational(num, denom);
-
-        // Only include if it's in reduced form (to avoid duplicates)
-        if (candidate.numerator === num && candidate.denominator === denom) {
-          validRationals.push(candidate);
-        }
-      }
     }
+    if (onEmpty === "null") return null;
+    if (onEmpty === "mid") return RationalInterval.point(this.midpoint());
+    throw new RangeError(
+      `No rational with grid denominator ${gridDenominator} lies in this interval`,
+    );
+  }
 
-    if (validRationals.length === 0) {
-      // Fallback to midpoint if no rationals found (shouldn't happen for reasonable maxDenominator)
-      return this.midpoint();
+  /**
+   * Uniformly samples a numerator from this interval on a denominator grid.
+   * A reduced result may have a denominator that divides the grid denominator.
+   * @param {number|bigint|undefined} denominator - Fixed grid denominator
+   * @param {"mid"|"null"|"error"} onEmpty - Empty-grid behavior
+   * @param {Function} random - Source returning a number in [0, 1)
+   * @returns {Rational|null} Sampled rational or the selected fallback
+   */
+  randomRational(denominator, onEmpty = "error", random = Math.random) {
+    if (typeof random !== "function") {
+      throw new TypeError("Random source must be a function");
     }
+    const gridDenominator = denominator === undefined
+      ? lcm(this.#low.denominator, this.#high.denominator)
+      : toExactBigInt(denominator, "Grid denominator");
+    const grid = this.denominatorInterval(gridDenominator, onEmpty);
+    if (grid === null) return null;
 
-    // Select a random rational from the valid ones
-    const randomIndex = Math.floor(Math.random() * validRationals.length);
-    return validRationals[randomIndex];
+    const first = this.#ceilRational(
+      this.#low.multiply(new Rational(gridDenominator)),
+    ).numerator;
+    const last = this.#floorRational(
+      this.#high.multiply(new Rational(gridDenominator)),
+    ).numerator;
+    if (first > last) return grid.start;
+
+    const numerator = first + randomBigIntBelow(last - first + 1n, random);
+    return new Rational(numerator, gridDenominator);
   }
 
   /**
@@ -1084,5 +1139,9 @@ export class RationalInterval {
     const lowBits = this.#low.bitLength();
     const highBits = this.#high.bitLength();
     return Math.max(lowBits, highBits);
+  }
+
+  toJSON() {
+    return { $ratmath: "RationalInterval", start: this.#start, end: this.#end };
   }
 }

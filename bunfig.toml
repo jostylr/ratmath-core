@@ -3,6 +3,7 @@
 [test]
 # Use built-in default patterns for test files
 preload = ["./tests/setup.js"]
+coverageThreshold = { lines = 0.99, functions = 0.95 }
 
 [install]
 registry = "https://registry.npmjs.org"

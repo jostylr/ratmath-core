@@ -28,7 +28,7 @@ for (const { rational, description } of testRationals) {
   const metadata = rational.computeDecimalMetadata();
   
   console.log(`  Fraction: ${rational.toString()}`);
-  console.log(`  Repeating decimal: ${rational.toRepeatingDecimal()}`);
+  console.log(`  Repeating decimal: ${rational.toRepeatingDecimal(100, "trunc")}`);
   console.log(`  Whole part: ${metadata.wholePart}`);
   console.log(`  Initial segment: "${metadata.initialSegment}"`);
   console.log(`  Initial leading zeros: ${metadata.initialSegmentLeadingZeros}`);

@@ -545,4 +545,8 @@ export class Integer {
     if (this.#value === 0n) return 0;
     return this.#value < 0n ? (-this.#value).toString(2).length : this.#value.toString(2).length;
   }
+
+  toJSON() {
+    return { $ratmath: "Integer", value: this.#value.toString() };
+  }
 }

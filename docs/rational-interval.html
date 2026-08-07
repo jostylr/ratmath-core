@@ -622,8 +622,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td><code>start:end</code> using RiX mixed fractions</td>
 </tr>
 <tr class="odd">
-<td><code>toRepeatingDecimal(useRepeatNotation?)</code></td>
-<td>Exact decimal endpoints</td>
+<td><code>toRepeatingDecimal(options?)</code></td>
+<td>Decimal endpoints with the Rational limit policy</td>
 </tr>
 <tr class="even">
 <td><code>compactedDecimalInterval()</code></td>
@@ -676,10 +676,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>A terminating base-<code>base</code> rational within the interval, or <code>null</code></td>
 </tr>
 <tr class="even">
-<td><code>randomRational(maxDenominator?)</code></td>
-<td>Pseudorandom contained rational with bounded denominator</td>
+<td><code>denominatorInterval(denominator?, onEmpty?)</code></td>
+<td>Contained portion of a fixed denominator grid</td>
 </tr>
 <tr class="odd">
+<td><code>randomRational(denominator?, onEmpty?, random?)</code></td>
+<td>Uniformly sample a numerator on that grid</td>
+</tr>
+<tr class="even">
 <td><code>bitLength()</code></td>
 <td>Maximum bit length of the two endpoints</td>
 </tr>
@@ -691,9 +695,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>range<span class="op">.</span><span class="fu">midpoint</span>()<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span>      <span class="co">// "1/2"</span></span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>range<span class="op">.</span><span class="fu">shortestDecimal</span>()<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span> <span class="co">// "1/2"</span></span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> sample <span class="op">=</span> range<span class="op">.</span><span class="fu">randomRational</span>(<span class="dv">100</span>)<span class="op">;</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>range<span class="op">.</span><span class="fu">containsValue</span>(sample)<span class="op">;</span>      <span class="co">// true</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>randomRational</code> uses <code>Math.random</code>, so it is neither deterministic nor cryptographically secure.</p>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> grid <span class="op">=</span> range<span class="op">.</span><span class="fu">denominatorInterval</span>(<span class="dv">100</span>)<span class="op">;</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> sample <span class="op">=</span> range<span class="op">.</span><span class="fu">randomRational</span>(<span class="dv">100</span>)<span class="op">;</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>range<span class="op">.</span><span class="fu">containsValue</span>(sample)<span class="op">;</span>      <span class="co">// true</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The denominator is a grid denominator, not a maximum. A result may reduce to a smaller divisor. If omitted, the endpoint-denominator LCM is used. Empty grids support <code>"mid"</code>, <code>"null"</code>, and <code>"error"</code> (default). <code>randomRational</code> uses <code>Math.random</code> unless a third-argument random function is supplied, so the default is neither deterministic nor cryptographically secure.</p>
 
 
 </section>

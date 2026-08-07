@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0 — 2026-08-06
+## 0.3.0 — 2026-08-07
 
 ### Breaking changes
 
@@ -10,6 +10,15 @@
   as their unit. For example, `1.23[+5:-6]` means `1.17:1.28`.
 - Constructors reject unsafe JavaScript integer values. Use a decimal string or
   `bigint` when a value is outside `Number`'s safe-integer range.
+- `randomRational()` now samples a fixed-denominator grid instead of all
+  reduced fractions up to a maximum denominator.
+
+### Added
+
+- Add `denominatorInterval()`, endpoint-denominator LCM defaults, empty-grid
+  policies, and injectable randomness for rational interval sampling.
+- Add exact rational rounding helpers, tagged JSON revival, and public type
+  guards.
 
 ### Fixes
 
@@ -21,7 +30,13 @@
   relative interval output.
 - Recompute continued-fraction convergents when a later call requests more
   terms, instead of retaining a truncated first result.
-- Accept `bigint` denominator bounds in the published `randomRational()`
-  TypeScript signature.
+- Make repeating-decimal serialization exact by default, with a 30-digit
+  period limit and explicit `"trunc"`, `"null"`, or `"error"` behavior.
+- Correct scientific notation so incomplete periods are visibly marked with
+  `...`; bounded repeating-decimal output retains `#` to locate the period.
+- Fix negative zero-whole-part strings such as `-0.5`, `-.5`, and
+  `-0..1/2`.
 - Improve validation for fractions, bases, Farey operations, and interval
   notation.
+- Make all retained examples executable and enforce line/function coverage
+  thresholds in CI.

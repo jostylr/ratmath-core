@@ -2,8 +2,8 @@
 title: API index
 ---
 
-The package exports every item below as a named export. Its default export is
-an object containing the seven classes and seven parsing functions.
+The package exports every item below as a named export. Its default export also
+contains the classes, parsing functions, type guards, and JSON reviver.
 
 ## Classes
 
@@ -39,12 +39,20 @@ type CoreNumber = CoreScalar | RationalInterval;
 type SternBrocotDirection = "L" | "R";
 ```
 
+## Guards and JSON
+
+`isInteger`, `isRational`, `isRationalInterval`, `isFraction`,
+`isFractionInterval`, `isBaseSystem`, and `isCoreNumber` provide public runtime
+type checks. Use `reviveCoreValue` as a `JSON.parse` reviver for tagged output
+created by the core classes' `toJSON()` methods.
+
 The formatting result interfaces are:
 
 ```ts
 interface RepeatingExpansion {
-  decimal: string;
+  decimal: string | null;
   period: number;
+  truncated: boolean;
 }
 
 interface BaseExpansion {
@@ -75,7 +83,7 @@ examples, edge cases, and return types.
 |---|---|
 | `Integer` | `value`; `add`, `subtract`, `multiply`, `divide`, `modulo`, `negate`, `pow`; comparisons; `abs`, `sign`, sign/parity predicates; `gcd`, `lcm`; `toString`, `toBase`, `toNumber`, `toRational`; `E`, `factorial`, `doubleFactorial`, `bitLength`; static `zero`, `one`, `from`, `fromRational` |
 | `Rational` | `numerator`, `denominator`; arithmetic, comparison, `abs`; fraction/mixed/decimal/base/scientific formatters; period metadata; continued fractions, convergents, and bounded approximations; `E`, `bitLength`; static construction helpers and formatting limits |
-| `RationalInterval` | `start`, `end`, `isAscending`, `low`, `high`; arithmetic, `pow`, `mpow`; containment/set operations; interval formatters; `mediant`, `midpoint`, `shortestDecimal`, `randomRational`, `E`, `bitLength`; static `zero`, `one`, `unitInterval`, `point`, `fromString` |
+| `RationalInterval` | `start`, `end`, `isAscending`, `low`, `high`; arithmetic, `pow`, `mpow`; containment/set operations; interval formatters; `mediant`, `midpoint`, `shortestDecimal`, `denominatorInterval`, `randomRational`, `E`, `bitLength`; static `zero`, `one`, `unitInterval`, `point`, `fromString` |
 | `Fraction` | `numerator`, `denominator`, `isInfinite`; unreduced arithmetic, comparisons, `scale`, `reduce`, `E`; mediant/Farey operations; Stern–Brocot navigation; static conversion and relationship helpers |
 | `FractionInterval` | `low`, `high`; `mediantSplit`, `partitionWithMediants`, `partitionWith`; conversion, string/equality, `E`; static `fromRationalInterval` |
 | `BaseSystem` | `base`, `characters`, `charMap`, `name`; digit conversion/validation; equality/case behavior; presets, factories, and prefix registry |

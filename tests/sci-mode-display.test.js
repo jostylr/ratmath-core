@@ -100,7 +100,7 @@ test("SCI mode large numbers with repeating decimals", () => {
   // 1000/7 should have proper scientific notation with repeating decimal
   const thousandSevenths = new Rational(1000n, 7n);
   const sciResult = thousandSevenths.toScientificNotation(true, 10, false);
-  expect(sciResult).toMatch(/^1\.\d+#\d+E2$/);
+  expect(sciResult).toBe("1.#428571E2");
 });
 
 test("SCI mode zero and whole numbers", () => {

@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { Rational } from "../src/Rational.js";
+import { Rational } from "../src/rational.js";
 
 test("Zero notation optimization - should only use {0~n} when n > 6", () => {
   // Test case: 3..3/37 = 114/37 = 3.081081081...
@@ -41,21 +41,8 @@ test("Zero notation optimization - various cases under threshold", () => {
 });
 
 test("Zero notation optimization - should use {0~n} when n > 6", () => {
-  // Create a case where we have 7 or more leading zeros in the period
-  // This should use the {0~7} notation
-  
-  // For now, just test that the {0~n} functionality works when n > 6
-  // We'll create a simpler test by manually checking behavior
-  
-  // Test that anything with > 6 zeros should potentially use compression
-  // (We'll test this by creating examples where we know there are many zeros)
-  
-  // For this test, let's just verify that our logic correctly avoids
-  // small {0~n} values but would allow larger ones
-  
-  // This is a placeholder test - the main issue was the small values
-  // which are now fixed
-  expect(true).toBe(true); // Placeholder until we find a good test case
+  const rational = new Rational(1, 99999999);
+  expect(rational.toRepeatingDecimal()).toBe("0.#{0~7}1");
 });
 
 test("SCI mode zero notation consistency", () => {

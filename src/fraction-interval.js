@@ -228,4 +228,8 @@ export class FractionInterval {
     
     return new FractionInterval(newLow, newHigh);
   }
+
+  toJSON() {
+    return { $ratmath: "FractionInterval", low: this.#low, high: this.#high };
+  }
 }

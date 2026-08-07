@@ -617,12 +617,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>toRepeatingDecimal()</code></td>
-<td>Exact base-10 string using <code>#</code> repeat notation</td>
+<td><code>toRepeatingDecimal(limit?, onLimit?)</code></td>
+<td>Exact base-10 <code>#</code> notation, with a default period limit of 30</td>
 </tr>
 <tr class="even">
-<td><code>toRepeatingDecimalWithPeriod(useRepeatNotation?)</code></td>
-<td><code>{ decimal, period }</code></td>
+<td><code>toRepeatingDecimalWithPeriod(options?)</code></td>
+<td><code>{ decimal, period, truncated }</code></td>
 </tr>
 <tr class="odd">
 <td><code>computeDecimalMetadata(maxPeriodDigits?)</code></td>
@@ -649,7 +649,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">// periodLength: 1, isTerminating: false</span></span>
 <span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="kw">new</span> <span class="fu">Rational</span>(<span class="dv">12345</span>)<span class="op">.</span><span class="fu">toScientificNotation</span>()<span class="op">;</span> <span class="co">// "1.2345E4"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>Rational.DEFAULT_PERIOD_DIGITS</code>, <code>MAX_PERIOD_DIGITS</code>, and <code>MAX_PERIOD_CHECK</code> are the public limits used by these formatting operations. For exact interchange, prefer <code>toString()</code> or <code>toRepeatingDecimal()</code>.</p>
+<p><code>Rational.DEFAULT_PERIOD_DIGITS</code>, <code>MAX_PERIOD_DIGITS</code>, and <code>MAX_PERIOD_CHECK</code> are the public limits used by these formatting operations. <code>onLimit</code> is <code>"error"</code> (default), <code>"null"</code>, or <code>"trunc"</code>. Truncated output uses <code>#</code> to mark where repetition begins and ends in <code>...</code> to show that the period is incomplete; it is informative rather than parseable. Output with <code>#</code> and no ellipsis contains the complete period. For exact interchange, use <code>toString()</code> or choose a <code>toRepeatingDecimal</code> limit large enough for the reported period.</p>
+<p>Exact rounding is available through <code>floor()</code>, <code>ceil()</code>, <code>trunc()</code>, <code>round(mode?)</code>, and <code>roundTo(places, mode?)</code>. Integer rounding methods return <code>bigint</code>; supported modes are <code>half-even</code>, <code>half-up</code>, <code>toward-zero</code>, <code>floor</code>, and <code>ceil</code>.</p>
 </section>
 <section id="arbitrary-base-output" class="level2">
 <h2 class="anchored" data-anchor-id="arbitrary-base-output">Arbitrary-base output</h2>

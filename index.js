@@ -21,6 +21,16 @@ import {
   parseRational,
   parseRepeatingDecimal,
 } from "./src/number-parser.js";
+import {
+  isBaseSystem,
+  isCoreNumber,
+  isFraction,
+  isFractionInterval,
+  isInteger,
+  isRational,
+  isRationalInterval,
+  reviveCoreValue,
+} from "./src/core-values.js";
 
 // Export named exports
 export {
@@ -38,6 +48,14 @@ export {
   parseNumber,
   parseRational,
   parseRepeatingDecimal,
+  isBaseSystem,
+  isCoreNumber,
+  isFraction,
+  isFractionInterval,
+  isInteger,
+  isRational,
+  isRationalInterval,
+  reviveCoreValue,
 };
 
 // Default export for convenient importing
@@ -56,4 +74,12 @@ export default {
   parseNumber,
   parseRational,
   parseRepeatingDecimal,
+  isBaseSystem,
+  isCoreNumber,
+  isFraction,
+  isFractionInterval,
+  isInteger,
+  isRational,
+  isRationalInterval,
+  reviveCoreValue,
 };

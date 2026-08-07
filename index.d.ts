@@ -3,6 +3,14 @@ export type RationalInput = IntegerInput | Rational;
 export type CoreScalar = Integer | Rational;
 export type CoreNumber = CoreScalar | RationalInterval;
 export type SternBrocotDirection = "L" | "R";
+export type LimitBehavior = "trunc" | "null" | "error";
+export type EmptyGridBehavior = "mid" | "null" | "error";
+export type RoundingMode =
+  | "half-even"
+  | "half-up"
+  | "toward-zero"
+  | "floor"
+  | "ceil";
 
 export interface DecimalMetadata {
   wholePart?: bigint;
@@ -17,8 +25,9 @@ export interface DecimalMetadata {
 }
 
 export interface RepeatingExpansion {
-  decimal: string;
+  decimal: string | null;
   period: number;
+  truncated: boolean;
 }
 
 export interface BaseExpansion {
@@ -64,6 +73,7 @@ export class Integer {
   factorial(): Integer;
   doubleFactorial(): Integer;
   bitLength(): number;
+  toJSON(): { $ratmath: "Integer"; value: string };
 
   static from(value: IntegerInput): Integer;
   static fromRational(rational: Rational): Integer;
@@ -99,6 +109,11 @@ export class Rational {
   greaterThan(other: Rational): boolean;
   greaterThanOrEqual(other: Rational): boolean;
   abs(): Rational;
+  floor(): bigint;
+  ceil(): bigint;
+  trunc(): bigint;
+  round(mode?: RoundingMode): bigint;
+  roundTo(places: number, mode?: RoundingMode): Rational;
   toString(base?: number | BaseSystem): string;
   toRepeatingBase(baseSystem: BaseSystem): string;
   toRepeatingBaseWithPeriod(
@@ -109,9 +124,15 @@ export class Rational {
   toBase(baseSystem: BaseSystem): string;
   toMixedString(): string;
   toNumber(): number;
-  toRepeatingDecimal(): string;
+  toRepeatingDecimal(limit?: number, onLimit?: LimitBehavior): string | null;
   toRepeatingDecimalWithPeriod(
-    useRepeatNotation?: boolean,
+    options?: boolean | {
+      useRepeatNotation?: boolean;
+      limit?: number;
+      onLimit?: LimitBehavior;
+    },
+    legacyLimit?: number,
+    legacyOnLimit?: LimitBehavior,
   ): RepeatingExpansion;
   computeDecimalMetadata(maxPeriodDigits?: number): DecimalMetadata;
   extractPeriodSegment(
@@ -134,14 +155,19 @@ export class Rational {
   bestApproximation(maxDenominator: bigint): Rational;
   bestConvergent(maxDenominator: bigint): Rational;
   bitLength(): number;
+  toJSON(): {
+    $ratmath: "Rational";
+    numerator: string;
+    denominator: string;
+  };
 
-  static from(value: number | string | bigint | Rational): Rational;
+  static from(value: number | string | bigint | Integer | Rational): Rational;
   static fromContinuedFraction(
     coefficients: ReadonlyArray<number | bigint>,
   ): Rational;
   static fromContinuedFractionString(value: string): Rational;
   static convergentsFromCF(
-    input: ReadonlyArray<bigint> | string,
+    input: ReadonlyArray<number | bigint> | string,
     maxCount?: number,
   ): Rational[];
 }
@@ -176,16 +202,33 @@ export class RationalInterval {
   union(other: RationalInterval): RationalInterval | null;
   toString(): string;
   toMixedString(): string;
-  toRepeatingDecimal(useRepeatNotation?: boolean): string;
+  toRepeatingDecimal(options?: boolean | {
+    useRepeatNotation?: boolean;
+    limit?: number;
+    onLimit?: LimitBehavior;
+  }): string | null;
   compactedDecimalInterval(): string;
   relativeMidDecimalInterval(): string;
   relativeDecimalInterval(): string;
   mediant(): Rational;
   midpoint(): Rational;
   shortestDecimal(base?: number | bigint): Rational | null;
-  randomRational(maxDenominator?: number | bigint): Rational;
+  denominatorInterval(
+    denominator?: number | bigint,
+    onEmpty?: EmptyGridBehavior,
+  ): RationalInterval | null;
+  randomRational(
+    denominator?: number | bigint,
+    onEmpty?: EmptyGridBehavior,
+    random?: () => number,
+  ): Rational | null;
   E(exponent: number | bigint): RationalInterval;
   bitLength(): number;
+  toJSON(): {
+    $ratmath: "RationalInterval";
+    start: Rational;
+    end: Rational;
+  };
 
   static point(value: RationalInput): RationalInterval;
   static fromString(value: string): RationalInterval;
@@ -218,6 +261,11 @@ export class Fraction {
   greaterThan(other: Fraction): boolean;
   greaterThanOrEqual(other: Fraction): boolean;
   E(exponent: number | bigint): Fraction;
+  toJSON(): {
+    $ratmath: "Fraction";
+    numerator: string;
+    denominator: string;
+  };
   fareyParents(): { left: Fraction; right: Fraction };
   sternBrocotParent(): Fraction | null;
   sternBrocotChildren(): { left: Fraction; right: Fraction };
@@ -258,6 +306,11 @@ export class FractionInterval {
   toString(): string;
   equals(other: FractionInterval): boolean;
   E(exponent: number | bigint): FractionInterval;
+  toJSON(): {
+    $ratmath: "FractionInterval";
+    low: Fraction;
+    high: Fraction;
+  };
 
   static fromRationalInterval(interval: RationalInterval): FractionInterval;
 }
@@ -295,6 +348,11 @@ export class BaseSystem {
   toString(): string;
   equals(other: BaseSystem): boolean;
   withCaseSensitivity(caseSensitive: boolean): BaseSystem;
+  toJSON(): {
+    $ratmath: "BaseSystem";
+    characters: string[];
+    name: string;
+  };
 
   static fromBase(base: number, name?: string): BaseSystem;
   static createPattern(
@@ -366,6 +424,15 @@ export function parseContinuedFraction(
 /** Parse an interval, promoting scalar input to a point interval. */
 export function parseInterval(value: string): RationalInterval;
 
+export function isInteger(value: unknown): value is Integer;
+export function isRational(value: unknown): value is Rational;
+export function isRationalInterval(value: unknown): value is RationalInterval;
+export function isFraction(value: unknown): value is Fraction;
+export function isFractionInterval(value: unknown): value is FractionInterval;
+export function isBaseSystem(value: unknown): value is BaseSystem;
+export function isCoreNumber(value: unknown): value is CoreNumber;
+export function reviveCoreValue(key: string, value: unknown): unknown;
+
 declare const core: {
   Integer: typeof Integer;
   Rational: typeof Rational;
@@ -381,6 +448,14 @@ declare const core: {
   parseMixedNumber: typeof parseMixedNumber;
   parseContinuedFraction: typeof parseContinuedFraction;
   parseInterval: typeof parseInterval;
+  isInteger: typeof isInteger;
+  isRational: typeof isRational;
+  isRationalInterval: typeof isRationalInterval;
+  isFraction: typeof isFraction;
+  isFractionInterval: typeof isFractionInterval;
+  isBaseSystem: typeof isBaseSystem;
+  isCoreNumber: typeof isCoreNumber;
+  reviveCoreValue: typeof reviveCoreValue;
 };
 
 export default core;

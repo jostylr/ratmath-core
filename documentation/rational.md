@@ -78,8 +78,8 @@ x.toDecimal();     // "-2.25"
 
 | Method | Result |
 |---|---|
-| `toRepeatingDecimal()` | Exact base-10 string using `#` repeat notation |
-| `toRepeatingDecimalWithPeriod(useRepeatNotation?)` | `{ decimal, period }` |
+| `toRepeatingDecimal(limit?, onLimit?)` | Exact base-10 `#` notation, with a default period limit of 30 |
+| `toRepeatingDecimalWithPeriod(options?)` | `{ decimal, period, truncated }` |
 | `computeDecimalMetadata(maxPeriodDigits?)` | Segments and period metadata used by formatters |
 | `extractPeriodSegment(initial, periodLength, digits)` | Repeats/truncates a known period segment to the requested length |
 | `toScientificNotation(useRepeatNotation?, precision?, showPeriodInfo?)` | Decimal scientific display |
@@ -100,7 +100,17 @@ new Rational(12345).toScientificNotation(); // "1.2345E4"
 
 `Rational.DEFAULT_PERIOD_DIGITS`, `MAX_PERIOD_DIGITS`, and
 `MAX_PERIOD_CHECK` are the public limits used by these formatting operations.
-For exact interchange, prefer `toString()` or `toRepeatingDecimal()`.
+`onLimit` is `"error"` (default), `"null"`, or `"trunc"`. Truncated output
+uses `#` to mark where repetition begins and ends in `...` to show that the
+period is incomplete; it is informative rather than parseable. Output with
+`#` and no ellipsis contains the complete period. For exact interchange, use
+`toString()` or choose a `toRepeatingDecimal` limit large enough for the
+reported period.
+
+Exact rounding is available through `floor()`, `ceil()`, `trunc()`,
+`round(mode?)`, and `roundTo(places, mode?)`. Integer rounding methods return
+`bigint`; supported modes are `half-even`, `half-up`, `toward-zero`, `floor`,
+and `ceil`.
 
 ## Arbitrary-base output
 

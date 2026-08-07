@@ -55,53 +55,32 @@ describe('Efficient Decimal Computation', () => {
     expect(result.period).toBe(6);
   });
 
-  test('handles large period lengths efficiently', () => {
-    // Create a fraction that would have a very large period
-    const largeNum = new Integer(1);
-    const largeDen = new Integer(97); // Prime number will create long period
-    const fraction = largeNum.divide(largeDen);
-    
-    const start = Date.now();
+  test('reports a known period longer than the digit prefix', () => {
+    const fraction = new Rational(1, 97);
     const metadata = fraction.computeDecimalMetadata();
-    const elapsed = Date.now() - start;
-    
-    // Should complete quickly (under 100ms)
-    expect(elapsed).toBeLessThan(100);
-    expect(metadata.periodLength).toBeGreaterThan(0);
-    expect(metadata.periodLength).toBeLessThan(10000000); // Under our limit
+
+    expect(metadata.periodLength).toBe(96);
+    expect(metadata.periodDigits).toHaveLength(Rational.DEFAULT_PERIOD_DIGITS);
+    expect(metadata.periodDigits).toStartWith('010309278350515463917525773195');
   });
 
   test('handles period > 10^7 gracefully', () => {
-    // Mock a case where period would exceed limit by creating a very large denominator
-    // This is a conceptual test - in practice, we'd need a specific fraction
     const veryLargeResult = new Rational(1n, 999999999999999989n); // Large prime
-    
-    const start = Date.now();
     const metadata = veryLargeResult.computeDecimalMetadata();
-    const elapsed = Date.now() - start;
-    
-    // Should complete quickly even for very large denominators
-    expect(elapsed).toBeLessThan(1000);
-    
-    // Should either compute the period or recognize it's too large
-    expect(typeof metadata.periodLength).toBe('number');
+
+    expect(metadata.periodLength).toBe(-1);
+    expect(metadata.periodDigits).toHaveLength(Rational.DEFAULT_PERIOD_DIGITS);
+    expect(veryLargeResult.toRepeatingDecimal(30, 'null')).toBeNull();
   });
 
   test('100!!/99!! should not hang', () => {
-    const start = Date.now();
     const n100 = new Integer(100).doubleFactorial();
     const n99 = new Integer(99).doubleFactorial();
     const result = n100.divide(n99);
-    
-    // This should complete quickly now
     const metadata = result.computeDecimalMetadata();
-    const elapsed = Date.now() - start;
-    
-    // Should complete in reasonable time (under 5 seconds)
-    expect(elapsed).toBeLessThan(5000);
-    
-    // Period is likely to be very large, so should be -1
+
     expect(metadata.periodLength).toBe(-1);
+    expect(metadata.periodDigits).toHaveLength(Rational.DEFAULT_PERIOD_DIGITS);
   });
 
   test('extractPeriodSegment works correctly', () => {

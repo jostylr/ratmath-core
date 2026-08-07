@@ -85,7 +85,8 @@ test("Scientific notation works for very small numbers", () => {
   const sciNotation = ratio.toScientificNotation();
   expect(sciNotation).not.toBe("0");
   expect(sciNotation).toMatch(/^\d+[\.\#\d]*E-\d+$/);
-  expect(sciNotation).toBe("6.#57130949E-29");
+  expect(sciNotation).toBe("6.5713094994...E-29");
+  expect(sciNotation).not.toContain("#");
 });
 
 test("Scientific notation works for terminating decimals", () => {
@@ -103,7 +104,7 @@ test("Scientific notation works for repeating decimals", () => {
   const r2 = new Rational(1, 7);
   
   expect(r1.toScientificNotation()).toBe("3.#3E-1");
-  expect(r2.toScientificNotation()).toBe("1.#42857E-1");
+  expect(r2.toScientificNotation()).toBe("1.#428571E-1");
 });
 
 test("Scientific notation with repeat notation parameter", () => {
@@ -182,10 +183,13 @@ test("Repeat notation formatting handles period digits", () => {
   const factorial49Double = new Integer(49).doubleFactorial();
   const ratio = new Rational(factorial10Double.value, factorial49Double.value);
   
-  const withRepeat = ratio.toRepeatingDecimalWithPeriod(true);
-  
-  // Should contain repeat notation for the many leading zeros
-  expect(withRepeat.decimal).toContain("{0~");
+  const withRepeat = ratio.toRepeatingDecimalWithPeriod({
+    limit: 30,
+    onLimit: "trunc",
+  });
+  expect(withRepeat.truncated).toBe(true);
+  expect(withRepeat.decimal).toEndWith("...");
+  expect(withRepeat.decimal).toContain("#");
 });
 
 test("Scientific notation fallback in calc.js context", () => {

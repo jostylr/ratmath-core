@@ -15,6 +15,22 @@ const bitLength = function (int) {
   return int < 0n ? (-int).toString(2).length : int.toString(2).length;
 }
 
+const roundedQuotient = function (numerator, denominator, mode) {
+  const quotient = numerator / denominator;
+  const remainder = numerator % denominator;
+  if (remainder === 0n || mode === "toward-zero") return quotient;
+  if (mode === "floor") return numerator < 0n ? quotient - 1n : quotient;
+  if (mode === "ceil") return numerator > 0n ? quotient + 1n : quotient;
+
+  const twiceRemainder = (remainder < 0n ? -remainder : remainder) * 2n;
+  if (twiceRemainder < denominator) return quotient;
+  const direction = numerator < 0n ? -1n : 1n;
+  if (twiceRemainder > denominator || mode === "half-up") {
+    return quotient + direction;
+  }
+  return quotient % 2n === 0n ? quotient : quotient + direction;
+};
+
 
 export class Rational {
   #numerator;
@@ -37,7 +53,7 @@ export class Rational {
   #maxPeriodDigitsComputed;
 
   // Class variables for decimal computation
-  static DEFAULT_PERIOD_DIGITS = 20;
+  static DEFAULT_PERIOD_DIGITS = 30;
   static MAX_PERIOD_DIGITS = 1000;
   static MAX_PERIOD_CHECK = 10000000; // 10^7
 
@@ -104,7 +120,9 @@ export class Rational {
           throw new Error("Invalid mixed number format. Use 'a..b/c'");
         }
 
-        const wholePart = BigInt(mixedParts[0]);
+        const wholeText = mixedParts[0].trim();
+        const isNegative = wholeText.startsWith("-");
+        const wholePart = BigInt(wholeText);
         const fractionParts = mixedParts[1].split("/");
 
         if (fractionParts.length !== 2) {
@@ -115,7 +133,6 @@ export class Rational {
         const fracDenominator = BigInt(fractionParts[1]);
 
         // Calculate equivalent improper fraction: whole + numerator/denominator
-        const isNegative = wholePart < 0n;
         const absWhole = isNegative ? -wholePart : wholePart;
 
         // (absWhole * denominator + numerator) with appropriate sign
@@ -140,6 +157,7 @@ export class Rational {
             }
 
             // Convert decimal to fraction
+            const isNegative = integerPart.startsWith("-");
             const wholePart = BigInt(integerPart);
             const fractionalValue = BigInt(fractionalPart);
             const denomValue = 10n ** BigInt(fractionalPart.length);
@@ -147,7 +165,7 @@ export class Rational {
             // Combine: wholePart + fractionalPart/denomValue
             this.#numerator =
               wholePart * denomValue +
-              (wholePart < 0n ? -fractionalValue : fractionalValue);
+              (isNegative ? -fractionalValue : fractionalValue);
             this.#denominator = denomValue;
           } else {
             throw new Error("Invalid decimal format - multiple decimal points");
@@ -551,6 +569,52 @@ export class Rational {
       : new Rational(this.#numerator, this.#denominator);
   }
 
+  floor() {
+    return roundedQuotient(this.#numerator, this.#denominator, "floor");
+  }
+
+  ceil() {
+    return roundedQuotient(this.#numerator, this.#denominator, "ceil");
+  }
+
+  trunc() {
+    return roundedQuotient(this.#numerator, this.#denominator, "toward-zero");
+  }
+
+  round(mode = "half-even") {
+    if (!new Set(["half-even", "half-up", "toward-zero", "floor", "ceil"]).has(mode)) {
+      throw new TypeError("Unknown rounding mode");
+    }
+    return roundedQuotient(this.#numerator, this.#denominator, mode);
+  }
+
+  roundTo(places, mode = "half-even") {
+    if (!Number.isSafeInteger(places)) {
+      throw new RangeError("Decimal places must be a safe integer");
+    }
+    if (!new Set(["half-even", "half-up", "toward-zero", "floor", "ceil"]).has(mode)) {
+      throw new TypeError("Unknown rounding mode");
+    }
+    const scale = 10n ** BigInt(Math.abs(places));
+    if (places >= 0) {
+      return new Rational(
+        roundedQuotient(this.#numerator * scale, this.#denominator, mode),
+        scale,
+      );
+    }
+    return new Rational(
+      roundedQuotient(this.#numerator, this.#denominator * scale, mode) * scale,
+    );
+  }
+
+  toJSON() {
+    return {
+      $ratmath: "Rational",
+      numerator: this.#numerator.toString(),
+      denominator: this.#denominator.toString(),
+    };
+  }
+
   /**
    * Converts this rational to a string in the format "numerator/denominator"
    * or just "numerator" if denominator is 1
@@ -812,30 +876,49 @@ export class Rational {
 
   /**
    * Converts this rational to its repeating decimal string representation
-   * @returns {string} Repeating decimal string (e.g., "1/3" becomes "0.#3")
+   * @param {number} limit - Maximum repeating-period digits (default: 30)
+   * @param {"trunc"|"null"|"error"} onLimit - Over-limit behavior
+   * @returns {string|null} Repeating decimal string (e.g., "1/3" becomes "0.#3")
    */
-  toRepeatingDecimal() {
-    // Use the new efficient method
-    const result = this.toRepeatingDecimalWithPeriod();
+  toRepeatingDecimal(limit = Rational.DEFAULT_PERIOD_DIGITS, onLimit = "error") {
+    const result = this.toRepeatingDecimalWithPeriod({ limit, onLimit });
     return result.decimal;
   }
 
   /**
    * Converts this rational to a repeating decimal string with period information
-   * @param {boolean} useRepeatNotation - Whether to use {0~15} notation for leading zeros (default: false)
-   * @returns {object} Object with decimal string and period info: {decimal: string, period: number}
+   * @param {boolean|object} options - Legacy compact-notation flag or formatting options
+   * @returns {object} Object with decimal string, period, and truncation information
    */
-  toRepeatingDecimalWithPeriod(useRepeatNotation = true) {
+  toRepeatingDecimalWithPeriod(options = true, legacyLimit, legacyOnLimit) {
+    const normalized = typeof options === "boolean"
+      ? {
+          useRepeatNotation: options,
+          limit: legacyLimit ?? Rational.DEFAULT_PERIOD_DIGITS,
+          onLimit: legacyOnLimit ?? "error",
+        }
+      : {
+          useRepeatNotation: options?.useRepeatNotation ?? true,
+          limit: options?.limit ?? Rational.DEFAULT_PERIOD_DIGITS,
+          onLimit: options?.onLimit ?? "error",
+        };
+    const { useRepeatNotation, limit, onLimit } = normalized;
+
+    if (!Number.isSafeInteger(limit) || limit < 1) {
+      throw new RangeError("Repeating-decimal limit must be a positive safe integer");
+    }
+    if (!new Set(["trunc", "null", "error"]).has(onLimit)) {
+      throw new TypeError('onLimit must be "trunc", "null", or "error"');
+    }
+
     // Handle special cases
     if (this.#numerator === 0n) {
-      return { decimal: "0", period: 0 };
+      return { decimal: "0", period: 0, truncated: false };
     }
 
     // Ensure whole part and decimal metadata are computed
     this.#computeWholePart();
-    // When using compact notation, compute more digits to find significant digits
-    const maxDigits = useRepeatNotation ? 100 : Rational.DEFAULT_PERIOD_DIGITS;
-    this.#computeDecimalMetadata(maxDigits);
+    this.#computeDecimalMetadata(limit);
 
     let result = (this.#isNegative ? "-" : "") + this.#wholePart.toString();
 
@@ -849,54 +932,39 @@ export class Rational {
       } else {
         // For pure integers, don't add #0
       }
-      return { decimal: result, period: 0 };
+      return { decimal: result, period: 0, truncated: false };
     } else {
-      // Repeating decimal - use full period if possible for exact roundtrip
-      let periodDigits = this.#periodDigits;
+      const overLimit = this.#periodLength === -1 || this.#periodLength > limit;
+      if (overLimit) {
+        if (onLimit === "null") {
+          return { decimal: null, period: this.#periodLength, truncated: true };
+        }
+        if (onLimit === "error") {
+          const period = this.#periodLength === -1
+            ? `more than ${Rational.MAX_PERIOD_CHECK.toLocaleString()}`
+            : this.#periodLength.toString();
+          throw new RangeError(
+            `Repeating decimal period is ${period} digits, exceeding limit ${limit}`,
+          );
+        }
 
-      // If period is reasonable size and we only have partial digits, compute full period
-      if (
-        this.#periodLength > 0 &&
-        this.#periodLength <= Rational.MAX_PERIOD_DIGITS &&
-        this.#periodDigits.length < this.#periodLength
-      ) {
-        periodDigits = this.extractPeriodSegment(
-          this.#initialSegment,
-          this.#periodLength,
-          this.#periodLength,
-        );
+        const initial = useRepeatNotation
+          ? Rational.#formatRepeatedDigits(this.#initialSegment, 7)
+          : this.#initialSegment;
+        const periodPrefix = this.#periodDigits.slice(0, limit);
+        const decimal = `${result}.${initial}#${periodPrefix}...`;
+        return { decimal, period: this.#periodLength, truncated: true };
       }
+
+      const periodDigits = this.#periodDigits;
 
       const formattedInitial = useRepeatNotation
         ? Rational.#formatRepeatedDigits(this.#initialSegment, 7) // threshold n > 6
         : this.#initialSegment;
 
-      // For repeating decimals, show significant digits even if period is long
-      let displayPeriod = periodDigits;
-      if (useRepeatNotation && this.#leadingZerosInPeriod < 1000) {
-        // Show compact zeros plus first significant digits from period
-        const significantDigits = this.#periodDigitsRest;
-        if (significantDigits && significantDigits.length > 0) {
-          const leadingZerosFormatted =
-            this.#leadingZerosInPeriod > 6
-              ? `{0~${this.#leadingZerosInPeriod}}`
-              : this.#leadingZerosInPeriod > 0
-                ? "0".repeat(this.#leadingZerosInPeriod)
-                : "";
-          const maxSignificantDigits = Math.min(significantDigits.length, 20);
-          displayPeriod =
-            leadingZerosFormatted +
-            significantDigits.substring(0, maxSignificantDigits);
-        } else {
-          displayPeriod = useRepeatNotation
-            ? Rational.#formatRepeatedDigits(periodDigits, 7)
-            : periodDigits;
-        }
-      } else {
-        displayPeriod = useRepeatNotation
-          ? Rational.#formatRepeatedDigits(periodDigits, 7)
-          : periodDigits;
-      }
+      const displayPeriod = useRepeatNotation
+        ? Rational.#formatRepeatedDigits(periodDigits, 7)
+        : periodDigits;
 
       if (this.#initialSegment) {
         result += "." + formattedInitial + "#" + displayPeriod;
@@ -907,6 +975,7 @@ export class Rational {
       return {
         decimal: result,
         period: this.#periodLength,
+        truncated: false,
       };
     }
   }
@@ -1407,205 +1476,89 @@ export class Rational {
     precision = 11,
     showPeriodInfo = false,
   ) {
-    // Handle special cases
     if (this.#numerator === 0n) {
       return "0";
     }
+    if (!Number.isSafeInteger(precision) || precision < 1) {
+      throw new RangeError("Scientific-notation precision must be a positive safe integer");
+    }
 
-    // Ensure decimal metadata is computed with enough period digits
     this.#computeWholePart();
-    this.#computeDecimalMetadata(100); // Get more period digits for scientific notation
+    this.#computeDecimalMetadata(precision);
 
-    const isNegative = this.#isNegative;
-    const prefix = isNegative ? "-" : "";
+    const prefix = this.#isNegative ? "-" : "";
+    const format = (digits) => useRepeatNotation
+      ? Rational.#formatRepeatedDigits(digits, 7)
+      : digits;
 
-    // Case 1: Number >= 1 (whole part > 0)
-    if (this.#wholePart > 0n) {
-      const wholeStr = this.#wholePart.toString();
-      const firstDigit = wholeStr[0];
-      const exponent = wholeStr.length - 1;
-
-      let mantissa = firstDigit;
-
-      // Check if we have additional content to add after the first digit
-      const hasMoreWholeDigits = wholeStr.length > 1;
-      const hasFractionalPart = this.#remainder > 0n;
-
-      if (hasFractionalPart || hasMoreWholeDigits) {
-        // For repeating decimals, check if we can consolidate whole part digits with repeating part
-        if (hasFractionalPart && !this.#isTerminating) {
-          mantissa += ".";  // Add decimal point for repeating decimals
-          const remainingWholeDigits = hasMoreWholeDigits ? wholeStr.substring(1) : "";
-          const formattedInitial = useRepeatNotation
-            ? Rational.#formatRepeatedDigits(this.#initialSegment, 7)
-            : this.#initialSegment;
-
-          // Get period digits
-          let periodDigits = this.#periodDigits;
-          if (
-            this.#periodLength > 0 &&
-            this.#periodLength <= Rational.MAX_PERIOD_DIGITS &&
-            periodDigits.length < this.#periodLength
-          ) {
-            periodDigits = this.extractPeriodSegment(
-              this.#initialSegment,
-              this.#periodLength,
-              Math.min(10, this.#periodLength),
-            );
-          }
-
-          // Check if the remaining whole digits match the repeating pattern
-          if (remainingWholeDigits && periodDigits && remainingWholeDigits === periodDigits.substring(0, remainingWholeDigits.length)) {
-            // The whole part continuation matches the repeating pattern - use # notation immediately
-            mantissa += "#" + periodDigits;
-          } else {
-            // Normal case - add whole digits, then initial segment, then period
-            if (hasMoreWholeDigits) {
-              mantissa += remainingWholeDigits;
-            }
-            mantissa += formattedInitial + "#";
-            const formattedPeriod = useRepeatNotation
-              ? Rational.#formatRepeatedDigits(periodDigits, 7)
-              : periodDigits.substring(
-                0,
-                Math.max(1, precision - mantissa.length + 1),
-              );
-            mantissa += formattedPeriod;
-          }
-        } else {
-          // Terminating decimal or no fractional part
-
-          if (hasMoreWholeDigits || hasFractionalPart) {
-            // Add decimal point and remaining content
-            mantissa += ".";
-
-            // Add remaining whole digits
-            if (hasMoreWholeDigits) {
-              const remainingDigits = wholeStr.substring(1);
-              // For pure integers, remove trailing zeros
-              if (!hasFractionalPart) {
-                const trimmedDigits = remainingDigits.replace(/0+$/, '');
-                if (trimmedDigits === '') {
-                  // All zeros - remove decimal point
-                  mantissa = mantissa.slice(0, -1);
-                } else {
-                  mantissa += trimmedDigits;
-                }
-              } else {
-                mantissa += remainingDigits;
-              }
-            }
-
-            // Add fractional part if it exists
-            if (hasFractionalPart) {
-              const formattedInitial = useRepeatNotation
-                ? Rational.#formatRepeatedDigits(this.#initialSegment, 7)
-                : this.#initialSegment;
-              // Remove trailing zeros for terminating decimals
-              const trimmedInitial = formattedInitial.replace(/0+$/, '');
-              if (trimmedInitial) {
-                mantissa += trimmedInitial;
-              } else if (!hasMoreWholeDigits) {
-                // If we only had zeros and no more whole digits, remove the decimal point
-                mantissa = mantissa.slice(0, -1);
-              }
-            }
-          }
-        }
-      } else if (!hasFractionalPart && !hasMoreWholeDigits) {
-        // Pure integer with single digit - no decimal point needed
-        // mantissa is already just the first digit
+    // A period that does not fit is approximate display, never exact # syntax.
+    if (!this.#isTerminating &&
+        (this.#periodLength === -1 || this.#periodLength > precision)) {
+      let numerator = this.#numerator < 0n ? -this.#numerator : this.#numerator;
+      let denominator = this.#denominator;
+      let exponent = 0;
+      while (numerator >= denominator * 10n) {
+        denominator *= 10n;
+        exponent += 1;
       }
-
+      while (numerator < denominator) {
+        numerator *= 10n;
+        exponent -= 1;
+      }
+      const digits = [];
+      for (let i = 0; i < precision; i += 1) {
+        digits.push((numerator / denominator).toString());
+        numerator = (numerator % denominator) * 10n;
+      }
+      const mantissa = digits[0] +
+        (digits.length > 1 ? `.${digits.slice(1).join("")}` : "") + "...";
       const result = `${prefix}${mantissa}E${exponent}`;
       return result + this.#generatePeriodInfo(showPeriodInfo);
     }
 
-    // Case 2: Number < 1 (fractional only)
-    if (this.#isTerminating) {
-      // Find first non-zero digit in initial segment
-      const leadingZeros = this.#initialSegmentLeadingZeros;
-      const rest = this.#initialSegmentRest;
+    const whole = this.#wholePart.toString();
+    const period = this.#periodDigits;
+    let firstDigit;
+    let exponent;
+    let nonRepeatingTail = "";
+    let scientificPeriod = period;
 
-      if (rest === "") {
-        return prefix + "0";
-      }
-
-      const firstDigit = rest[0];
-      const exponent = -(leadingZeros + 1);
-
-      let mantissa = firstDigit;
-      if (rest.length > 1) {
-        const remainingDigits = Math.max(0, precision - 1);
-        mantissa += "." + rest.substring(1, remainingDigits + 1);
-      }
-
-      return `${prefix}${mantissa}E${exponent}`;
-    } else {
-      // Repeating decimal < 1
-      const firstNonZeroInPeriod = this.#periodDigitsRest;
-
-      if (this.#initialSegmentRest !== "") {
-        // First non-zero is in initial segment
-        const firstDigit = this.#initialSegmentRest[0];
-        const exponent = -(this.#initialSegmentLeadingZeros + 1);
-
-        let mantissa = firstDigit;
-        if (this.#initialSegmentRest.length > 1 || this.#periodDigits !== "") {
-          mantissa += ".";
-          if (this.#initialSegmentRest.length > 1) {
-            mantissa += this.#initialSegmentRest.substring(1);
-          }
-
-          // Add period notation
-          mantissa += "#";
-          if (
-            this.#leadingZerosInPeriod > 0 &&
-            useRepeatNotation &&
-            this.#leadingZerosInPeriod > 6
-          ) {
-            mantissa += `{0~${this.#leadingZerosInPeriod}}`;
-          } else if (this.#leadingZerosInPeriod > 0) {
-            mantissa += "0".repeat(Math.min(this.#leadingZerosInPeriod, 10));
-          }
-
-          if (firstNonZeroInPeriod !== "") {
-            const remainingLength = Math.max(
-              1,
-              precision - mantissa.length + 1,
-            );
-            mantissa += firstNonZeroInPeriod.substring(0, remainingLength);
-          }
-        }
-
-        const result = `${prefix}${mantissa}E${exponent}`;
-        return result + this.#generatePeriodInfo(showPeriodInfo);
-      } else if (firstNonZeroInPeriod !== "") {
-        // First non-zero is in repeating part  
-        const firstDigit = firstNonZeroInPeriod[0];
-        // Total leading zeros = initial segment leading zeros + period leading zeros
-        const totalLeadingZeros =
-          this.#initialSegmentLeadingZeros + this.#leadingZerosInPeriod;
-        const exponent = -(totalLeadingZeros + 1);
-
-        let mantissa = firstDigit;
-
-        // Add remaining period digits with # notation
-        if (firstNonZeroInPeriod.length > 1) {
-          mantissa += ".#";
-          const remainingDigits = Math.max(0, precision - 3); // Account for "X.#"
-          mantissa += firstNonZeroInPeriod.substring(1, remainingDigits + 1);
-        } else {
-          // Single repeating digit case like 1/3 = 0.333... -> 3.#3E-1
-          mantissa += ".#" + firstDigit;
-        }
-
-        const result = `${prefix}${mantissa}E${exponent}`;
-        return result + this.#generatePeriodInfo(showPeriodInfo);
+    if (this.#wholePart > 0n) {
+      firstDigit = whole[0];
+      exponent = whole.length - 1;
+      const wholeTail = whole.slice(1);
+      if (!this.#isTerminating && this.#initialSegment.length === 0) {
+        const stream = wholeTail + period.repeat(
+          Math.ceil((period.length + wholeTail.length) / period.length) + 1,
+        );
+        scientificPeriod = stream.slice(0, period.length);
       } else {
-        return prefix + "0";
+        nonRepeatingTail = wholeTail + this.#initialSegment;
       }
+    } else if (this.#initialSegmentRest !== "") {
+      const index = this.#initialSegmentLeadingZeros;
+      firstDigit = this.#initialSegment[index];
+      exponent = -(index + 1);
+      nonRepeatingTail = this.#initialSegment.slice(index + 1);
+    } else {
+      const index = period.search(/[1-9]/);
+      firstDigit = period[index];
+      exponent = -(this.#initialSegment.length + index + 1);
+      scientificPeriod = period.slice(index + 1) + period.slice(0, index + 1);
     }
+
+    if (this.#isTerminating) {
+      const tail = nonRepeatingTail.replace(/0+$/, "");
+      const shown = tail.slice(0, Math.max(0, precision - 1));
+      const ellipsis = tail.length > shown.length ? "..." : "";
+      return `${prefix}${firstDigit}${shown ? `.${shown}` : ""}${ellipsis}E${exponent}`;
+    }
+
+    const initial = format(nonRepeatingTail);
+    const repeated = format(scientificPeriod);
+    const mantissa = `${firstDigit}.${initial}#${repeated}`;
+    const result = `${prefix}${mantissa}E${exponent}`;
+    return result + this.#generatePeriodInfo(showPeriodInfo);
   }
 
   /**
@@ -1636,7 +1589,7 @@ export class Rational {
     // Convert to BigInt array
     const cf = cfArray.map(term => {
       if (typeof term === 'number') {
-        return BigInt(term);
+        return toExactBigInt(term, "Continued fraction term");
       } else if (typeof term === 'bigint') {
         return term;
       } else {

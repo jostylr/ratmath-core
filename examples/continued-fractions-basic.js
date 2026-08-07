@@ -10,8 +10,7 @@
  * - Arithmetic with CF-created rationals
  */
 
-import { Rational } from '../src/rational.js';
-import { Parser } from '../src/parser.js';
+import { parseContinuedFraction, Rational } from '../index.js';
 
 console.log('=== RatMath Continued Fractions Basic Examples ===\n');
 
@@ -51,7 +50,7 @@ const cfExpressions = [
 ];
 
 cfExpressions.forEach(expr => {
-    const result = Parser.parse(expr);
+    const result = parseContinuedFraction(expr);
     // Handle both Rational and Integer results
     const decimal = result.toDecimal ? result.toDecimal().substring(0, 12) : result.toString();
     console.log(`"${expr}" → ${result.toString()} (${decimal})`);
@@ -148,9 +147,9 @@ console.log();
 // 8. Arithmetic with CF-created Rationals
 console.log('8. Arithmetic with CF-created Rationals\n');
 
-const a = Parser.parse("3.~7");        // 22/7
-const b = Parser.parse("1.~1~2");      // 8/5
-const c = Parser.parse("0.~2");        // 1/2
+const a = parseContinuedFraction("3.~7");        // 22/7
+const b = parseContinuedFraction("1.~1~2");      // 8/5
+const c = parseContinuedFraction("0.~2");        // 1/2
 
 console.log(`a = ${a.toString()} (from "3.~7")`);
 console.log(`b = ${b.toString()} (from "1.~1~2")`);  
@@ -204,7 +203,7 @@ const invalidCFs = [
 console.log('Testing invalid CF formats:');
 invalidCFs.forEach(invalid => {
     try {
-        Parser.parse(invalid);
+        parseContinuedFraction(invalid);
         console.log(`  "${invalid}" → Unexpectedly succeeded!`);
     } catch (error) {
         console.log(`  "${invalid}" → Error: ${error.message}`);

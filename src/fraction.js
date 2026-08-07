@@ -245,7 +245,7 @@ export class Fraction {
    * const scaled = f.scale(3); // 3/6
    */
   scale(factor) {
-    const scaleFactor = BigInt(factor);
+    const scaleFactor = toExactBigInt(factor, "Fraction scale factor");
     return Fraction.#fromComponents(
       this.#numerator * scaleFactor,
       this.#denominator * scaleFactor
@@ -539,6 +539,14 @@ export class Fraction {
       const newDenominator = this.#denominator * (10n ** (-exp));
       return Fraction.#fromComponents(this.#numerator, newDenominator);
     }
+  }
+
+  toJSON() {
+    return {
+      $ratmath: "Fraction",
+      numerator: this.#numerator.toString(),
+      denominator: this.#denominator.toString(),
+    };
   }
 
   // ===== FAREY SEQUENCE AND MEDIANT OPERATIONS =====

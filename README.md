@@ -117,9 +117,33 @@ interval.compactedDecimalInterval(); // a compact range when possible
 ```
 
 Repeating-decimal and continued-fraction output is exact and can be parsed
-again. `toDecimal()` is intended for display and limits output to 20
-fractional digits, including longer terminating expansions; use
-`toRepeatingDecimal()` for exact round trips.
+again. `toRepeatingDecimal()` allows periods up to 30 digits by default and
+throws if a longer period would be required. Pass a larger limit for exact
+interchange, or choose an explicit over-limit policy:
+
+```js
+new Rational(1, 97).toRepeatingDecimal(100);          // exact `#` period
+new Rational(1, 97).toRepeatingDecimal(30, "trunc"); // visible `...` suffix
+new Rational(1, 97).toRepeatingDecimal(30, "null");  // null
+```
+
+In truncated output, `#` still marks the start of the repeating section and
+the trailing `...` says that only a prefix of its period is shown. Such output
+is informative but is not parseable as an exact value. `#` output without an
+ellipsis contains the complete period and round-trips exactly. `toDecimal()`
+is display-oriented and limits output to 20 fractional digits.
+
+Intervals can work on a fixed denominator grid without enumerating fractions:
+
+```js
+const range = parseInterval("1/3:2/3");
+range.denominatorInterval(10).toString();              // "2/5:3/5"
+range.randomRational(10, "error", () => 0).toString(); // "2/5"
+```
+
+Omitting the grid denominator uses the LCM of the endpoint denominators.
+`"mid"`, `"null"`, and `"error"` control what happens when a grid misses the
+interval.
 
 ## Fractions and bases
 
@@ -138,7 +162,10 @@ new Rational(255).toBase(BaseSystem.HEXADECIMAL);       // "ff"
 
 The public API also includes `Integer`, `Fraction`, `FractionInterval`,
 `RationalInterval`, `BaseSystem`, and `TypePromotion`. TypeScript declarations
-ship with the package.
+ship with the package. `isInteger`, `isRational`, `isRationalInterval`,
+`isFraction`, `isFractionInterval`, `isBaseSystem`, and `isCoreNumber` are
+public type guards. Core values use tagged `toJSON()` output and can be restored
+with `JSON.parse(text, reviveCoreValue)`.
 
 ## Documentation
 
