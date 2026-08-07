@@ -27,6 +27,28 @@ describe("Rational", () => {
       expect(r.denominator).toBe(4n);
     });
 
+    it("copies another Rational", () => {
+      const original = new Rational(3n, 4n);
+      expect(new Rational(original).equals(original)).toBe(true);
+    });
+
+    it("accepts an exact integer string denominator", () => {
+      const rational = new Rational("777", "10");
+      expect(rational.toString()).toBe("777/10");
+    });
+
+    it("rejects unsafe JavaScript number components", () => {
+      expect(() => new Rational(Number.MAX_SAFE_INTEGER + 1, 1)).toThrow(
+        "safe integer",
+      );
+      expect(() => new Rational(1, Number.MAX_SAFE_INTEGER + 1)).toThrow(
+        "safe integer",
+      );
+      expect(new Rational("9007199254740993/2").numerator).toBe(
+        9007199254740993n,
+      );
+    });
+
     it("creates a rational from a string", () => {
       const r = new Rational("3/4");
       expect(r.numerator).toBe(3n);

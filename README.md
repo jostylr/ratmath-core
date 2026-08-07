@@ -29,6 +29,14 @@ const uncertainty = new RationalInterval("1.2", "1.3");
 uncertainty.multiply(new Rational(2)).toString(); // "12/5:13/5"
 ```
 
+JavaScript `number` constructor arguments must be safe integers. Use `bigint`
+or decimal integer strings when a value is outside that range, so it reaches
+RatMath without first losing precision:
+
+```js
+new Rational("9007199254740993", "2");
+```
+
 ## Parse exact numbers
 
 Use `parseNumber` when the input may be an integer, rational, or interval:

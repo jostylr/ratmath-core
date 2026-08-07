@@ -16,6 +16,18 @@ describe("Fraction", () => {
       expect(f.denominator).toBe(2n);
     });
 
+    it("rejects unsafe JavaScript number components", () => {
+      expect(() => new Fraction(Number.MAX_SAFE_INTEGER + 1, 1)).toThrow(
+        "safe integer",
+      );
+      expect(() => new Fraction(1, Number.MAX_SAFE_INTEGER + 1)).toThrow(
+        "safe integer",
+      );
+      expect(new Fraction("9007199254740993/2").numerator).toBe(
+        9007199254740993n,
+      );
+    });
+
     it("creates with default denominator", () => {
       const f = new Fraction(5);
       expect(f.numerator).toBe(5n);

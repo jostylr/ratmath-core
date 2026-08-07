@@ -261,7 +261,7 @@ function parseUncertainty(input) {
     parts.some((part) => part.length === 0)
   ) {
     throw new Error(
-      "Decimal interval brackets require one or two comma- or colon-separated values",
+      "Decimal interval brackets require one or two colon-separated values",
     );
   }
 

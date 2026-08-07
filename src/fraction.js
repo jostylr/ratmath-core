@@ -8,6 +8,7 @@
  */
 
 import { Rational } from './rational.js';
+import { toExactBigInt } from './bigint.js';
 
 export class Fraction {
   #numerator;
@@ -17,7 +18,7 @@ export class Fraction {
    * Creates a new Fraction.
    * 
    * @param {number|string|bigint} numerator - The numerator, or a string like "3/4"
-   * @param {number|bigint|undefined} denominator - The denominator (optional if numerator is a string)
+   * @param {number|string|bigint|undefined} denominator - The denominator (optional if numerator is a string)
    * @param {Object} options - Optional configuration
    * @param {boolean} options.allowInfinite - Allow a nonzero numerator over zero
    * @throws {Error} If the input is 0/0, or has a zero denominator without allowInfinite
@@ -42,7 +43,7 @@ export class Fraction {
       if (parts.length === 1) {
         // Just a number like "3"
         this.#numerator = BigInt(parts[0]);
-        this.#denominator = BigInt(denominator);
+        this.#denominator = toExactBigInt(denominator, 'Fraction denominator');
       } else if (parts.length === 2) {
         // Fraction like "3/4"
         this.#numerator = BigInt(parts[0]);
@@ -52,8 +53,8 @@ export class Fraction {
       }
     } else {
       // Handle numeric inputs
-      this.#numerator = BigInt(numerator);
-      this.#denominator = BigInt(denominator);
+      this.#numerator = toExactBigInt(numerator, 'Fraction numerator');
+      this.#denominator = toExactBigInt(denominator, 'Fraction denominator');
     }
 
     // Zero denominators represent signed infinity only when explicitly

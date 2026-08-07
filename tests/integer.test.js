@@ -40,6 +40,18 @@ describe('Integer', () => {
       expect(i.value).toBe(BigInt(large));
     });
 
+    it('copies another Integer exactly', () => {
+      const original = new Integer('9007199254740993');
+      expect(new Integer(original).value).toBe(9007199254740993n);
+    });
+
+    it('rejects unsafe JavaScript numbers', () => {
+      expect(() => new Integer(Number.MAX_SAFE_INTEGER + 1)).toThrow(
+        'safe integer',
+      );
+      expect(new Integer('9007199254740992').value).toBe(9007199254740992n);
+    });
+
     it('throws error for invalid string format', () => {
       expect(() => new Integer('42.5')).toThrow('Invalid integer format');
       expect(() => new Integer('abc')).toThrow('Invalid integer format');

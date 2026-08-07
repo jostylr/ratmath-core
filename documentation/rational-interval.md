@@ -107,9 +107,11 @@ range.relativeDecimalInterval();  // "1.23[+0.5:-0.6]"
 range.relativeMidDecimalInterval(); // "1.2295[+-55]"
 ```
 
-These compact forms target human-readable RiX notation. Fraction and repeating
-decimal endpoint output are the simplest choices for durable exact
-serialization.
+`relativeDecimalInterval()` preserves exact bounds, using rational offsets when
+an offset has a repeating decimal expansion. The midpoint and common-prefix
+forms target compact human-readable display and may use `toDecimal()`'s limited
+output. Fraction and repeating-decimal endpoint output remain the simplest
+choices for durable exact serialization.
 
 ## Selecting values
 

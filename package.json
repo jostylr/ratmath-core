@@ -1,6 +1,6 @@
 {
   "name": "@ratmath/core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Exact integers, rational numbers, rational intervals, and number-only parsing",
   "main": "index.js",
   "types": "index.d.ts",
@@ -14,6 +14,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "CHANGELOG.md",
     "index.js",
     "index.d.ts",
     "src/"
@@ -22,6 +23,7 @@
   "scripts": {
     "test": "bun test",
     "test:pack": "npm pack --dry-run",
+    "prepublishOnly": "bun test && npm run test:pack",
     "docs:build": "bash scripts/build-docs.sh"
   },
   "keywords": [

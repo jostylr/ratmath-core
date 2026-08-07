@@ -6,6 +6,18 @@
  */
 
 import { Rational } from "./rational.js";
+import { toExactBigInt } from "./bigint.js";
+
+function hasTerminatingDecimal(value) {
+  let denominator = value.denominator;
+  while (denominator % 2n === 0n) denominator /= 2n;
+  while (denominator % 5n === 0n) denominator /= 5n;
+  return denominator === 1n;
+}
+
+function exactOffsetString(value) {
+  return hasTerminatingDecimal(value) ? value.toDecimal() : value.toString();
+}
 
 export class RationalInterval {
   #start;
@@ -709,6 +721,10 @@ export class RationalInterval {
    * @returns {string} Relative decimal interval string (e.g., "1.224:1.235" becomes "1.23[+0.5:-0.6]")
    */
   relativeDecimalInterval() {
+    if (this.#low.equals(this.#high)) {
+      return this.toRepeatingDecimal();
+    }
+
     // Find the shortest precise decimal within the interval
     const shortestDecimal = this.#findShortestPreciseDecimal();
 
@@ -736,29 +752,17 @@ export class RationalInterval {
       scaledOffsetEnd = offsetEnd.multiply(scaleFactor);
     }
 
-    const offsetStartStr = scaledOffsetStart.toDecimal();
-    const offsetEndStr = scaledOffsetEnd.toDecimal();
-
-    // Check if offsets are symmetric (within small tolerance)
-    if (
-      offsetStart.add(offsetEnd).abs().compareTo(new Rational(1, 1000000)) <
-      0
-    ) {
-      // Use symmetric notation for nearly equal offsets
-      const avgOffset = scaledOffsetStart
-        .abs()
-        .add(scaledOffsetEnd.abs())
-        .divide(new Rational(2));
-      return `${decimalStr}[+-${avgOffset.toDecimal()}]`;
+    if (offsetStart.equals(offsetEnd.negate())) {
+      return `${decimalStr}[+-${exactOffsetString(scaledOffsetEnd.abs())}]`;
     } else {
       // Use asymmetric notation keeping the specific start/end directions
       // Sort to put positive first which is standard for this notation
-      const off1 = { v: scaledOffsetStart, s: offsetStartStr };
-      const off2 = { v: scaledOffsetEnd, s: offsetEndStr };
+      const off1 = { v: scaledOffsetStart };
+      const off2 = { v: scaledOffsetEnd };
       const sorted = [off1, off2].sort((a, b) => b.v.compareTo(a.v));
 
-      const s1 = "+" + sorted[0].v.abs().toDecimal();
-      const s2 = "-" + sorted[1].v.abs().toDecimal();
+      const s1 = "+" + exactOffsetString(sorted[0].v.abs());
+      const s2 = "-" + exactOffsetString(sorted[1].v.abs());
 
       return `${decimalStr}[${s1}:${s2}]`;
     }
@@ -771,11 +775,11 @@ export class RationalInterval {
    */
   #findShortestPreciseDecimal() {
     const midpoint = this.#low.add(this.#high).divide(new Rational(2));
+    let scale = Rational.one;
 
-    // Try increasing precision levels until we find decimals within the interval
-    for (let precision = 0; precision <= 20; precision++) {
-      const scale = new Rational(10).pow(precision);
-
+    // Every non-point rational interval contains a finite decimal. Increase
+    // the scale exactly until one is available.
+    while (true) {
       // Find the range of integers that, when divided by scale, fall within our interval
       const lowScaled = this.#low.multiply(scale);
       const highScaled = this.#high.multiply(scale);
@@ -785,41 +789,28 @@ export class RationalInterval {
       const maxInt = this.#floorRational(highScaled);
 
       if (minInt.compareTo(maxInt) <= 0) {
-        // We have at least one integer in the range
-        const candidates = [];
+        const scaledMidpoint = midpoint.multiply(scale);
+        let bestInt;
 
-        // Collect all integers in the range
-        let current = minInt;
-        while (current.compareTo(maxInt) <= 0) {
-          candidates.push(current.divide(scale));
-          current = current.add(new Rational(1));
+        if (scaledMidpoint.lessThanOrEqual(minInt)) {
+          bestInt = minInt;
+        } else if (scaledMidpoint.greaterThanOrEqual(maxInt)) {
+          bestInt = maxInt;
+        } else {
+          const lower = this.#floorRational(scaledMidpoint);
+          const upper = this.#ceilRational(scaledMidpoint);
+          const lowerDistance = scaledMidpoint.subtract(lower).abs();
+          const upperDistance = upper.subtract(scaledMidpoint).abs();
+          bestInt = lowerDistance.lessThanOrEqual(upperDistance)
+            ? lower
+            : upper;
         }
 
-        if (candidates.length > 0) {
-          // Find the candidate closest to midpoint (lower if tied)
-          let best = candidates[0];
-          let bestDistance = best.subtract(midpoint).abs();
-
-          for (let i = 1; i < candidates.length; i++) {
-            const distance = candidates[i].subtract(midpoint).abs();
-            const comparison = distance.compareTo(bestDistance);
-
-            if (
-              comparison < 0 ||
-              (comparison === 0 && candidates[i].compareTo(best) < 0)
-            ) {
-              best = candidates[i];
-              bestDistance = distance;
-            }
-          }
-
-          return best;
-        }
+        return bestInt.divide(scale);
       }
-    }
 
-    // Fallback to midpoint if no precise decimal found (shouldn't happen in practice)
-    return midpoint;
+      scale = scale.multiply(new Rational(10));
+    }
   }
 
   /**
@@ -893,7 +884,7 @@ export class RationalInterval {
    * @throws {Error} If base is not a positive integer greater than 1
    */
   shortestDecimal(base = 10) {
-    const baseBigInt = BigInt(base);
+    const baseBigInt = toExactBigInt(base, "Base");
 
     if (baseBigInt <= 1n) {
       throw new Error("Base must be greater than 1");
@@ -901,49 +892,24 @@ export class RationalInterval {
 
     // Handle point intervals separately
     if (this.#low.equals(this.#high)) {
-      // For point intervals, check if the single value can be represented with a power-of-base denominator
       const value = this.#low;
+      let remainingDenominator = value.denominator;
 
-      // Try each power of base to see if we can represent the value exactly
-      let k = 0;
-      let denominator = 1n;
-
-      // Use a reasonable bound for point intervals
-      while (k <= 50) {
-        // Check if value * denominator is an integer
-        const numeratorCandidate = value.multiply(new Rational(denominator));
-
-        if (numeratorCandidate.denominator === 1n) {
-          // We found an exact representation: value = numeratorCandidate.numerator / denominator
-          return new Rational(numeratorCandidate.numerator, denominator);
-        }
-
-        k++;
-        denominator *= baseBigInt;
+      while (remainingDenominator !== 1n) {
+        const commonFactor = this.#gcd(remainingDenominator, baseBigInt);
+        if (commonFactor === 1n) return null;
+        remainingDenominator /= commonFactor;
       }
 
-      // No power-of-base representation found
-      return null;
+      return new Rational(value.numerator, value.denominator);
     }
 
-    // Calculate the theoretical bound: ceil(log(1/L)/log(base)) where L is interval length
-    const intervalLength = this.#high.subtract(this.#low);
-
-    // L = intervalLength, we need base^k <= 1/L
-    // So k <= log(1/L)/log(base) = log(L.denominator/L.numerator)/log(base)
-    const lengthAsNumber =
-      Number(intervalLength.numerator) / Number(intervalLength.denominator);
-    const baseAsNumber = Number(baseBigInt);
-    let maxK = Math.ceil(Math.log(1 / lengthAsNumber) / Math.log(baseAsNumber));
-
-    // Add a small safety margin for floating point precision issues
-    maxK = Math.max(0, maxK + 2);
-
     // Start with k=0, so denominator = base^0 = 1
-    let k = 0;
     let denominator = 1n;
 
-    while (k <= maxK) {
+    // A non-point interval always contains a base-adic rational, so this exact
+    // search terminates without a floating-point estimate of the bound.
+    while (true) {
       // For denominator = base^k, find if there's a numerator p such that
       // low <= p/denominator <= high
 
@@ -965,14 +931,8 @@ export class RationalInterval {
       }
 
       // Move to next power of base
-      k++;
       denominator *= baseBigInt;
     }
-
-    // This should never happen mathematically, but provide a fallback
-    throw new Error(
-      "Failed to find shortest decimal representation (exceeded theoretical bound)",
-    );
   }
 
   /**

@@ -7,6 +7,7 @@
 
 
 import { BaseSystem } from "./base-system.js";
+import { toExactBigInt } from "./bigint.js";
 
 /** Helper function to compute bit length of a BigInt */
 const bitLength = function (int) {
@@ -55,11 +56,18 @@ export class Rational {
   /**
    * Creates a new Rational number.
    *
-   * @param {number|string|bigint} numerator - The numerator, or a string like "3/4"
-   * @param {number|bigint|undefined} denominator - The denominator (optional if numerator is a string)
+   * @param {number|string|bigint|Integer|Rational} numerator - The numerator, a string like "3/4", or an exact value to copy
+   * @param {number|string|bigint|Integer|undefined} denominator - The denominator (optional if numerator is a string)
    * @throws {Error} If denominator is zero or if the input format is invalid
    */
   constructor(numerator, denominator = 1n) {
+    if (numerator instanceof Rational) {
+      this.#numerator = numerator.numerator;
+      this.#denominator = numerator.denominator;
+      this.#isNegative = this.#numerator < 0n;
+      return;
+    }
+
     // Handle Integer object inputs
     if (
       numerator &&
@@ -72,7 +80,7 @@ export class Rational {
       if (denominator && typeof denominator === "object" && denominator.constructor.name === "Integer") {
         this.#denominator = denominator.value;
       } else if (denominator !== undefined) {
-        this.#denominator = BigInt(denominator);
+        this.#denominator = toExactBigInt(denominator, "Rational denominator");
       } else {
         this.#denominator = 1n;
       }
@@ -151,7 +159,10 @@ export class Rational {
           if (parts.length === 1) {
             // Just a number like "3"
             this.#numerator = BigInt(parts[0]);
-            this.#denominator = BigInt(denominator);
+            this.#denominator = toExactBigInt(
+              denominator,
+              "Rational denominator",
+            );
           } else if (parts.length === 2) {
             // Fraction like "3/4"
             this.#numerator = BigInt(parts[0]);
@@ -165,8 +176,11 @@ export class Rational {
       }
     } else {
       // Handle numeric inputs
-      this.#numerator = BigInt(numerator);
-      this.#denominator = BigInt(denominator);
+      this.#numerator = toExactBigInt(numerator, "Rational numerator");
+      this.#denominator = toExactBigInt(
+        denominator,
+        "Rational denominator",
+      );
     }
 
     // Check for zero denominator

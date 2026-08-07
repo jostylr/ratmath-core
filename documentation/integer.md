@@ -23,7 +23,9 @@ Integer.fromRational(new Rational(3, 2));            // throws
 
 The constructor and `Integer.from(value)` accept `number`, decimal integer
 `string`, `bigint`, or `Integer`. A string must contain only an optional `-`
-and decimal digits. `Integer.fromRational(value)` requires denominator `1`.
+and decimal digits. Number inputs must satisfy `Number.isSafeInteger`; use a
+string or `bigint` for larger exact values. `Integer.fromRational(value)`
+requires denominator `1`.
 
 ## Arithmetic
 

@@ -122,6 +122,34 @@ describe("number-only parsing", () => {
     expect(parseInterval(text).equals(original)).toBe(true);
   });
 
+  it("preserves exact asymmetric and repeating offsets", () => {
+    const nearlySymmetric = new RationalInterval(
+      Rational.zero,
+      new Rational(1n, 10_000_000n),
+    );
+    const nearlySymmetricText = nearlySymmetric.relativeDecimalInterval();
+    expect(nearlySymmetricText).toBe("0[+0.0000001:-0]");
+    expect(parseInterval(nearlySymmetricText).equals(nearlySymmetric)).toBe(
+      true,
+    );
+
+    const repeating = new RationalInterval(Rational.zero, new Rational(1n, 3n));
+    const repeatingText = repeating.relativeDecimalInterval();
+    expect(repeatingText).toBe("0[+1/3:-0]");
+    expect(parseInterval(repeatingText).equals(repeating)).toBe(true);
+
+    const point = RationalInterval.point(new Rational(1n, 3n));
+    expect(parseInterval(point.relativeDecimalInterval()).equals(point)).toBe(
+      true,
+    );
+  });
+
+  it("formats wide relative intervals without enumerating their integers", () => {
+    const wide = new RationalInterval(0n, 10n ** 100n);
+    const text = wide.relativeDecimalInterval();
+    expect(parseInterval(text).equals(wide)).toBe(true);
+  });
+
   it("parses decimal-point ranges with repeating endpoints", () => {
     const value = parseInterval("0.[#3:#6]");
     expect(value.low.equals(new Rational(1n, 3n))).toBe(true);

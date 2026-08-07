@@ -9,6 +9,7 @@
 import { Rational } from "./rational.js";
 import { RationalInterval } from "./rational-interval.js";
 import { BaseSystem } from "./base-system.js";
+import { toExactBigInt } from "./bigint.js";
 
 export class Integer {
   #value;
@@ -22,7 +23,9 @@ export class Integer {
    * @throws {Error} If the input is not a valid integer
    */
   constructor(value) {
-    if (typeof value === "string") {
+    if (value instanceof Integer) {
+      this.#value = value.value;
+    } else if (typeof value === "string") {
       // Handle string input, ensure it's a valid integer
       const trimmed = value.trim();
       if (!/^-?\d+$/.test(trimmed)) {
@@ -30,7 +33,7 @@ export class Integer {
       }
       this.#value = BigInt(trimmed);
     } else {
-      this.#value = BigInt(value);
+      this.#value = toExactBigInt(value, "Integer value");
     }
   }
 

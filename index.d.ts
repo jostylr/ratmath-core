@@ -78,8 +78,8 @@ export class Rational {
   static DEFAULT_CF_LIMIT: number;
 
   constructor(
-    numerator: number | string | bigint | Integer,
-    denominator?: number | bigint | Integer,
+    numerator: number | string | bigint | Integer | Rational,
+    denominator?: number | string | bigint | Integer,
   );
 
   readonly numerator: bigint;
@@ -194,7 +194,7 @@ export class RationalInterval {
 export class Fraction {
   constructor(
     numerator: number | string | bigint,
-    denominator?: number | bigint,
+    denominator?: number | string | bigint,
     options?: { allowInfinite?: boolean },
   );
 

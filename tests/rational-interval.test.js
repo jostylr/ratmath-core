@@ -491,6 +491,23 @@ describe("RationalInterval", () => {
         expect(shortest.equals(new Rational(1, 4))).toBe(true);
       });
 
+      it("supports terminating point values beyond 50 base digits", () => {
+        const value = new Rational(1n, 10n ** 51n);
+        const shortest = RationalInterval.point(value).shortestDecimal();
+        expect(shortest.equals(value)).toBe(true);
+      });
+
+      it("keeps the interval-width search in arbitrary precision", () => {
+        const numerator = 10n ** 400n + 1n;
+        const denominator = 10n ** 401n + 3n;
+        const interval = new RationalInterval(
+          Rational.zero,
+          new Rational(numerator, denominator),
+        );
+        const shortest = interval.shortestDecimal();
+        expect(shortest.equals(Rational.zero)).toBe(true);
+      });
+
       it("returns null for point intervals without power-of-base representation", () => {
         const pointInterval = new RationalInterval("3/7", "3/7");
         const shortest = pointInterval.shortestDecimal();

@@ -647,7 +647,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>range<span class="op">.</span><span class="fu">toRepeatingDecimal</span>()<span class="op">;</span>       <span class="co">// "1.224#0:1.235#0"</span></span>
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>range<span class="op">.</span><span class="fu">relativeDecimalInterval</span>()<span class="op">;</span>  <span class="co">// "1.23[+0.5:-0.6]"</span></span>
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>range<span class="op">.</span><span class="fu">relativeMidDecimalInterval</span>()<span class="op">;</span> <span class="co">// "1.2295[+-55]"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>These compact forms target human-readable RiX notation. Fraction and repeating decimal endpoint output are the simplest choices for durable exact serialization.</p>
+<p><code>relativeDecimalInterval()</code> preserves exact bounds, using rational offsets when an offset has a repeating decimal expansion. The midpoint and common-prefix forms target compact human-readable display and may use <code>toDecimal()</code>’s limited output. Fraction and repeating-decimal endpoint output remain the simplest choices for durable exact serialization.</p>
 </section>
 <section id="selecting-values" class="level2">
 <h2 class="anchored" data-anchor-id="selecting-values">Selecting values</h2>
