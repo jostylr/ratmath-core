@@ -662,6 +662,9 @@ export class Rational {
     }
 
     const { useRepeatNotation = true, limit = 1000 } = options;
+    if (!Number.isSafeInteger(limit) || limit < 1) {
+      throw new RangeError("Base-expansion limit must be a positive safe integer");
+    }
 
     // Handle negative numbers
     if (this.#numerator < 0n) {
@@ -763,6 +766,9 @@ export class Rational {
   periodModulo(baseSystem, limit = 1000000) {
     if (!(baseSystem instanceof BaseSystem)) {
       throw new Error("Argument must be a BaseSystem");
+    }
+    if (!Number.isSafeInteger(limit) || limit < 1) {
+      throw new RangeError("Period limit must be a positive safe integer");
     }
 
     let den = this.#denominator;
@@ -1137,8 +1143,7 @@ export class Rational {
     }
 
     // Set period length (or -1 if too large)
-    this.#periodLength =
-      periodLength >= Rational.MAX_PERIOD_CHECK ? -1 : periodLength;
+    this.#periodLength = remainder === 1n ? periodLength : -1;
     this.#isTerminating = false;
 
     // Compute initial non-repeating segment
@@ -1445,7 +1450,7 @@ export class Rational {
   /**
    * Converts this rational to scientific notation using decimal metadata for efficiency
    * @param {boolean} useRepeatNotation - Whether to use {0~15} notation in mantissa (default: true)
-   * @param {number} precision - Number of significant digits in mantissa (default: 10)
+   * @param {number} precision - Number of significant digits in mantissa (default: 11)
    * @param {boolean} showPeriodInfo - Whether to append period info for repeating decimals (default: false)
    * @returns {string} Scientific notation string (e.g., "6.57130E-6" or "6.57130E-6 {period: 42}")
    */
@@ -1642,6 +1647,9 @@ export class Rational {
    * @returns {Array<bigint>} Array [integer_part, ...continued_fraction_terms]
    */
   toContinuedFraction(maxTerms = Rational.DEFAULT_CF_LIMIT) {
+    if (!Number.isSafeInteger(maxTerms) || maxTerms < 1) {
+      throw new RangeError("Continued-fraction term limit must be a positive safe integer");
+    }
     if (this.#denominator === 0n) {
       throw new Error("Cannot convert infinite value to continued fraction");
     }
@@ -1790,6 +1798,9 @@ export class Rational {
    * @returns {Array<Rational>} Array of convergent Rational numbers
    */
   convergents(maxCount = Rational.DEFAULT_CF_LIMIT) {
+    if (!Number.isSafeInteger(maxCount) || maxCount < 1) {
+      throw new RangeError("Convergent count must be a positive safe integer");
+    }
     if (
       !this._convergents ||
       (!this._convergentsComplete && this._convergents.length < maxCount)
@@ -1844,6 +1855,9 @@ export class Rational {
    * @returns {Rational} The nth convergent
    */
   getConvergent(n) {
+    if (!Number.isSafeInteger(n) || n < 0) {
+      throw new RangeError("Convergent index must be a nonnegative safe integer");
+    }
     const convergents = this.convergents();
     if (n < 0 || n >= convergents.length) {
       throw new Error(`Convergent index ${n} out of range [0, ${convergents.length - 1}]`);

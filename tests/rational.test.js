@@ -420,6 +420,32 @@ describe("Rational", () => {
       ).toThrow("exceeded limit of 2");
     });
 
+    it("validates arbitrary-base expansion and period limits", () => {
+      const value = new Rational(1, 7);
+      const invalidLimits = [0, -1, 1.5, NaN, Infinity];
+
+      for (const limit of invalidLimits) {
+        expect(() =>
+          value.toRepeatingBaseWithPeriod(BaseSystem.DECIMAL, { limit }),
+        ).toThrow("positive safe integer");
+        expect(() =>
+          value.periodModulo(BaseSystem.DECIMAL, limit),
+        ).toThrow("positive safe integer");
+      }
+    });
+
+    it("recognizes a period exactly at the global discovery boundary", () => {
+      const originalLimit = Rational.MAX_PERIOD_CHECK;
+      try {
+        Rational.MAX_PERIOD_CHECK = 6;
+        const metadata = new Rational(1, 7).computeDecimalMetadata(6);
+        expect(metadata.periodLength).toBe(6);
+        expect(metadata.periodDigits).toBe("142857");
+      } finally {
+        Rational.MAX_PERIOD_CHECK = originalLimit;
+      }
+    });
+
     it("parses continued-fraction strings and rejects malformed terms", () => {
       expect(Rational.fromContinuedFractionString("3.~7~15").toString()).toBe(
         "333/106",
@@ -459,12 +485,37 @@ describe("Rational", () => {
         "355/113",
       ]);
       expect(value.getConvergent(1).toString()).toBe("22/7");
-      expect(() => value.getConvergent(-1)).toThrow("out of range");
+      expect(() => value.getConvergent(-1)).toThrow(
+        "nonnegative safe integer",
+      );
       expect(() => value.getConvergent(3)).toThrow("out of range");
 
       expect(
         new Rational(4).convergents().map((term) => term.toString()),
       ).toEqual(["4"]);
+    });
+
+    it("rejects invalid continued-fraction counts and indexes", () => {
+      const value = new Rational(355, 113);
+      const invalidCounts = [0, -1, 1.5, NaN, Infinity];
+
+      for (const count of invalidCounts) {
+        expect(() => value.toContinuedFraction(count)).toThrow(
+          "positive safe integer",
+        );
+        expect(() => value.convergents(count)).toThrow(
+          "positive safe integer",
+        );
+        expect(() => Rational.convergentsFromCF([3n, 7n], count)).toThrow(
+          "positive safe integer",
+        );
+      }
+
+      for (const index of [1.5, NaN, Infinity]) {
+        expect(() => value.getConvergent(index)).toThrow(
+          "nonnegative safe integer",
+        );
+      }
     });
 
     it("computes convergents from arrays and strings", () => {
