@@ -711,8 +711,6 @@ export class Rational {
       throw new Error("Argument must be a BaseSystem");
     }
 
-    // Work with positive absolute value
-    let num = this.#numerator < 0n ? -this.#numerator : this.#numerator;
     let den = this.#denominator;
 
     // Remove factors of base from denominator to find "non-terminating part"
@@ -1692,6 +1690,7 @@ export class Rational {
     // Store CF data on the instance
     result.cf = cf.slice(1); // CF coefficients without integer part
     result._convergents = convergents;
+    result._convergentsComplete = true;
     result.wholePart = cf[0];
 
     return result;
@@ -1851,7 +1850,10 @@ export class Rational {
    * @returns {Array<Rational>} Array of convergent Rational numbers
    */
   convergents(maxCount = Rational.DEFAULT_CF_LIMIT) {
-    if (!this._convergents) {
+    if (
+      !this._convergents ||
+      (!this._convergentsComplete && this._convergents.length < maxCount)
+    ) {
       // Compute continued fraction and convergents
       const cf = this.toContinuedFraction(maxCount);
 
@@ -1884,6 +1886,9 @@ export class Rational {
 
         this._convergents = convergents;
       }
+
+      const last = this._convergents[this._convergents.length - 1];
+      this._convergentsComplete = last.equals(this);
     }
 
     if (maxCount && this._convergents && this._convergents.length > maxCount) {

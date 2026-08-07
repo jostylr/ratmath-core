@@ -31,6 +31,14 @@ describe("RationalInterval", () => {
 
       expect(interval.low.equals(new Rational(1, 2))).toBe(true);
       expect(interval.high.equals(new Rational(3, 4))).toBe(true);
+      expect(interval.start.equals(new Rational(3, 4))).toBe(true);
+      expect(interval.end.equals(new Rational(1, 2))).toBe(true);
+      expect(interval.isAscending).toBe(false);
+
+      const ascending = new RationalInterval("1/2", "3/4");
+      expect(ascending.start.equals(ascending.low)).toBe(true);
+      expect(ascending.end.equals(ascending.high)).toBe(true);
+      expect(ascending.isAscending).toBe(true);
     });
   });
 

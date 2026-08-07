@@ -160,18 +160,7 @@ export class TypePromotion {
    * @returns {Integer|Rational|RationalInterval} The result with appropriate type
    */
   static eNotation(base, exponent) {
-    // Use the base's E method if available, otherwise promote and use
-    if (base.E && typeof base.E === 'function') {
-      return base.E(exponent);
-    }
-    
-    // Fallback: convert to rational and apply E notation
-    const exp = BigInt(exponent);
-    const powerOf10 = exp >= 0n 
-      ? new Rational(10n ** exp, 1n)
-      : new Rational(1n, 10n ** (-exp));
-    
-    return TypePromotion.multiply(base, powerOf10);
+    return base.E(exponent);
   }
 
   /**

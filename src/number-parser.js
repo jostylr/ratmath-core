@@ -318,17 +318,11 @@ function parseUncertainty(input) {
         );
       }
       const cleanSuffix = cleanDigits(suffix);
-      if (!/^\d+$/.test(cleanSuffix)) {
-        throw new Error(`Invalid decimal interval endpoint: ${suffix}`);
-      }
       return parseDecimalValue(
         `${shape.sign}${shape.integer}.${cleanSuffix}`,
       );
     }
     const cleanSuffix = cleanDigits(suffix);
-    if (!/^\d+$/.test(cleanSuffix)) {
-      throw new Error(`Invalid compact interval endpoint: ${suffix}`);
-    }
     const point = shape.hasPoint ? "." : "";
     return parseDecimalValue(
       `${shape.sign}${shape.integer}${point}${shape.fractional}${cleanSuffix}`,

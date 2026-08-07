@@ -30,6 +30,7 @@ describe("number-only parsing", () => {
     expectRational(parseRational("-18/24"), -3n, 4n);
     expectRational(parseDecimal(".125"), 1n, 8n);
     expectRational(parseDecimal("-12.50"), -25n, 2n);
+    expectRational(parseDecimal("1_0.0"), 10n);
     expectRational(parseDecimal("2."), 2n);
   });
 
@@ -55,6 +56,7 @@ describe("number-only parsing", () => {
     );
     expect(parseContinuedFraction([1n, 2n, 2n]).toString()).toBe("7/5");
     expect(parseContinuedFraction("~-1.~2").toString()).toBe("-1/2");
+    expect(parseContinuedFraction("5.~0").toString()).toBe("5");
   });
 
   it("parses exact colon intervals with any scalar endpoint notation", () => {
@@ -170,6 +172,10 @@ describe("number-only parsing", () => {
     const value = parseInterval("0.[#3:#6]");
     expect(value.low.equals(new Rational(1n, 3n))).toBe(true);
     expect(value.high.equals(new Rational(2n, 3n))).toBe(true);
+
+    const finite = parseInterval("1.[3:4]");
+    expect(finite.low.equals(new Rational("1.3"))).toBe(true);
+    expect(finite.high.equals(new Rational("1.4"))).toBe(true);
   });
 
   it("round-trips exact repeating interval output", () => {
@@ -182,6 +188,8 @@ describe("number-only parsing", () => {
   });
 
   it("rejects expressions and malformed numeric forms", () => {
+    expect(() => parseNumber(1)).toThrow("must be a string");
+    expect(() => parseNumber("  ")).toThrow("cannot be empty");
     expect(() => parseNumber("1 + 2")).toThrow("Invalid rational number");
     expect(() => parseRational("1:2")).toThrow("received an interval");
     expect(() => parseMixedNumber("3/4")).toThrow("Expected mixed-fraction");
@@ -192,6 +200,39 @@ describe("number-only parsing", () => {
     expect(() => parseDecimal("1__000.0")).toThrow(
       "Underscore separators",
     );
+    expect(() => parseDecimal("_1")).toThrow("Underscore separators");
+    expect(() => parseDecimal("1.2.3")).toThrow("Invalid decimal format");
+    expect(() => parseDecimal("0.#")).toThrow("repeating part");
+    expect(() => parseDecimal("0.#1#2")).toThrow("only one '#'");
+    expect(() => parseDecimal("0.{1")).toThrow("repeated-digit notation");
+    expect(() => parseDecimal("0.{1~999999999999999999999}")).toThrow(
+      "Invalid repeated-digit count",
+    );
+    expect(() => parseDecimal("0.{12~50001}")).toThrow(
+      "Expanded decimal exceeds",
+    );
+    expect(() => parseDecimal(`0.${"1".repeat(100_001)}`)).toThrow(
+      "Decimal exceeds",
+    );
+    expect(() => parseMixedNumber("1..1/0")).toThrow(
+      "Denominator cannot be zero",
+    );
+    expect(() => parseInterval("1/2[+1]")).toThrow(
+      "requires an integer or finite decimal base",
+    );
+    expect(() => parseInterval("1.2[3")).toThrow(
+      "Invalid decimal interval notation",
+    );
+    expect(() => parseInterval("1.2[+- ]")).toThrow(
+      "must have a valid number",
+    );
+    expect(() => parseInterval("1.2[3:]")).toThrow("colon-separated values");
+    expect(() => parseInterval("1.2[1:2:3]")).toThrow(
+      "colon-separated values",
+    );
+    expect(() => parseInterval("1.2[3]")).toThrow("exactly two endpoints");
+    expect(() => parseInterval("1.[x:2]")).toThrow("Invalid decimal digits");
+    expect(() => parseInterval("1:2:3")).toThrow("exactly two endpoints");
     expect(() => parseNumber("1.2[+3:+4]")).toThrow(
       "allows one '+' and one '-'",
     );

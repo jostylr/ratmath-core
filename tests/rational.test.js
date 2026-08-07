@@ -1,4 +1,5 @@
 import { describe, expect, it, test } from "bun:test";
+import { BaseSystem } from "../src/base-system.js";
 import { Rational } from "../src/rational.js";
 
 describe("Rational", () => {
@@ -408,6 +409,76 @@ describe("Rational", () => {
   });
 
   describe("continued-fraction utilities", () => {
+    it("calculates terminating and repeating periods in a base", () => {
+      expect(new Rational(5).periodModulo(BaseSystem.DECIMAL)).toBe(0);
+      expect(new Rational(1, 8).periodModulo(BaseSystem.DECIMAL)).toBe(0);
+      expect(new Rational(1, 3).periodModulo(BaseSystem.DECIMAL)).toBe(1);
+      expect(new Rational(-1, 7).periodModulo(BaseSystem.DECIMAL)).toBe(6);
+      expect(new Rational(1, 3).periodModulo(BaseSystem.BINARY)).toBe(2);
+      expect(() => new Rational(1, 3).periodModulo({})).toThrow(
+        "must be a BaseSystem",
+      );
+      expect(() =>
+        new Rational(1, 7).periodModulo(BaseSystem.DECIMAL, 2),
+      ).toThrow("exceeded limit of 2");
+    });
+
+    it("parses continued-fraction strings and rejects malformed terms", () => {
+      expect(Rational.fromContinuedFractionString("3.~7~15").toString()).toBe(
+        "333/106",
+      );
+      expect(Rational.fromContinuedFractionString("-5.~0").toString()).toBe(
+        "-5",
+      );
+      expect(() => Rational.fromContinuedFractionString("3/4")).toThrow(
+        "Invalid continued fraction format",
+      );
+      expect(() => Rational.fromContinuedFractionString("3.~")).toThrow(
+        "at least one term",
+      );
+      expect(() => Rational.fromContinuedFractionString("3.~7~")).toThrow(
+        "cannot end",
+      );
+      expect(() => Rational.fromContinuedFractionString("3.~7~~2")).toThrow(
+        "double tilde",
+      );
+      expect(() => Rational.fromContinuedFractionString("3.~7~x")).toThrow(
+        "Invalid continued fraction term",
+      );
+      expect(() => Rational.fromContinuedFractionString("3.~7~0")).toThrow(
+        "must be positive integers",
+      );
+    });
+
+    it("computes, limits, and indexes convergents without poisoning the cache", () => {
+      const value = new Rational(355, 113);
+      expect(value.convergents(2).map((term) => term.toString())).toEqual([
+        "3",
+        "22/7",
+      ]);
+      expect(value.convergents().map((term) => term.toString())).toEqual([
+        "3",
+        "22/7",
+        "355/113",
+      ]);
+      expect(value.getConvergent(1).toString()).toBe("22/7");
+      expect(() => value.getConvergent(-1)).toThrow("out of range");
+      expect(() => value.getConvergent(3)).toThrow("out of range");
+
+      expect(
+        new Rational(4).convergents().map((term) => term.toString()),
+      ).toEqual(["4"]);
+    });
+
+    it("computes convergents from arrays and strings", () => {
+      expect(
+        Rational.convergentsFromCF([3n, 7n, 15n]).map((term) => term.toString()),
+      ).toEqual(["3", "22/7", "333/106"]);
+      expect(
+        Rational.convergentsFromCF("3.~7~15", 2).map((term) => term.toString()),
+      ).toEqual(["3", "22/7"]);
+    });
+
     it("returns a nonnegative approximation error", () => {
       const target = new Rational(1, 2);
 

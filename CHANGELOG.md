@@ -19,6 +19,8 @@
   relative-decimal base.
 - Preserve exact asymmetric, repeating, and long terminating offsets in
   relative interval output.
+- Recompute continued-fraction convergents when a later call requests more
+  terms, instead of retaining a truncated first result.
 - Accept `bigint` denominator bounds in the published `randomRational()`
   TypeScript signature.
 - Improve validation for fractions, bases, Farey operations, and interval
