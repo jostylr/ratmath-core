@@ -39,6 +39,9 @@ function freezeRepresentation(value) {
   if (Array.isArray(copy.provisionalSuffix)) {
     copy.provisionalSuffix = Object.freeze([...copy.provisionalSuffix]);
   }
+  if (copy.presentationHint && typeof copy.presentationHint === "object") {
+    copy.presentationHint = Object.freeze({ ...copy.presentationHint });
+  }
   return Object.freeze(copy);
 }
 
@@ -66,16 +69,67 @@ function operand(value) {
   return null;
 }
 
+function presentationHint(value) {
+  const rep = value?.representation;
+  if (rep?.kind !== "radix") return null;
+  const certified = String(rep.certifiedPrefix ?? "");
+  const dot = certified.indexOf(".");
+  return {
+    base: rep.base,
+    characters: rep.characters,
+    certifiedFractionalDigits: dot === -1 ? 0 : certified.length - dot - 1,
+    provisionalDigits: String(rep.provisionalSuffix ?? "").length,
+  };
+}
+
 function derivedOptions(left, right = null) {
+  const hint = presentationHint(left) ?? presentationHint(right);
   return {
     representation: {
       kind: "derived",
       reason: "derived",
       original: null,
+      ...(hint ? { presentationHint: hint } : {}),
     },
     sourceId: Symbol("ratmath-derived-approximation"),
     dependencies: right ? [left.sourceId, right.sourceId].filter(Boolean) : [left.sourceId].filter(Boolean),
   };
+}
+
+function decimalCylinder(interval, maxDigits = 100) {
+  if (interval.low.lessThan(Rational.zero)) return null;
+  let scale = 1n;
+  for (let digits = 0; digits <= maxDigits; digits++) {
+    const lowNumerator = interval.low.numerator * scale;
+    const highNumerator = interval.high.numerator * scale;
+    if (lowNumerator % interval.low.denominator === 0n && highNumerator % interval.high.denominator === 0n) {
+      const lowGrid = lowNumerator / interval.low.denominator;
+      const highGrid = highNumerator / interval.high.denominator;
+      if (highGrid === lowGrid + 1n) return { digits, scale, lowGrid };
+    }
+    scale *= 10n;
+  }
+  return null;
+}
+
+function fixedDecimalFromGrid(grid, digits) {
+  const text = grid.toString();
+  if (digits === 0) return text;
+  const padded = text.padStart(digits + 1, "0");
+  return `${padded.slice(0, -digits)}.${padded.slice(-digits)}`;
+}
+
+function candidateFractionalDigits(value, count) {
+  const rational = asRational(value);
+  const numerator = rational.numerator < 0n ? -rational.numerator : rational.numerator;
+  let remainder = numerator % rational.denominator;
+  let result = "";
+  for (let index = 0; index < count; index++) {
+    remainder *= 10n;
+    result += String(remainder / rational.denominator);
+    remainder %= rational.denominator;
+  }
+  return result;
 }
 
 function serializeSourceId(sourceId) {
@@ -236,6 +290,18 @@ export class CertifiedApproximation {
     if (this.#representation?.original) return this.#representation.original;
     const entirelyNegative = this.#enclosure.high.lessThan(Rational.zero);
     const displayEnclosure = entirelyNegative ? this.#enclosure.negate() : this.#enclosure;
+    const hint = this.#representation?.presentationHint;
+    const cylinder = hint?.base === 10 ? decimalCylinder(displayEnclosure) : null;
+    if (cylinder) {
+      const prefix = fixedDecimalFromGrid(cylinder.lowGrid, cylinder.digits);
+      const provisionalCount = hint.provisionalDigits ?? 0;
+      const displayCandidate = entirelyNegative ? this.#candidate.negate() : this.#candidate;
+      const candidateDigits = candidateFractionalDigits(displayCandidate, cylinder.digits + provisionalCount);
+      const provisional = provisionalCount > 0
+        ? candidateDigits.slice(cylinder.digits, cylinder.digits + provisionalCount)
+        : "";
+      return `${entirelyNegative ? "-" : ""}${prefix}?${provisional}`;
+    }
     const displayCandidate = displayEnclosure.shortestDecimal();
     const candidateText = displayCandidate.toRepeatingDecimal().replace(/#0$/, "");
     return `${entirelyNegative ? "-" : ""}${candidateText}?[=${displayEnclosure.low}:${displayEnclosure.high}]`;

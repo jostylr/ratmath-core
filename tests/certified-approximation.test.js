@@ -73,13 +73,15 @@ describe("CertifiedApproximation", () => {
     expect(value.subtract(value).toString()).toBe("0");
     expect(value.copy().sameSource(value)).toBe(true);
     const spelling = sum.toString();
-    expect(spelling).toContain("?[=");
+    expect(spelling).toBe("5.0?5");
     const roundTrip = parseNumber(spelling);
     expect(roundTrip).toBeInstanceOf(CertifiedApproximation);
     expect(roundTrip.enclosure.equals(sum.enclosure)).toBe(true);
 
     const negative = parseNumber("-2.0?").subtract(new Integer(1n));
     expect(parseNumber(negative.toString()).enclosure.equals(negative.enclosure)).toBe(true);
+
+    expect(parseNumber("23.456?789").add(new Integer(1n)).toString()).toBe("24.456?789");
   });
 
   it("uses interval-collection semantics when explicitly mixed with an interval", () => {
