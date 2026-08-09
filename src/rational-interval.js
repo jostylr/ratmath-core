@@ -184,6 +184,9 @@ export class RationalInterval {
    * @returns {RationalInterval} The sum as a new RationalInterval
    */
   add(other) {
+    if (other?.isCertifiedApproximation === true) {
+      return this.add(other.enclosure);
+    }
     // Handle Integer type by checking for value property
     if (other.value !== undefined && typeof other.value === "bigint") {
       // Convert Integer to Rational and create point interval
@@ -219,6 +222,9 @@ export class RationalInterval {
    * @returns {RationalInterval} The difference as a new RationalInterval
    */
   subtract(other) {
+    if (other?.isCertifiedApproximation === true) {
+      return this.subtract(other.enclosure);
+    }
     // Handle Integer type by checking for value property
     if (other.value !== undefined && typeof other.value === "bigint") {
       // Convert Integer to Rational and create point interval
@@ -254,6 +260,9 @@ export class RationalInterval {
    * @returns {RationalInterval} The product as a new RationalInterval
    */
   multiply(other) {
+    if (other?.isCertifiedApproximation === true) {
+      return this.multiply(other.enclosure);
+    }
     // Handle Integer type by checking for value property
     if (other.value !== undefined && typeof other.value === "bigint") {
       // Convert Integer to Rational and create point interval
@@ -305,6 +314,9 @@ export class RationalInterval {
    * @throws {Error} If the divisor interval contains zero
    */
   divide(other) {
+    if (other?.isCertifiedApproximation === true) {
+      return this.divide(other.enclosure);
+    }
     // Handle Integer type by checking for value property
     if (other.value !== undefined && typeof other.value === "bigint") {
       if (other.value === 0n) {
@@ -363,6 +375,25 @@ export class RationalInterval {
         `Cannot divide RationalInterval by ${other.constructor.name}`,
       );
     }
+  }
+
+  /** Return a LESS/EQUAL/GREATER possibility mask against another enclosure. */
+  possibleRelationsTo(other) {
+    if (other?.isCertifiedApproximation === true) other = other.enclosure;
+    if (other?.value !== undefined && typeof other.value === "bigint") {
+      other = new Rational(other.value, 1n);
+    }
+    if (other?.numerator !== undefined && other?.denominator !== undefined) {
+      other = new RationalInterval(other, other);
+    }
+    if (!other?.low || !other?.high) {
+      throw new TypeError("Possible relations require a Core numeric value");
+    }
+    let mask = 0;
+    if (this.#low.lessThan(other.high)) mask |= 1;
+    if (this.#low.lessThanOrEqual(other.high) && other.low.lessThanOrEqual(this.#high)) mask |= 2;
+    if (this.#high.greaterThan(other.low)) mask |= 4;
+    return mask;
   }
 
   /**

@@ -1,7 +1,14 @@
 export type IntegerInput = number | string | bigint | Integer;
 export type RationalInput = IntegerInput | Rational;
 export type CoreScalar = Integer | Rational;
-export type CoreNumber = CoreScalar | RationalInterval;
+export type CoreNumber = CoreScalar | RationalInterval | CertifiedApproximation;
+export type RelationMask = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type ApproximationReason =
+  | "literal"
+  | "truncated"
+  | "rounded"
+  | "derived"
+  | "budgetExhausted";
 export type SternBrocotDirection = "L" | "R";
 export type LimitBehavior = "trunc" | "null" | "error";
 export type EmptyGridBehavior = "mid" | "null" | "error";
@@ -46,6 +53,115 @@ export interface ContinuedFractionOptions {
   long?: boolean;
 }
 
+export interface ApproximationRepresentation {
+  kind: "radix" | "continuedFraction" | "derived";
+  reason?: ApproximationReason;
+  original?: string | null;
+  base?: number;
+  characters?: string;
+  certifiedPrefix?: string | ReadonlyArray<string>;
+  provisionalSuffix?: string | ReadonlyArray<string>;
+  requested?: Readonly<Record<string, unknown>>;
+  achieved?: Readonly<Record<string, unknown>>;
+  roundingMode?: RoundingMode;
+}
+
+export interface CertifiedApproximationOptions {
+  representation?: ApproximationRepresentation | null;
+  sourceId?: string | number | symbol;
+  dependencies?: ReadonlyArray<string | number | symbol>;
+  preserveWrapper?: boolean;
+}
+
+export const Relation: Readonly<{
+  LESS: 1;
+  EQUAL: 2;
+  GREATER: 4;
+}>;
+
+export class CertifiedApproximation {
+  constructor(
+    candidate: CoreScalar,
+    enclosure: RationalInterval,
+    options?: CertifiedApproximationOptions,
+  );
+  readonly candidate: CoreScalar;
+  readonly enclosure: RationalInterval;
+  readonly representation: Readonly<ApproximationRepresentation> | null;
+  readonly sourceId: string | number | symbol;
+  readonly dependencies: ReadonlyArray<string | number | symbol>;
+  readonly low: Rational;
+  readonly high: Rational;
+  readonly isCertifiedApproximation: true;
+  sameSource(other: unknown): boolean;
+  copy(): CertifiedApproximation;
+  add(other: CoreNumber): CoreNumber;
+  subtract(other: CoreNumber): CoreNumber;
+  multiply(other: CoreNumber): CoreNumber;
+  divide(other: CoreNumber): CoreNumber;
+  negate(): CoreNumber;
+  reciprocal(): CoreNumber;
+  pow(exponent: number | bigint): CoreNumber;
+  E(exponent: number | bigint): CoreNumber;
+  possibleRelationsTo(other: CoreNumber): RelationMask;
+  toRationalInterval(): RationalInterval;
+  toRational(): Rational;
+  toString(): string;
+  toJSON(): {
+    $ratmath: "CertifiedApproximation";
+    candidate: CoreScalar;
+    enclosure: RationalInterval;
+    representation: Readonly<ApproximationRepresentation> | null;
+    sourceId: string | number | null;
+  };
+}
+
+export function normalizeCertifiedApproximation(
+  candidate: CoreScalar,
+  enclosure: RationalInterval,
+  options?: CertifiedApproximationOptions,
+): CoreScalar | CertifiedApproximation;
+
+export function certifiedRadixPrefix(options: {
+  integerDigits: string;
+  fractionalDigits?: string;
+  provisionalDigits?: string;
+  negative?: boolean;
+  baseSystem?: BaseSystem;
+  enclosure?: RationalInterval | null;
+  original?: string | null;
+  reason?: ApproximationReason;
+  requested?: Readonly<Record<string, unknown>> | null;
+  achieved?: Readonly<Record<string, unknown>> | null;
+  roundingMode?: RoundingMode | null;
+  sourceId?: string | number | symbol;
+}): CertifiedApproximation;
+
+export function certifiedContinuedFractionPrefix(options: {
+  coefficients: ReadonlyArray<number | bigint>;
+  provisionalCoefficients?: ReadonlyArray<number | bigint>;
+  original?: string | null;
+  reason?: ApproximationReason;
+  requested?: Readonly<Record<string, unknown>> | null;
+  achieved?: Readonly<Record<string, unknown>> | null;
+  sourceId?: string | number | symbol;
+}): CertifiedApproximation;
+
+export function boundedDecimalApproximation(
+  value: CoreScalar,
+  options?: { fractionalDigits?: number; reason?: ApproximationReason },
+): CoreScalar | CertifiedApproximation;
+
+export function boundedContinuedFractionApproximation(
+  value: CoreScalar,
+  options?: { maxTerms?: number; reason?: ApproximationReason },
+): CoreScalar | CertifiedApproximation;
+
+export function possibleRelations(
+  left: CoreNumber,
+  right: CoreNumber,
+): RelationMask;
+
 export interface ConvergentOptions {
   maxCount?: number;
   long?: boolean;
@@ -86,6 +202,7 @@ export class Integer {
   toNumber(): number;
   toRational(): Rational;
   E(exponent: number | bigint): Integer | Rational;
+  possibleRelationsTo(other: CoreNumber): RelationMask;
   factorial(): Integer;
   doubleFactorial(): Integer;
   bitLength(): number;
@@ -164,6 +281,7 @@ export class Rational {
   ): string;
   toDecimal(maxDigits?: number): string;
   E(exponent: number | bigint): Rational;
+  possibleRelationsTo(other: CoreNumber): RelationMask;
   toScientificNotation(
     useRepeatNotation?: boolean,
     precision?: number,
@@ -247,6 +365,7 @@ export class RationalInterval {
     random?: () => number,
   ): Rational | null;
   E(exponent: number | bigint): RationalInterval;
+  possibleRelationsTo(other: CoreNumber): RelationMask;
   bitLength(): number;
   toJSON(): {
     $ratmath: "RationalInterval";
@@ -425,11 +544,16 @@ export class TypePromotion {
   static negate(value: CoreNumber): CoreNumber;
   static determineTypeFromString(
     value: string,
-  ): "integer" | "rational" | "interval";
+  ): "integer" | "rational" | "interval" | "approximation";
 }
 
-/** Parse a number-only RiX-compatible exact literal. */
+/** Parse a number-only RiX-compatible literal. */
 export function parseNumber(value: string): CoreNumber;
+
+/** Parse a certified decimal or continued-fraction approximation. */
+export function parseCertifiedApproximation(
+  value: string,
+): CertifiedApproximation;
 
 /** Parse a scalar exact literal and always return Rational. */
 export function parseRational(value: string): Rational;
@@ -446,7 +570,7 @@ export function parseMixedNumber(value: string): Rational;
 /** Parse continued-fraction coefficients or RiX ".~" notation. */
 export function parseContinuedFraction(
   value: string | ReadonlyArray<number | bigint>,
-): Rational;
+): Rational | CertifiedApproximation;
 
 /** Parse an interval, promoting scalar input to a point interval. */
 export function parseInterval(value: string): RationalInterval;
@@ -454,6 +578,9 @@ export function parseInterval(value: string): RationalInterval;
 export function isInteger(value: unknown): value is Integer;
 export function isRational(value: unknown): value is Rational;
 export function isRationalInterval(value: unknown): value is RationalInterval;
+export function isCertifiedApproximation(
+  value: unknown,
+): value is CertifiedApproximation;
 export function isFraction(value: unknown): value is Fraction;
 export function isFractionInterval(value: unknown): value is FractionInterval;
 export function isBaseSystem(value: unknown): value is BaseSystem;
@@ -468,7 +595,16 @@ declare const core: {
   FractionInterval: typeof FractionInterval;
   TypePromotion: typeof TypePromotion;
   BaseSystem: typeof BaseSystem;
+  CertifiedApproximation: typeof CertifiedApproximation;
+  Relation: typeof Relation;
+  boundedDecimalApproximation: typeof boundedDecimalApproximation;
+  boundedContinuedFractionApproximation: typeof boundedContinuedFractionApproximation;
+  certifiedRadixPrefix: typeof certifiedRadixPrefix;
+  certifiedContinuedFractionPrefix: typeof certifiedContinuedFractionPrefix;
+  normalizeCertifiedApproximation: typeof normalizeCertifiedApproximation;
+  possibleRelations: typeof possibleRelations;
   parseNumber: typeof parseNumber;
+  parseCertifiedApproximation: typeof parseCertifiedApproximation;
   parseRational: typeof parseRational;
   parseDecimal: typeof parseDecimal;
   parseRepeatingDecimal: typeof parseRepeatingDecimal;
@@ -478,6 +614,7 @@ declare const core: {
   isInteger: typeof isInteger;
   isRational: typeof isRational;
   isRationalInterval: typeof isRationalInterval;
+  isCertifiedApproximation: typeof isCertifiedApproximation;
   isFraction: typeof isFraction;
   isFractionInterval: typeof isFractionInterval;
   isBaseSystem: typeof isBaseSystem;

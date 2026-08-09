@@ -1,6 +1,6 @@
 # @ratmath/core
 
-Exact integer, rational, fraction, and rational-interval arithmetic for
+Exact integer, rational, fraction, rational-interval, and certified-approximation arithmetic for
 JavaScript. Values use `BigInt`, have no runtime dependencies, and work in Node
 and browser bundles.
 
@@ -96,6 +96,42 @@ integer base value, the last-visible-digit unit is `1`.
 When a bracket contains two values, colon is the required separator.
 
 `parseInterval("3/4")` creates the point interval `3/4:3/4`.
+
+## Certified finite approximations
+
+An embedded `?` separates certified representation data from optional
+provisional data. The authoritative guarantee is always an exact rational
+enclosure:
+
+```js
+const x = parseNumber("23.456?789");
+
+x.candidate.toString(); // "23456789/1000000"
+x.enclosure.toString(); // "2932/125:23457/1000"
+x.add(new Rational(1, 2)); // another CertifiedApproximation
+```
+
+`23.456?` certifies the decimal prefix but does not claim the expansion is
+complete. `3.~7~15?1~292` does the same for a continued-fraction prefix.
+Bracket uncertainty can narrow a decimal cylinder, as in
+`23.456?789[+-12]`, and is validated against the certified prefix.
+
+`CertifiedApproximation` is an uncertain scalar, not an interval collection.
+Arithmetic with exact scalars preserves that distinction. Explicitly mixing
+one with `RationalInterval` yields interval arithmetic. Core's
+`possibleRelations(a, b)` returns a mask composed from `Relation.LESS`,
+`Relation.EQUAL`, and `Relation.GREATER`; it never invents a Boolean answer for
+overlapping enclosures.
+
+Derived values without an honest radix prefix use the parseable spelling
+`candidate?[=low:high]`; the exact bracket endpoints preserve the scalar's
+enclosure across string round trips.
+
+A trailing `...` from an ordinary formatter remains display-only truncation.
+It does not create an approximate value; parseable approximation values use
+`?`. Use `boundedDecimalApproximation(value, { fractionalDigits })` or
+`boundedContinuedFractionApproximation(value, { maxTerms })` when reaching a
+work limit should deliberately return a certified numeric value.
 
 ## Export formats
 

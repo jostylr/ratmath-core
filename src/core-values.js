@@ -4,15 +4,18 @@ import { FractionInterval } from "./fraction-interval.js";
 import { Integer } from "./integer.js";
 import { Rational } from "./rational.js";
 import { RationalInterval } from "./rational-interval.js";
+import { CertifiedApproximation } from "./certified-approximation.js";
 
 export const isInteger = (value) => value instanceof Integer;
 export const isRational = (value) => value instanceof Rational;
 export const isRationalInterval = (value) => value instanceof RationalInterval;
+export const isCertifiedApproximation = (value) => value instanceof CertifiedApproximation;
 export const isFraction = (value) => value instanceof Fraction;
 export const isFractionInterval = (value) => value instanceof FractionInterval;
 export const isBaseSystem = (value) => value instanceof BaseSystem;
 export const isCoreNumber = (value) =>
-  isInteger(value) || isRational(value) || isRationalInterval(value);
+  isInteger(value) || isRational(value) || isRationalInterval(value) ||
+  isCertifiedApproximation(value);
 
 /** JSON.parse reviver for values produced by the core classes' toJSON methods. */
 export function reviveCoreValue(_key, value) {
@@ -26,6 +29,11 @@ export function reviveCoreValue(_key, value) {
       return new Rational(value.numerator, value.denominator);
     case "RationalInterval":
       return new RationalInterval(value.start, value.end);
+    case "CertifiedApproximation":
+      return new CertifiedApproximation(value.candidate, value.enclosure, {
+        representation: value.representation,
+        sourceId: value.sourceId ?? undefined,
+      });
     case "Fraction":
       return new Fraction(value.numerator, value.denominator, {
         allowInfinite: value.denominator === "0",

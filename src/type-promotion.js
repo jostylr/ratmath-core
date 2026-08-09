@@ -8,6 +8,7 @@
 import { Integer } from './integer.js';
 import { Rational } from './rational.js';
 import { RationalInterval } from './rational-interval.js';
+import { CertifiedApproximation } from './certified-approximation.js';
 
 export class TypePromotion {
   constructor() {
@@ -23,6 +24,9 @@ export class TypePromotion {
     if (value instanceof Integer) return 0;
     if (value instanceof Rational) return 1;
     if (value instanceof RationalInterval) return 2;
+    if (value instanceof CertifiedApproximation) {
+      throw new Error("CertifiedApproximation is scalar uncertainty, not a linear promotion level");
+    }
     throw new Error(`Unknown type: ${value.constructor.name}`);
   }
 
@@ -114,6 +118,10 @@ export class TypePromotion {
    * @returns {Integer|Rational|RationalInterval} The result with appropriate type
    */
   static add(a, b) {
+    if (a instanceof RationalInterval && b instanceof CertifiedApproximation) return a.add(b.enclosure);
+    if (b instanceof RationalInterval && a instanceof CertifiedApproximation) return a.enclosure.add(b);
+    if (a instanceof CertifiedApproximation) return a.add(b);
+    if (b instanceof CertifiedApproximation) return b._operateExactLeft("add", a);
     const [promotedA, promotedB] = TypePromotion.promoteToCommonType(a, b);
     return promotedA.add(promotedB);
   }
@@ -125,6 +133,10 @@ export class TypePromotion {
    * @returns {Integer|Rational|RationalInterval} The result with appropriate type
    */
   static subtract(a, b) {
+    if (a instanceof RationalInterval && b instanceof CertifiedApproximation) return a.subtract(b.enclosure);
+    if (b instanceof RationalInterval && a instanceof CertifiedApproximation) return a.enclosure.subtract(b);
+    if (a instanceof CertifiedApproximation) return a.subtract(b);
+    if (b instanceof CertifiedApproximation) return b._operateExactLeft("subtract", a);
     const [promotedA, promotedB] = TypePromotion.promoteToCommonType(a, b);
     return promotedA.subtract(promotedB);
   }
@@ -136,6 +148,10 @@ export class TypePromotion {
    * @returns {Integer|Rational|RationalInterval} The result with appropriate type
    */
   static multiply(a, b) {
+    if (a instanceof RationalInterval && b instanceof CertifiedApproximation) return a.multiply(b.enclosure);
+    if (b instanceof RationalInterval && a instanceof CertifiedApproximation) return a.enclosure.multiply(b);
+    if (a instanceof CertifiedApproximation) return a.multiply(b);
+    if (b instanceof CertifiedApproximation) return b._operateExactLeft("multiply", a);
     const [promotedA, promotedB] = TypePromotion.promoteToCommonType(a, b);
     return promotedA.multiply(promotedB);
   }
@@ -148,6 +164,10 @@ export class TypePromotion {
    * @returns {Integer|Rational|RationalInterval} The result with appropriate type
    */
   static divide(a, b) {
+    if (a instanceof RationalInterval && b instanceof CertifiedApproximation) return a.divide(b.enclosure);
+    if (b instanceof RationalInterval && a instanceof CertifiedApproximation) return a.enclosure.divide(b);
+    if (a instanceof CertifiedApproximation) return a.divide(b);
+    if (b instanceof CertifiedApproximation) return b._operateExactLeft("divide", a);
     // Special case: Integer / Integer might return Integer or Rational
     if (a instanceof Integer && b instanceof Integer) {
       return a.divide(b); // Integer.divide handles this logic
@@ -217,6 +237,7 @@ export class TypePromotion {
    * @returns {string} 'integer', 'rational', or 'interval'
    */
   static determineTypeFromString(str) {
+    if (str.includes('?')) return 'approximation';
     // Check for interval notation
     if (
       str.includes(':') ||

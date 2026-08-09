@@ -2,7 +2,7 @@
 title: Number parsing
 ---
 
-The parser accepts exact *number literals only*. It does not accept operators,
+The parser accepts *number literals only*. It does not accept operators,
 variables, calls, parentheses, or other RiX expressions. All parsing is base
 10; use [`BaseSystem`](base-system.md) for explicit base conversion.
 
@@ -10,12 +10,13 @@ variables, calls, parentheses, or other RiX expressions. All parsing is base
 
 | Function | Accepted input | Result |
 |---|---|---|
-| `parseNumber(text)` | Any supported scalar or interval form | `Integer`, `Rational`, or `RationalInterval` |
+| `parseNumber(text)` | Any supported scalar or interval form | `Integer`, `Rational`, `CertifiedApproximation`, or `RationalInterval` |
+| `parseCertifiedApproximation(text)` | Decimal or continued-fraction `?` form | `CertifiedApproximation` |
 | `parseRational(text)` | Any scalar form | Always `Rational`; rejects intervals |
 | `parseDecimal(text)` | Finite or repeating decimal | `Rational` |
 | `parseRepeatingDecimal(text)` | Alias of `parseDecimal` | `Rational` |
 | `parseMixedNumber(text)` | Mixed-fraction form | `Rational` |
-| `parseContinuedFraction(value)` | Coefficient array or `.~` form | `Rational` |
+| `parseContinuedFraction(value)` | Coefficient array or `.~` form | `Rational`, or `CertifiedApproximation` for `?` input |
 | `parseInterval(text)` | Any interval form, or a scalar | `RationalInterval`; a scalar becomes a point interval |
 
 Every string entry point trims leading and trailing whitespace. Underscores are
@@ -76,6 +77,33 @@ leading `~` is accepted for compatibility with RiX negative literal syntax:
 parseContinuedFraction("-3.~1~3").toString();  // "-9/4"
 parseContinuedFraction("~-3.~1~3").toString(); // "-9/4"
 ```
+
+### Certified approximation prefixes
+
+`?` embedded in a decimal or continued fraction denies exact completion. Text
+to its left is certified; text to its right is provisional candidate data:
+
+```js
+const reading = parseNumber("23.456?789");
+reading.candidate.toString(); // "23456789/1000000"
+reading.enclosure.toString(); // "2932/125:23457/1000"
+
+parseNumber("3.~7~15?").enclosure.toString();
+// "333/106:355/113"
+```
+
+An explicit bracket, such as `23.456?789[+-12]`, narrows the authoritative
+enclosure and is rejected if it lies outside the certified prefix cell. Bare
+`?` is not a Core number and is rejected.
+
+The serialization form `candidate?[=low:high]` is reserved for derived
+approximations whose enclosure has no useful common radix prefix. Its exact
+endpoint bracket is authoritative and round-trips as a certified scalar.
+
+For non-decimal bases, call `certifiedRadixPrefix` with a `BaseSystem`.
+`boundedDecimalApproximation` and `boundedContinuedFractionApproximation`
+explicitly convert an exact value at a work limit. Ordinary formatter
+ellipses remain nonparseable display truncation.
 
 ## Interval forms
 

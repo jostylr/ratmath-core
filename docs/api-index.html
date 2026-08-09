@@ -492,18 +492,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td><code>new RationalInterval(a, b)</code></td>
 </tr>
 <tr class="even">
+<td><code>CertifiedApproximation</code></td>
+<td><code>new CertifiedApproximation(candidate, enclosure, options?)</code></td>
+</tr>
+<tr class="odd">
 <td><a href="./fraction.html"><code>Fraction</code></a></td>
 <td><code>new Fraction(numerator, denominator?, options?)</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="./fraction-interval.html"><code>FractionInterval</code></a></td>
 <td><code>new FractionInterval(a, b)</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><a href="./base-system.html"><code>BaseSystem</code></a></td>
 <td><code>new BaseSystem(characters, name?)</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="./type-promotion.html"><code>TypePromotion</code></a></td>
 <td>Static utility class; do not instantiate</td>
 </tr>
@@ -522,29 +526,33 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td><a href="./parsing.html"><code>parseNumber</code></a></td>
-<td><code>(value: string) =&gt; Integer \| Rational \| RationalInterval</code></td>
+<td><code>(value: string) =&gt; CoreNumber</code></td>
 </tr>
 <tr class="even">
+<td><a href="./parsing.html"><code>parseCertifiedApproximation</code></a></td>
+<td><code>(value: string) =&gt; CertifiedApproximation</code></td>
+</tr>
+<tr class="odd">
 <td><a href="./parsing.html"><code>parseRational</code></a></td>
 <td><code>(value: string) =&gt; Rational</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="./parsing.html"><code>parseDecimal</code></a></td>
 <td><code>(value: string) =&gt; Rational</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><a href="./parsing.html"><code>parseRepeatingDecimal</code></a></td>
 <td><code>(value: string) =&gt; Rational</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="./parsing.html"><code>parseMixedNumber</code></a></td>
 <td><code>(value: string) =&gt; Rational</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><a href="./parsing.html"><code>parseContinuedFraction</code></a></td>
 <td><code>(value: string \| readonly (number \| bigint)[]) =&gt; Rational</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="./parsing.html"><code>parseInterval</code></a></td>
 <td><code>(value: string) =&gt; RationalInterval</code></td>
 </tr>
@@ -556,12 +564,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode ts code-with-copy"><code class="sourceCode typescript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> IntegerInput <span class="op">=</span> <span class="dt">number</span> <span class="op">|</span> <span class="dt">string</span> <span class="op">|</span> <span class="dt">bigint</span> <span class="op">|</span> Integer<span class="op">;</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> RationalInput <span class="op">=</span> IntegerInput <span class="op">|</span> Rational<span class="op">;</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> CoreScalar <span class="op">=</span> Integer <span class="op">|</span> Rational<span class="op">;</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> CoreNumber <span class="op">=</span> CoreScalar <span class="op">|</span> RationalInterval<span class="op">;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> CoreNumber <span class="op">=</span> CoreScalar <span class="op">|</span> RationalInterval <span class="op">|</span> CertifiedApproximation<span class="op">;</span></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> SternBrocotDirection <span class="op">=</span> <span class="st">"L"</span> <span class="op">|</span> <span class="st">"R"</span><span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="guards-and-json" class="level2">
 <h2 class="anchored" data-anchor-id="guards-and-json">Guards and JSON</h2>
-<p><code>isInteger</code>, <code>isRational</code>, <code>isRationalInterval</code>, <code>isFraction</code>, <code>isFractionInterval</code>, <code>isBaseSystem</code>, and <code>isCoreNumber</code> provide public runtime type checks. Use <code>reviveCoreValue</code> as a <code>JSON.parse</code> reviver for tagged output created by the core classes’ <code>toJSON()</code> methods.</p>
+<p><code>isInteger</code>, <code>isRational</code>, <code>isRationalInterval</code>, <code>isCertifiedApproximation</code>, <code>isFraction</code>, <code>isFractionInterval</code>, <code>isBaseSystem</code>, and <code>isCoreNumber</code> provide public runtime type checks. Use <code>reviveCoreValue</code> as a <code>JSON.parse</code> reviver for tagged output created by the core classes’ <code>toJSON()</code> methods.</p>
 <p>The formatting result interfaces are:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode ts code-with-copy"><code class="sourceCode typescript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> RepeatingExpansion {</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  decimal<span class="op">:</span> <span class="dt">string</span> <span class="op">|</span> <span class="dt">null</span><span class="op">;</span></span>
@@ -615,18 +623,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td><code>start</code>, <code>end</code>, <code>isAscending</code>, <code>low</code>, <code>high</code>; arithmetic, <code>pow</code>, <code>mpow</code>; containment/set operations; interval formatters; <code>mediant</code>, <code>midpoint</code>, <code>shortestDecimal</code>, <code>denominatorInterval</code>, <code>randomRational</code>, <code>E</code>, <code>bitLength</code>; static <code>zero</code>, <code>one</code>, <code>unitInterval</code>, <code>point</code>, <code>fromString</code></td>
 </tr>
 <tr class="even">
+<td><code>CertifiedApproximation</code></td>
+<td><code>candidate</code>, authoritative <code>enclosure</code>, immutable <code>representation</code>, <code>sourceId</code>; scalar enclosure arithmetic; exact/interval conversions; <code>possibleRelationsTo</code>; copy, formatting, and JSON</td>
+</tr>
+<tr class="odd">
 <td><code>Fraction</code></td>
 <td><code>numerator</code>, <code>denominator</code>, <code>isInfinite</code>; unreduced arithmetic, comparisons, <code>scale</code>, <code>reduce</code>, <code>E</code>; mediant/Farey operations; Stern–Brocot navigation; static conversion and relationship helpers</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>FractionInterval</code></td>
 <td><code>low</code>, <code>high</code>; <code>mediantSplit</code>, <code>partitionWithMediants</code>, <code>partitionWith</code>; conversion, string/equality, <code>E</code>; static <code>fromRationalInterval</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>BaseSystem</code></td>
 <td><code>base</code>, <code>characters</code>, <code>charMap</code>, <code>name</code>; digit conversion/validation; equality/case behavior; presets, factories, and prefix registry</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>TypePromotion</code></td>
 <td>Type-level inspection/promotion; arithmetic dispatch; power, E notation, negation; syntactic type classification</td>
 </tr>

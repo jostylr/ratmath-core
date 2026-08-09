@@ -90,6 +90,23 @@ result.toString();           // "183/100:93/50"
 result.toRepeatingDecimal(); // "1.83#0:1.86#0"
 ```
 
+## Carry a certified scalar approximation
+
+```js
+import { parseNumber } from "@ratmath/core";
+
+const measured = parseNumber("23.456?789");
+const shifted = measured.add(parseNumber("0.5"));
+
+measured.candidate.toString(); // "23456789/1000000"
+measured.enclosure.toString(); // "2932/125:23457/1000"
+shifted.enclosure.toString();  // exact propagated guarantee
+```
+
+Unlike `RationalInterval`, this is one uncertain scalar with a preferred
+candidate. Mixing it with exact scalars preserves that type; mixing it with an
+explicit interval produces interval arithmetic.
+
 ## Pointwise versus independent powers
 
 ```js

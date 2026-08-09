@@ -8,6 +8,11 @@
 import { Integer } from "./integer.js";
 import { Rational } from "./rational.js";
 import { RationalInterval } from "./rational-interval.js";
+import {
+  CertifiedApproximation,
+  certifiedContinuedFractionPrefix,
+  certifiedRadixPrefix,
+} from "./certified-approximation.js";
 
 const DIGITS = String.raw`\d(?:_?\d)*`;
 const MAX_EXPANDED_DIGITS = 100_000;
@@ -332,6 +337,69 @@ function parseUncertainty(input) {
   return new RationalInterval(endpoint(parts[0]), endpoint(parts[1]));
 }
 
+function parseApproximation(input) {
+  let value = inputString(input, "certified approximation");
+
+  const derived = value.match(/^(.+?)\?\[=([^:]+):([^:]+)\]$/);
+  if (derived) {
+    const candidate = parseRationalLiteral(derived[1]);
+    let enclosure = new RationalInterval(
+      parseRationalLiteral(derived[2]),
+      parseRationalLiteral(derived[3]),
+    );
+    if (!enclosure.containsValue(candidate) && candidate.lessThan(Rational.zero)
+        && enclosure.low.greaterThanOrEqual(Rational.zero)) {
+      enclosure = enclosure.negate();
+    }
+    return new CertifiedApproximation(candidate, enclosure, {
+      representation: {
+        kind: "derived",
+        reason: "serialized",
+        original: value,
+      },
+    });
+  }
+
+  const explicitCf = value.startsWith("~");
+  const cfValue = explicitCf ? value.slice(1) : value;
+  const cf = cfValue.match(new RegExp(
+    `^([+-]?${DIGITS})\\.~(${DIGITS}(?:~${DIGITS})*)\\?(${DIGITS}(?:~${DIGITS})*)?$`,
+  ));
+  if (cf) {
+    const certified = [
+      BigInt(cleanDigits(cf[1], { signed: true })),
+      ...cf[2].split("~").map((term) => BigInt(cleanDigits(term))),
+    ];
+    const provisional = cf[3]
+      ? cf[3].split("~").map((term) => BigInt(cleanDigits(term)))
+      : [];
+    return certifiedContinuedFractionPrefix({
+      coefficients: certified,
+      provisionalCoefficients: provisional,
+      original: value,
+    });
+  }
+
+  const match = value.match(/^(.+?)\?((?:\d(?:_?\d)*)?)(\[[^\[\]]+\])?$/);
+  if (!match) throw new Error(`Invalid certified approximation notation: ${input}`);
+  const shape = decimalShape(match[1]);
+  const provisional = match[2] ? cleanDigits(match[2]) : "";
+  const candidateText = shape.hasPoint
+    ? `${shape.normalized}${provisional}`
+    : `${shape.normalized}${provisional ? `.${provisional}` : ""}`;
+  const explicitEnclosure = match[3]
+    ? parseUncertainty(`${candidateText}${match[3]}`)
+    : null;
+  return certifiedRadixPrefix({
+    integerDigits: shape.integer,
+    fractionalDigits: shape.fractional,
+    provisionalDigits: provisional,
+    negative: shape.sign === "-",
+    enclosure: explicitEnclosure,
+    original: value,
+  });
+}
+
 /**
  * Parse one exact RatMath number literal.
  *
@@ -340,6 +408,10 @@ function parseUncertainty(input) {
  */
 export function parseNumber(input) {
   const value = inputString(input);
+
+  if (value.includes("?")) {
+    return parseApproximation(value);
+  }
 
   if (value.includes("[") || value.includes("]")) {
     return parseUncertainty(value);
@@ -365,6 +437,9 @@ export function parseNumber(input) {
 /** Parse a scalar exact number and always return a Rational. */
 export function parseRational(input) {
   const value = parseNumber(input);
+  if (value instanceof CertifiedApproximation) {
+    return value.toRational();
+  }
   if (value instanceof RationalInterval) {
     throw new Error("Expected a scalar rational number, received an interval");
   }
@@ -403,7 +478,7 @@ export function parseContinuedFraction(input) {
   if (!value.includes(".~")) {
     throw new Error("Expected continued-fraction notation 'a0.~a1~a2'");
   }
-  return parseRationalLiteral(value);
+  return value.includes("?") ? parseApproximation(value) : parseRationalLiteral(value);
 }
 
 /**
@@ -412,7 +487,10 @@ export function parseContinuedFraction(input) {
 export function parseInterval(input) {
   const value = parseNumber(input);
   if (value instanceof RationalInterval) return value;
+  if (value instanceof CertifiedApproximation) return value.enclosure;
   return RationalInterval.point(
     value instanceof Integer ? value.toRational() : value,
   );
 }
+
+export { parseApproximation as parseCertifiedApproximation };

@@ -172,7 +172,7 @@
     "href": "parsing.html",
     "title": "Number parsing",
     "section": "",
-    "text": "The parser accepts exact number literals only. It does not accept operators, variables, calls, parentheses, or other RiX expressions. All parsing is base 10; use BaseSystem for explicit base conversion.",
+    "text": "The parser accepts number literals only. It does not accept operators, variables, calls, parentheses, or other RiX expressions. All parsing is base 10; use BaseSystem for explicit base conversion.",
     "crumbs": [
       "Overview",
       "Number parsing"
@@ -183,7 +183,7 @@
     "href": "parsing.html#entry-points",
     "title": "Number parsing",
     "section": "Entry points",
-    "text": "Entry points\n\n\n\n\n\n\n\n\nFunction\nAccepted input\nResult\n\n\n\n\nparseNumber(text)\nAny supported scalar or interval form\nInteger, Rational, or RationalInterval\n\n\nparseRational(text)\nAny scalar form\nAlways Rational; rejects intervals\n\n\nparseDecimal(text)\nFinite or repeating decimal\nRational\n\n\nparseRepeatingDecimal(text)\nAlias of parseDecimal\nRational\n\n\nparseMixedNumber(text)\nMixed-fraction form\nRational\n\n\nparseContinuedFraction(value)\nCoefficient array or .~ form\nRational\n\n\nparseInterval(text)\nAny interval form, or a scalar\nRationalInterval; a scalar becomes a point interval\n\n\n\nEvery string entry point trims leading and trailing whitespace. Underscores are allowed only between decimal digits.",
+    "text": "Entry points\n\n\n\n\n\n\n\n\nFunction\nAccepted input\nResult\n\n\n\n\nparseNumber(text)\nAny supported scalar or interval form\nInteger, Rational, CertifiedApproximation, or RationalInterval\n\n\nparseCertifiedApproximation(text)\nDecimal or continued-fraction ? form\nCertifiedApproximation\n\n\nparseRational(text)\nAny scalar form\nAlways Rational; rejects intervals\n\n\nparseDecimal(text)\nFinite or repeating decimal\nRational\n\n\nparseRepeatingDecimal(text)\nAlias of parseDecimal\nRational\n\n\nparseMixedNumber(text)\nMixed-fraction form\nRational\n\n\nparseContinuedFraction(value)\nCoefficient array or .~ form\nRational, or CertifiedApproximation for ? input\n\n\nparseInterval(text)\nAny interval form, or a scalar\nRationalInterval; a scalar becomes a point interval\n\n\n\nEvery string entry point trims leading and trailing whitespace. Underscores are allowed only between decimal digits.",
     "crumbs": [
       "Overview",
       "Number parsing"
@@ -194,7 +194,7 @@
     "href": "parsing.html#scalar-forms",
     "title": "Number parsing",
     "section": "Scalar forms",
-    "text": "Scalar forms\nimport {\n  parseNumber,\n  parseRational,\n  parseDecimal,\n  parseMixedNumber,\n  parseContinuedFraction,\n} from \"@ratmath/core\";\n\nparseNumber(\"-1_000\").toString();          // \"-1000\"\nparseRational(\"-3/4\").toString();          // \"-3/4\"\nparseDecimal(\".125\").toString();           // \"1/8\"\nparseDecimal(\"0.1#6\").toString();          // \"1/6\"\nparseMixedNumber(\"-2..1/4\").toString();    // \"-9/4\"\nparseContinuedFraction(\"3.~7~15\").toString(); // \"333/106\"\nparseContinuedFraction([3n, 7n, 15n]).toString(); // \"333/106\"\n\nRepeating decimals\n# starts the repeating block:\n\n\n\nLiteral\nExact value\n\n\n\n\n0.#3\n1/3\n\n\n0.1#6\n1/6\n\n\n12.34#56\nnon-repeating 34, then repeating 56\n\n\n1.25#0\n5/4; an all-zero repeat is terminating\n\n\n\nDigit-run compression is accepted inside a decimal: {digits~count} repeats the digit string count times. For example, 0.{0~8}1 is exactly 0.000000001. Expansion is capped at 100,000 digits.\n\n\nMixed fractions\nThe syntax is whole..numerator/denominator. A leading minus applies to the whole value:\nparseMixedNumber(\"2..1/4\").toString();  // \"9/4\"\nparseMixedNumber(\"-2..1/4\").toString(); // \"-9/4\"\n\n\nContinued fractions\nA finite simple continued fraction [a0; a1, a2, ...] is written a0.~a1~a2.... Tail coefficients are unsigned decimal integers. An explicit leading ~ is accepted for compatibility with RiX negative literal syntax:\nparseContinuedFraction(\"-3.~1~3\").toString();  // \"-9/4\"\nparseContinuedFraction(\"~-3.~1~3\").toString(); // \"-9/4\"",
+    "text": "Scalar forms\nimport {\n  parseNumber,\n  parseRational,\n  parseDecimal,\n  parseMixedNumber,\n  parseContinuedFraction,\n} from \"@ratmath/core\";\n\nparseNumber(\"-1_000\").toString();          // \"-1000\"\nparseRational(\"-3/4\").toString();          // \"-3/4\"\nparseDecimal(\".125\").toString();           // \"1/8\"\nparseDecimal(\"0.1#6\").toString();          // \"1/6\"\nparseMixedNumber(\"-2..1/4\").toString();    // \"-9/4\"\nparseContinuedFraction(\"3.~7~15\").toString(); // \"333/106\"\nparseContinuedFraction([3n, 7n, 15n]).toString(); // \"333/106\"\n\nRepeating decimals\n# starts the repeating block:\n\n\n\nLiteral\nExact value\n\n\n\n\n0.#3\n1/3\n\n\n0.1#6\n1/6\n\n\n12.34#56\nnon-repeating 34, then repeating 56\n\n\n1.25#0\n5/4; an all-zero repeat is terminating\n\n\n\nDigit-run compression is accepted inside a decimal: {digits~count} repeats the digit string count times. For example, 0.{0~8}1 is exactly 0.000000001. Expansion is capped at 100,000 digits.\n\n\nMixed fractions\nThe syntax is whole..numerator/denominator. A leading minus applies to the whole value:\nparseMixedNumber(\"2..1/4\").toString();  // \"9/4\"\nparseMixedNumber(\"-2..1/4\").toString(); // \"-9/4\"\n\n\nContinued fractions\nA finite simple continued fraction [a0; a1, a2, ...] is written a0.~a1~a2.... Tail coefficients are unsigned decimal integers. An explicit leading ~ is accepted for compatibility with RiX negative literal syntax:\nparseContinuedFraction(\"-3.~1~3\").toString();  // \"-9/4\"\nparseContinuedFraction(\"~-3.~1~3\").toString(); // \"-9/4\"\n\n\nCertified approximation prefixes\n? embedded in a decimal or continued fraction denies exact completion. Text to its left is certified; text to its right is provisional candidate data:\nconst reading = parseNumber(\"23.456?789\");\nreading.candidate.toString(); // \"23456789/1000000\"\nreading.enclosure.toString(); // \"2932/125:23457/1000\"\n\nparseNumber(\"3.~7~15?\").enclosure.toString();\n// \"333/106:355/113\"\nAn explicit bracket, such as 23.456?789[+-12], narrows the authoritative enclosure and is rejected if it lies outside the certified prefix cell. Bare ? is not a Core number and is rejected.\nThe serialization form candidate?[=low:high] is reserved for derived approximations whose enclosure has no useful common radix prefix. Its exact endpoint bracket is authoritative and round-trips as a certified scalar.\nFor non-decimal bases, call certifiedRadixPrefix with a BaseSystem. boundedDecimalApproximation and boundedContinuedFractionApproximation explicitly convert an exact value at a work limit. Ordinary formatter ellipses remain nonparseable display truncation.",
     "crumbs": [
       "Overview",
       "Number parsing"
@@ -238,7 +238,7 @@
     "href": "api-index.html#classes",
     "title": "API index",
     "section": "Classes",
-    "text": "Classes\n\n\n\nExport\nConstructor\n\n\n\n\nInteger\nnew Integer(value)\n\n\nRational\nnew Rational(numerator, denominator?)\n\n\nRationalInterval\nnew RationalInterval(a, b)\n\n\nFraction\nnew Fraction(numerator, denominator?, options?)\n\n\nFractionInterval\nnew FractionInterval(a, b)\n\n\nBaseSystem\nnew BaseSystem(characters, name?)\n\n\nTypePromotion\nStatic utility class; do not instantiate",
+    "text": "Classes\n\n\n\nExport\nConstructor\n\n\n\n\nInteger\nnew Integer(value)\n\n\nRational\nnew Rational(numerator, denominator?)\n\n\nRationalInterval\nnew RationalInterval(a, b)\n\n\nCertifiedApproximation\nnew CertifiedApproximation(candidate, enclosure, options?)\n\n\nFraction\nnew Fraction(numerator, denominator?, options?)\n\n\nFractionInterval\nnew FractionInterval(a, b)\n\n\nBaseSystem\nnew BaseSystem(characters, name?)\n\n\nTypePromotion\nStatic utility class; do not instantiate",
     "crumbs": [
       "Overview",
       "API index"
@@ -249,7 +249,7 @@
     "href": "api-index.html#parsing-functions",
     "title": "API index",
     "section": "Parsing functions",
-    "text": "Parsing functions\n\n\n\nExport\nSignature\n\n\n\n\nparseNumber\n(value: string) =&gt; Integer \\| Rational \\| RationalInterval\n\n\nparseRational\n(value: string) =&gt; Rational\n\n\nparseDecimal\n(value: string) =&gt; Rational\n\n\nparseRepeatingDecimal\n(value: string) =&gt; Rational\n\n\nparseMixedNumber\n(value: string) =&gt; Rational\n\n\nparseContinuedFraction\n(value: string \\| readonly (number \\| bigint)[]) =&gt; Rational\n\n\nparseInterval\n(value: string) =&gt; RationalInterval",
+    "text": "Parsing functions\n\n\n\nExport\nSignature\n\n\n\n\nparseNumber\n(value: string) =&gt; CoreNumber\n\n\nparseCertifiedApproximation\n(value: string) =&gt; CertifiedApproximation\n\n\nparseRational\n(value: string) =&gt; Rational\n\n\nparseDecimal\n(value: string) =&gt; Rational\n\n\nparseRepeatingDecimal\n(value: string) =&gt; Rational\n\n\nparseMixedNumber\n(value: string) =&gt; Rational\n\n\nparseContinuedFraction\n(value: string \\| readonly (number \\| bigint)[]) =&gt; Rational\n\n\nparseInterval\n(value: string) =&gt; RationalInterval",
     "crumbs": [
       "Overview",
       "API index"
@@ -260,7 +260,7 @@
     "href": "api-index.html#typescript-types",
     "title": "API index",
     "section": "TypeScript types",
-    "text": "TypeScript types\ntype IntegerInput = number | string | bigint | Integer;\ntype RationalInput = IntegerInput | Rational;\ntype CoreScalar = Integer | Rational;\ntype CoreNumber = CoreScalar | RationalInterval;\ntype SternBrocotDirection = \"L\" | \"R\";",
+    "text": "TypeScript types\ntype IntegerInput = number | string | bigint | Integer;\ntype RationalInput = IntegerInput | Rational;\ntype CoreScalar = Integer | Rational;\ntype CoreNumber = CoreScalar | RationalInterval | CertifiedApproximation;\ntype SternBrocotDirection = \"L\" | \"R\";",
     "crumbs": [
       "Overview",
       "API index"
@@ -271,7 +271,7 @@
     "href": "api-index.html#guards-and-json",
     "title": "API index",
     "section": "Guards and JSON",
-    "text": "Guards and JSON\nisInteger, isRational, isRationalInterval, isFraction, isFractionInterval, isBaseSystem, and isCoreNumber provide public runtime type checks. Use reviveCoreValue as a JSON.parse reviver for tagged output created by the core classes’ toJSON() methods.\nThe formatting result interfaces are:\ninterface RepeatingExpansion {\n  decimal: string | null;\n  period: number;\n  truncated: boolean;\n}\n\ninterface BaseExpansion {\n  baseStr: string;\n  period: number;\n  limitHit: boolean;\n}\n\ninterface DecimalMetadata {\n  wholePart?: bigint;\n  initialSegment: string;\n  initialSegmentLeadingZeros?: number;\n  initialSegmentRest?: string;\n  periodDigits: string;\n  periodLength: number;\n  leadingZerosInPeriod?: number;\n  periodDigitsRest?: string;\n  isTerminating: boolean;\n}",
+    "text": "Guards and JSON\nisInteger, isRational, isRationalInterval, isCertifiedApproximation, isFraction, isFractionInterval, isBaseSystem, and isCoreNumber provide public runtime type checks. Use reviveCoreValue as a JSON.parse reviver for tagged output created by the core classes’ toJSON() methods.\nThe formatting result interfaces are:\ninterface RepeatingExpansion {\n  decimal: string | null;\n  period: number;\n  truncated: boolean;\n}\n\ninterface BaseExpansion {\n  baseStr: string;\n  period: number;\n  limitHit: boolean;\n}\n\ninterface DecimalMetadata {\n  wholePart?: bigint;\n  initialSegment: string;\n  initialSegmentLeadingZeros?: number;\n  initialSegmentRest?: string;\n  periodDigits: string;\n  periodLength: number;\n  leadingZerosInPeriod?: number;\n  periodDigitsRest?: string;\n  isTerminating: boolean;\n}",
     "crumbs": [
       "Overview",
       "API index"
@@ -282,7 +282,7 @@
     "href": "api-index.html#method-checklist",
     "title": "API index",
     "section": "Method checklist",
-    "text": "Method checklist\nThis is a compact inventory; the linked class pages document behavior, examples, edge cases, and return types.\n\n\n\n\n\n\n\nClass\nPublic members\n\n\n\n\nInteger\nvalue; add, subtract, multiply, divide, modulo, negate, pow; comparisons; abs, sign, sign/parity predicates; gcd, lcm; toString, toBase, toNumber, toRational; E, factorial, doubleFactorial, bitLength; static zero, one, from, fromRational\n\n\nRational\nnumerator, denominator; arithmetic, comparison, abs; fraction/mixed/decimal/base/scientific formatters; period metadata; continued fractions, convergents, and bounded approximations; E, bitLength; static construction helpers and formatting limits\n\n\nRationalInterval\nstart, end, isAscending, low, high; arithmetic, pow, mpow; containment/set operations; interval formatters; mediant, midpoint, shortestDecimal, denominatorInterval, randomRational, E, bitLength; static zero, one, unitInterval, point, fromString\n\n\nFraction\nnumerator, denominator, isInfinite; unreduced arithmetic, comparisons, scale, reduce, E; mediant/Farey operations; Stern–Brocot navigation; static conversion and relationship helpers\n\n\nFractionInterval\nlow, high; mediantSplit, partitionWithMediants, partitionWith; conversion, string/equality, E; static fromRationalInterval\n\n\nBaseSystem\nbase, characters, charMap, name; digit conversion/validation; equality/case behavior; presets, factories, and prefix registry\n\n\nTypePromotion\nType-level inspection/promotion; arithmetic dispatch; power, E notation, negation; syntactic type classification\n\n\n\nThe installed package’s index.d.ts is the authoritative machine-readable signature reference.",
+    "text": "Method checklist\nThis is a compact inventory; the linked class pages document behavior, examples, edge cases, and return types.\n\n\n\n\n\n\n\nClass\nPublic members\n\n\n\n\nInteger\nvalue; add, subtract, multiply, divide, modulo, negate, pow; comparisons; abs, sign, sign/parity predicates; gcd, lcm; toString, toBase, toNumber, toRational; E, factorial, doubleFactorial, bitLength; static zero, one, from, fromRational\n\n\nRational\nnumerator, denominator; arithmetic, comparison, abs; fraction/mixed/decimal/base/scientific formatters; period metadata; continued fractions, convergents, and bounded approximations; E, bitLength; static construction helpers and formatting limits\n\n\nRationalInterval\nstart, end, isAscending, low, high; arithmetic, pow, mpow; containment/set operations; interval formatters; mediant, midpoint, shortestDecimal, denominatorInterval, randomRational, E, bitLength; static zero, one, unitInterval, point, fromString\n\n\nCertifiedApproximation\ncandidate, authoritative enclosure, immutable representation, sourceId; scalar enclosure arithmetic; exact/interval conversions; possibleRelationsTo; copy, formatting, and JSON\n\n\nFraction\nnumerator, denominator, isInfinite; unreduced arithmetic, comparisons, scale, reduce, E; mediant/Farey operations; Stern–Brocot navigation; static conversion and relationship helpers\n\n\nFractionInterval\nlow, high; mediantSplit, partitionWithMediants, partitionWith; conversion, string/equality, E; static fromRationalInterval\n\n\nBaseSystem\nbase, characters, charMap, name; digit conversion/validation; equality/case behavior; presets, factories, and prefix registry\n\n\nTypePromotion\nType-level inspection/promotion; arithmetic dispatch; power, E notation, negation; syntactic type classification\n\n\n\nThe installed package’s index.d.ts is the authoritative machine-readable signature reference.",
     "crumbs": [
       "Overview",
       "API index"
@@ -432,6 +432,17 @@
     "title": "Examples",
     "section": "Parse and calculate with uncertainty",
     "text": "Parse and calculate with uncertainty\nimport { parseInterval, parseRational } from \"@ratmath/core\";\n\nconst measured = parseInterval(\"1.23[+-1]\"); // [1.22, 1.24]\nconst scale = parseRational(\"3/2\");\nconst result = measured.multiply(scale);\n\nresult.toString();           // \"183/100:93/50\"\nresult.toRepeatingDecimal(); // \"1.83#0:1.86#0\"",
+    "crumbs": [
+      "Overview",
+      "Examples"
+    ]
+  },
+  {
+    "objectID": "examples.html#carry-a-certified-scalar-approximation",
+    "href": "examples.html#carry-a-certified-scalar-approximation",
+    "title": "Examples",
+    "section": "Carry a certified scalar approximation",
+    "text": "Carry a certified scalar approximation\nimport { parseNumber } from \"@ratmath/core\";\n\nconst measured = parseNumber(\"23.456?789\");\nconst shifted = measured.add(parseNumber(\"0.5\"));\n\nmeasured.candidate.toString(); // \"23456789/1000000\"\nmeasured.enclosure.toString(); // \"2932/125:23457/1000\"\nshifted.enclosure.toString();  // exact propagated guarantee\nUnlike RationalInterval, this is one uncertain scalar with a preferred candidate. Mixing it with exact scalars preserves that type; mixing it with an explicit interval produces interval arithmetic.",
     "crumbs": [
       "Overview",
       "Examples"

@@ -443,6 +443,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#repeating-decimals" id="toc-repeating-decimals" class="nav-link" data-scroll-target="#repeating-decimals">Repeating decimals</a></li>
   <li><a href="#mixed-fractions" id="toc-mixed-fractions" class="nav-link" data-scroll-target="#mixed-fractions">Mixed fractions</a></li>
   <li><a href="#continued-fractions" id="toc-continued-fractions" class="nav-link" data-scroll-target="#continued-fractions">Continued fractions</a></li>
+  <li><a href="#certified-approximation-prefixes" id="toc-certified-approximation-prefixes" class="nav-link" data-scroll-target="#certified-approximation-prefixes">Certified approximation prefixes</a></li>
   </ul></li>
   <li><a href="#interval-forms" id="toc-interval-forms" class="nav-link" data-scroll-target="#interval-forms">Interval forms</a></li>
   <li><a href="#rejected-input" id="toc-rejected-input" class="nav-link" data-scroll-target="#rejected-input">Rejected input</a></li>
@@ -472,7 +473,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>The parser accepts exact <em>number literals only</em>. It does not accept operators, variables, calls, parentheses, or other RiX expressions. All parsing is base 10; use <a href="./base-system.html"><code>BaseSystem</code></a> for explicit base conversion.</p>
+<p>The parser accepts <em>number literals only</em>. It does not accept operators, variables, calls, parentheses, or other RiX expressions. All parsing is base 10; use <a href="./base-system.html"><code>BaseSystem</code></a> for explicit base conversion.</p>
 <section id="entry-points" class="level2">
 <h2 class="anchored" data-anchor-id="entry-points">Entry points</h2>
 <table class="caption-top table">
@@ -492,34 +493,39 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td><code>parseNumber(text)</code></td>
 <td>Any supported scalar or interval form</td>
-<td><code>Integer</code>, <code>Rational</code>, or <code>RationalInterval</code></td>
+<td><code>Integer</code>, <code>Rational</code>, <code>CertifiedApproximation</code>, or <code>RationalInterval</code></td>
 </tr>
 <tr class="even">
+<td><code>parseCertifiedApproximation(text)</code></td>
+<td>Decimal or continued-fraction <code>?</code> form</td>
+<td><code>CertifiedApproximation</code></td>
+</tr>
+<tr class="odd">
 <td><code>parseRational(text)</code></td>
 <td>Any scalar form</td>
 <td>Always <code>Rational</code>; rejects intervals</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>parseDecimal(text)</code></td>
 <td>Finite or repeating decimal</td>
 <td><code>Rational</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>parseRepeatingDecimal(text)</code></td>
 <td>Alias of <code>parseDecimal</code></td>
 <td><code>Rational</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>parseMixedNumber(text)</code></td>
 <td>Mixed-fraction form</td>
 <td><code>Rational</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>parseContinuedFraction(value)</code></td>
 <td>Coefficient array or <code>.~</code> form</td>
-<td><code>Rational</code></td>
+<td><code>Rational</code>, or <code>CertifiedApproximation</code> for <code>?</code> input</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>parseInterval(text)</code></td>
 <td>Any interval form, or a scalar</td>
 <td><code>RationalInterval</code>; a scalar becomes a point interval</td>
@@ -588,14 +594,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">parseContinuedFraction</span>(<span class="st">"-3.~1~3"</span>)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span>  <span class="co">// "-9/4"</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">parseContinuedFraction</span>(<span class="st">"~-3.~1~3"</span>)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span> <span class="co">// "-9/4"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
+<section id="certified-approximation-prefixes" class="level3">
+<h3 class="anchored" data-anchor-id="certified-approximation-prefixes">Certified approximation prefixes</h3>
+<p><code>?</code> embedded in a decimal or continued fraction denies exact completion. Text to its left is certified; text to its right is provisional candidate data:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> reading <span class="op">=</span> <span class="fu">parseNumber</span>(<span class="st">"23.456?789"</span>)<span class="op">;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>reading<span class="op">.</span><span class="at">candidate</span><span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span> <span class="co">// "23456789/1000000"</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>reading<span class="op">.</span><span class="at">enclosure</span><span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span> <span class="co">// "2932/125:23457/1000"</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">parseNumber</span>(<span class="st">"3.~7~15?"</span>)<span class="op">.</span><span class="at">enclosure</span><span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co">// "333/106:355/113"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>An explicit bracket, such as <code>23.456?789[+-12]</code>, narrows the authoritative enclosure and is rejected if it lies outside the certified prefix cell. Bare <code>?</code> is not a Core number and is rejected.</p>
+<p>The serialization form <code>candidate?[=low:high]</code> is reserved for derived approximations whose enclosure has no useful common radix prefix. Its exact endpoint bracket is authoritative and round-trips as a certified scalar.</p>
+<p>For non-decimal bases, call <code>certifiedRadixPrefix</code> with a <code>BaseSystem</code>. <code>boundedDecimalApproximation</code> and <code>boundedContinuedFractionApproximation</code> explicitly convert an exact value at a work limit. Ordinary formatter ellipses remain nonparseable display truncation.</p>
+</section>
 </section>
 <section id="interval-forms" class="level2">
 <h2 class="anchored" data-anchor-id="interval-forms">Interval forms</h2>
 <p>Colon notation supplies two exact scalar endpoints:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { parseInterval } <span class="im">from</span> <span class="st">"@ratmath/core"</span><span class="op">;</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">parseInterval</span>(<span class="st">"1/3:2/3"</span>)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span> <span class="co">// "1/3:2/3"</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">parseInterval</span>(<span class="st">"3/4"</span>)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span>     <span class="co">// "3/4:3/4"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { parseInterval } <span class="im">from</span> <span class="st">"@ratmath/core"</span><span class="op">;</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">parseInterval</span>(<span class="st">"1/3:2/3"</span>)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span> <span class="co">// "1/3:2/3"</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="fu">parseInterval</span>(<span class="st">"3/4"</span>)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span>     <span class="co">// "3/4:3/4"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Decimal bracket notation provides shorter uncertainty forms:</p>
 <table class="caption-top table">
 <thead>
@@ -639,11 +658,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="rejected-input" class="level2">
 <h2 class="anchored" data-anchor-id="rejected-input">Rejected input</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">parseNumber</span>(<span class="st">"1 + 2"</span>)<span class="op">;</span>       <span class="co">// throws: expressions are not numbers</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">parseRational</span>(<span class="st">"1:2"</span>)<span class="op">;</span>       <span class="co">// throws: expected a scalar</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">parseDecimal</span>(<span class="st">"1/2"</span>)<span class="op">;</span>        <span class="co">// throws: expected decimal notation</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="fu">parseMixedNumber</span>(<span class="st">"9/4"</span>)<span class="op">;</span>    <span class="co">// throws: mixed notation required</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">parseInterval</span>(<span class="st">"1:2:3"</span>)<span class="op">;</span>     <span class="co">// throws: too many endpoints</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">parseNumber</span>(<span class="st">"1 + 2"</span>)<span class="op">;</span>       <span class="co">// throws: expressions are not numbers</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">parseRational</span>(<span class="st">"1:2"</span>)<span class="op">;</span>       <span class="co">// throws: expected a scalar</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">parseDecimal</span>(<span class="st">"1/2"</span>)<span class="op">;</span>        <span class="co">// throws: expected decimal notation</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="fu">parseMixedNumber</span>(<span class="st">"9/4"</span>)<span class="op">;</span>    <span class="co">// throws: mixed notation required</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">parseInterval</span>(<span class="st">"1:2:3"</span>)<span class="op">;</span>     <span class="co">// throws: too many endpoints</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>

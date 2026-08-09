@@ -313,6 +313,9 @@ export class Rational {
    * @returns {Rational|RationalInterval} The sum with appropriate type
    */
   add(other) {
+    if (other?.isCertifiedApproximation === true) {
+      return other._operateExactLeft("add", this);
+    }
     // Handle Integer type by importing it dynamically to avoid circular imports
     if (other.constructor.name === "Integer") {
       // Convert Integer to Rational and add
@@ -352,6 +355,9 @@ export class Rational {
    * @returns {Rational|RationalInterval} The difference with appropriate type
    */
   subtract(other) {
+    if (other?.isCertifiedApproximation === true) {
+      return other._operateExactLeft("subtract", this);
+    }
     // Handle Integer type by checking constructor name to avoid circular imports
     if (other.constructor.name === "Integer") {
       // Convert Integer to Rational and subtract
@@ -390,6 +396,9 @@ export class Rational {
    * @returns {Rational|RationalInterval} The product with appropriate type
    */
   multiply(other) {
+    if (other?.isCertifiedApproximation === true) {
+      return other._operateExactLeft("multiply", this);
+    }
     // Handle Integer type by checking constructor name to avoid circular imports
     if (other.constructor.name === "Integer") {
       // Convert Integer to Rational and multiply
@@ -427,6 +436,9 @@ export class Rational {
    * @throws {Error} If other is zero
    */
   divide(other) {
+    if (other?.isCertifiedApproximation === true) {
+      return other._operateExactLeft("divide", this);
+    }
     // Handle Integer type by checking constructor name to avoid circular imports
     if (other.constructor.name === "Integer") {
       if (other.value === 0n) {
@@ -462,6 +474,21 @@ export class Rational {
     } else {
       throw new Error(`Cannot divide Rational by ${other.constructor.name}`);
     }
+  }
+
+  /** Return a LESS/EQUAL/GREATER possibility mask against an enclosed value. */
+  possibleRelationsTo(other) {
+    if (other?.isCertifiedApproximation === true) other = other.enclosure;
+    if (other?.constructor?.name === "Integer") other = new Rational(other.value, 1n);
+    if (other instanceof Rational) return this.lessThan(other) ? 1 : this.greaterThan(other) ? 4 : 2;
+    if (other?.low && other?.high) {
+      let mask = 0;
+      if (this.lessThan(other.high)) mask |= 1;
+      if (other.low.lessThanOrEqual(this) && this.lessThanOrEqual(other.high)) mask |= 2;
+      if (this.greaterThan(other.low)) mask |= 4;
+      return mask;
+    }
+    throw new TypeError("Possible relations require a Core numeric value");
   }
 
   /**

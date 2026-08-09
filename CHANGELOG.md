@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Add `CertifiedApproximation`, decimal/base and continued-fraction `?`
+  parsing, exact enclosure propagation, possible-relation masks, JSON revival,
+  and TypeScript declarations.
+- Keep formatter ellipses display-only; certified uncertainty is represented
+  by an explicit approximation value.
+
 ## 0.3.0 — 2026-08-07
 
 ### Breaking changes

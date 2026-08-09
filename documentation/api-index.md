@@ -12,6 +12,7 @@ contains the classes, parsing functions, type guards, and JSON reviver.
 | [`Integer`](integer.md) | `new Integer(value)` |
 | [`Rational`](rational.md) | `new Rational(numerator, denominator?)` |
 | [`RationalInterval`](rational-interval.md) | `new RationalInterval(a, b)` |
+| `CertifiedApproximation` | `new CertifiedApproximation(candidate, enclosure, options?)` |
 | [`Fraction`](fraction.md) | `new Fraction(numerator, denominator?, options?)` |
 | [`FractionInterval`](fraction-interval.md) | `new FractionInterval(a, b)` |
 | [`BaseSystem`](base-system.md) | `new BaseSystem(characters, name?)` |
@@ -21,7 +22,8 @@ contains the classes, parsing functions, type guards, and JSON reviver.
 
 | Export | Signature |
 |---|---|
-| [`parseNumber`](parsing.md) | `(value: string) => Integer \| Rational \| RationalInterval` |
+| [`parseNumber`](parsing.md) | `(value: string) => CoreNumber` |
+| [`parseCertifiedApproximation`](parsing.md) | `(value: string) => CertifiedApproximation` |
 | [`parseRational`](parsing.md) | `(value: string) => Rational` |
 | [`parseDecimal`](parsing.md) | `(value: string) => Rational` |
 | [`parseRepeatingDecimal`](parsing.md) | `(value: string) => Rational` |
@@ -35,13 +37,13 @@ contains the classes, parsing functions, type guards, and JSON reviver.
 type IntegerInput = number | string | bigint | Integer;
 type RationalInput = IntegerInput | Rational;
 type CoreScalar = Integer | Rational;
-type CoreNumber = CoreScalar | RationalInterval;
+type CoreNumber = CoreScalar | RationalInterval | CertifiedApproximation;
 type SternBrocotDirection = "L" | "R";
 ```
 
 ## Guards and JSON
 
-`isInteger`, `isRational`, `isRationalInterval`, `isFraction`,
+`isInteger`, `isRational`, `isRationalInterval`, `isCertifiedApproximation`, `isFraction`,
 `isFractionInterval`, `isBaseSystem`, and `isCoreNumber` provide public runtime
 type checks. Use `reviveCoreValue` as a `JSON.parse` reviver for tagged output
 created by the core classes' `toJSON()` methods.
@@ -84,6 +86,7 @@ examples, edge cases, and return types.
 | `Integer` | `value`; `add`, `subtract`, `multiply`, `divide`, `modulo`, `negate`, `pow`; comparisons; `abs`, `sign`, sign/parity predicates; `gcd`, `lcm`; `toString`, `toBase`, `toNumber`, `toRational`; `E`, `factorial`, `doubleFactorial`, `bitLength`; static `zero`, `one`, `from`, `fromRational` |
 | `Rational` | `numerator`, `denominator`; arithmetic, comparison, `abs`; fraction/mixed/decimal/base/scientific formatters; period metadata; continued fractions, convergents, and bounded approximations; `E`, `bitLength`; static construction helpers and formatting limits |
 | `RationalInterval` | `start`, `end`, `isAscending`, `low`, `high`; arithmetic, `pow`, `mpow`; containment/set operations; interval formatters; `mediant`, `midpoint`, `shortestDecimal`, `denominatorInterval`, `randomRational`, `E`, `bitLength`; static `zero`, `one`, `unitInterval`, `point`, `fromString` |
+| `CertifiedApproximation` | `candidate`, authoritative `enclosure`, immutable `representation`, `sourceId`; scalar enclosure arithmetic; exact/interval conversions; `possibleRelationsTo`; copy, formatting, and JSON |
 | `Fraction` | `numerator`, `denominator`, `isInfinite`; unreduced arithmetic, comparisons, `scale`, `reduce`, `E`; mediant/Farey operations; Stern–Brocot navigation; static conversion and relationship helpers |
 | `FractionInterval` | `low`, `high`; `mediantSplit`, `partitionWithMediants`, `partitionWith`; conversion, string/equality, `E`; static `fromRationalInterval` |
 | `BaseSystem` | `base`, `characters`, `charMap`, `name`; digit conversion/validation; equality/case behavior; presets, factories, and prefix registry |

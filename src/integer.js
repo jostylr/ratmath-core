@@ -51,6 +51,9 @@ export class Integer {
    * @returns {Integer|Rational|RationalInterval} The sum with appropriate type
    */
   add(other) {
+    if (other?.isCertifiedApproximation === true) {
+      return other._operateExactLeft("add", this);
+    }
     if (other instanceof Integer) {
       return new Integer(this.#value + other.value);
     } else if (other instanceof Rational) {
@@ -74,6 +77,9 @@ export class Integer {
    * @returns {Integer|Rational|RationalInterval} The difference with appropriate type
    */
   subtract(other) {
+    if (other?.isCertifiedApproximation === true) {
+      return other._operateExactLeft("subtract", this);
+    }
     if (other instanceof Integer) {
       return new Integer(this.#value - other.value);
     } else if (other instanceof Rational) {
@@ -97,6 +103,9 @@ export class Integer {
    * @returns {Integer|Rational|RationalInterval} The product with appropriate type
    */
   multiply(other) {
+    if (other?.isCertifiedApproximation === true) {
+      return other._operateExactLeft("multiply", this);
+    }
     if (other instanceof Integer) {
       return new Integer(this.#value * other.value);
     } else if (other instanceof Rational) {
@@ -121,6 +130,9 @@ export class Integer {
    * @throws {Error} If other is zero
    */
   divide(other) {
+    if (other?.isCertifiedApproximation === true) {
+      return other._operateExactLeft("divide", this);
+    }
     if (other instanceof Integer) {
       if (other.value === 0n) {
         throw new Error("Division by zero");
@@ -146,6 +158,22 @@ export class Integer {
     } else {
       throw new Error(`Cannot divide Integer by ${other.constructor.name}`);
     }
+  }
+
+  /** Return a LESS/EQUAL/GREATER possibility mask against an enclosed value. */
+  possibleRelationsTo(other) {
+    const point = new Rational(this.#value, 1n);
+    if (other?.isCertifiedApproximation === true) other = other.enclosure;
+    if (other instanceof Integer) return this.#value < other.value ? 1 : this.#value > other.value ? 4 : 2;
+    if (other instanceof Rational) return point.lessThan(other) ? 1 : point.greaterThan(other) ? 4 : 2;
+    if (other?.low && other?.high) {
+      let mask = 0;
+      if (point.lessThan(other.high)) mask |= 1;
+      if (other.low.lessThanOrEqual(point) && point.lessThanOrEqual(other.high)) mask |= 2;
+      if (point.greaterThan(other.low)) mask |= 4;
+      return mask;
+    }
+    throw new TypeError("Possible relations require a Core numeric value");
   }
 
   /**
