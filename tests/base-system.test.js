@@ -159,4 +159,40 @@ describe("BaseSystem public API", () => {
     expect(insensitive.name).toContain("case-insensitive");
     expect(() => system.withCaseSensitivity("false")).toThrow("boolean");
   });
+
+  it("round-trips balanced and negative-radix integers", () => {
+    const balanced = new BaseSystem("T01", "Balanced ternary", {
+      radix: 3,
+      digitOffset: -1,
+    });
+    const negabinary = new BaseSystem("01", "Negabinary", { radix: -2 });
+
+    expect(balanced.radix).toBe(3);
+    expect(balanced.digitOffset).toBe(-1);
+    expect(balanced.supportsPositionalFractions).toBe(false);
+    expect(balanced.fromDecimal(-5n)).toBe("T11");
+    expect(balanced.toDecimal("T11")).toBe(-5n);
+    expect(negabinary.fromDecimal(-5n)).toBe("1111");
+    expect(negabinary.toDecimal("1111")).toBe(-5n);
+  });
+
+  it("supports bijective digits while rejecting unrepresentable zero", () => {
+    const bijective = new BaseSystem("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "Bijective 26", {
+      radix: 26,
+      digitOffset: 1,
+    });
+    expect(bijective.fromDecimal(26n)).toBe("Z");
+    expect(bijective.fromDecimal(27n)).toBe("AA");
+    expect(bijective.toDecimal("AA")).toBe(27n);
+    expect(() => bijective.fromDecimal(0n)).toThrow("no representation for zero");
+    expect(() => new BaseSystem("01", "Wrong radix", { radix: 3 })).toThrow("does not match");
+  });
+
+  it("allows parser punctuation only when the host requires quoted streams", () => {
+    expect(() => new BaseSystem("0+", "Unsafe binary")).toThrow("conflict");
+    const quoted = new BaseSystem("0+", "Quoted binary", { allowReserved: true });
+    expect(quoted.requiresQuoting).toBe(true);
+    expect(quoted.fromDecimal(3n)).toBe("++");
+    expect(quoted.toDecimal("++")).toBe(3n);
+  });
 });

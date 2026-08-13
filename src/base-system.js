@@ -8,9 +8,12 @@
 
 export class BaseSystem {
   #base;
+  #radix;
+  #digitOffset;
   #characters;
   #charMap;
   #name;
+  #allowReserved;
 
   // Prefix registry
   static #prefixMap = new Map();
@@ -40,9 +43,13 @@ export class BaseSystem {
    *                                     NOTE: Does NOT support range notation (e.g., "0-9").
    *                                     Use BaseParser from @ratmath/parser for range parsing.
    * @param {string} [name] - Optional human-readable name for the base system
+   * @param {{radix?: number, digitOffset?: number, allowReserved?: boolean}} [options] - Signed radix
+   * and the value represented by the first digit. For example, balanced
+   * ternary uses `{ radix: 3, digitOffset: -1 }`, negabinary uses radix -2,
+   * and bijective base 26 uses digitOffset 1.
    * @throws {Error} If entries are not unique single Unicode characters or contain conflicts
    */
-  constructor(characters, name) {
+  constructor(characters, name, options = {}) {
     if (typeof characters === "string") {
       this.#characters = [...characters];
     } else if (Array.isArray(characters)) {
@@ -67,6 +74,9 @@ export class BaseSystem {
     }
 
     this.#base = this.#characters.length;
+    this.#radix = options.radix ?? this.#base;
+    this.#digitOffset = options.digitOffset ?? 0;
+    this.#allowReserved = options.allowReserved === true;
     this.#charMap = this.#createCharacterMap();
     this.#name = name || `Base ${this.#base}`;
 
@@ -81,6 +91,30 @@ export class BaseSystem {
    */
   get base() {
     return this.#base;
+  }
+
+  /** Signed positional radix. */
+  get radix() {
+    return this.#radix;
+  }
+
+  /** Value represented by the first character. */
+  get digitOffset() {
+    return this.#digitOffset;
+  }
+
+  /** Whether ordinary finite/repeating fractional-place algorithms apply. */
+  get supportsPositionalFractions() {
+    return this.#radix === this.#base && this.#digitOffset === 0;
+  }
+
+  /** Whether the digit alphabet requires a quoted literal stream. */
+  get requiresQuoting() {
+    return this.#characters.some((character) => BaseSystem.RESERVED_SYMBOLS.has(character));
+  }
+
+  get allowsReservedDigits() {
+    return this.#allowReserved;
   }
 
   /**
@@ -109,14 +143,14 @@ export class BaseSystem {
     const i = Number(value);
     if (
       !Number.isSafeInteger(i) ||
-      i < 0 ||
-      i >= this.#characters.length
+      i < this.#digitOffset ||
+      i >= this.#digitOffset + this.#characters.length
     ) {
       throw new Error(
         `Value ${value} must be an in-range integer for base ${this.#base}`,
       );
     }
-    return this.#characters[i];
+    return this.#characters[i - this.#digitOffset];
   }
 
   /**
@@ -136,7 +170,7 @@ export class BaseSystem {
   #createCharacterMap() {
     const map = new Map();
     for (let i = 0; i < this.#characters.length; i++) {
-      map.set(this.#characters[i], i);
+      map.set(this.#characters[i], i + this.#digitOffset);
     }
     return map;
   }
@@ -146,15 +180,16 @@ export class BaseSystem {
    * @throws {Error} If the base is invalid
    */
   #validateBase() {
-    if (this.#base < 2) {
-      throw new Error("Base must be at least 2");
+    if (!Number.isSafeInteger(this.#radix) || Math.abs(this.#radix) < 2) {
+      throw new Error("Radix must be a safe integer with absolute value at least 2");
     }
 
-    if (this.#base !== this.#characters.length) {
+    if (Math.abs(this.#radix) !== this.#characters.length) {
       throw new Error(
-        `Base ${this.#base} does not match character set length ${this.#characters.length}`,
+        `Radix ${this.#radix} does not match character set length ${this.#characters.length}`,
       );
     }
+    if (!Number.isSafeInteger(this.#digitOffset)) throw new Error("Digit offset must be a safe integer");
 
     // Validate character uniqueness (already done in parsing, but double-check)
     const uniqueChars = new Set(this.#characters);
@@ -229,6 +264,7 @@ export class BaseSystem {
    * @throws {Error} If conflicts are found
    */
   #checkForConflicts() {
+    if (this.#allowReserved) return;
     const conflicts = [];
 
     for (const char of this.#characters) {
@@ -268,7 +304,7 @@ export class BaseSystem {
     }
 
     let result = 0n;
-    const baseBigInt = BigInt(this.#base);
+    const baseBigInt = BigInt(this.#radix);
 
     for (const char of str) {
       if (!this.#charMap.has(char)) {
@@ -295,26 +331,36 @@ export class BaseSystem {
     }
 
     if (value === 0n) {
-      return this.#characters[0];
+      const zero = this.#characters.find((character) => this.#charMap.get(character) === 0);
+      if (zero !== undefined) return zero;
+      throw new Error(`${this.#name} has no representation for zero`);
     }
 
-    let negative = false;
-    if (value < 0n) {
-      negative = true;
-      value = -value;
+    // Conventional positive systems retain the familiar leading minus.
+    if (value < 0n && this.#radix > 0 && this.#digitOffset === 0) {
+      return `-${this.fromDecimal(-value)}`;
+    }
+    if (value < 0n && this.#radix > 0 && this.#digitOffset > 0) {
+      return `-${this.fromDecimal(-value)}`;
     }
 
-    const baseBigInt = BigInt(this.#base);
+    const radix = BigInt(this.#radix);
+    const modulus = BigInt(Math.abs(this.#radix));
+    const digitValues = this.#characters.map((character) => BigInt(this.#charMap.get(character)));
     const digits = [];
+    let steps = 0;
 
-    while (value > 0n) {
-      const remainder = Number(value % baseBigInt);
-      digits.unshift(this.#characters[remainder]);
-      value = value / baseBigInt;
+    while (value !== 0n) {
+      const residue = ((value % modulus) + modulus) % modulus;
+      const index = digitValues.findIndex((digit) => ((digit % modulus) + modulus) % modulus === residue);
+      if (index < 0) throw new Error(`No digit in ${this.#name} can encode residue ${residue}`);
+      const digit = digitValues[index];
+      digits.unshift(this.#characters[index]);
+      value = (value - digit) / radix;
+      if (++steps > 100000) throw new Error(`${this.#name} conversion did not converge`);
     }
 
-    const result = digits.join("");
-    return negative ? "-" + result : result;
+    return digits.join("");
   }
 
   /**
@@ -386,7 +432,7 @@ export class BaseSystem {
       return false;
     }
 
-    if (this.#base !== other.#base) {
+    if (this.#base !== other.#base || this.#radix !== other.#radix || this.#digitOffset !== other.#digitOffset) {
       return false;
     }
 
@@ -594,6 +640,7 @@ export class BaseSystem {
       return new BaseSystem(
         uniqueLowerChars.join(""),
         `${this.#name} (case-insensitive)`,
+        { radix: this.#radix, digitOffset: this.#digitOffset, allowReserved: this.#allowReserved },
       );
     }
 
@@ -605,6 +652,9 @@ export class BaseSystem {
       $ratmath: "BaseSystem",
       characters: this.#characters,
       name: this.#name,
+      radix: this.#radix,
+      digitOffset: this.#digitOffset,
+      allowReserved: this.#allowReserved,
     };
   }
 }
