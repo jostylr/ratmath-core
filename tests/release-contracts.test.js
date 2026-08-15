@@ -219,11 +219,17 @@ describe("rounding and tagged JSON", () => {
 
     const fraction = new Fraction(2, 4);
     const fractionInterval = new FractionInterval(fraction, new Fraction(3, 4));
+    const balanced = new BaseSystem("T01", "Balanced ternary", {
+      radix: 3,
+      digitOffset: -1,
+      allowReserved: false,
+    });
     const values = [
       new Integer(2),
       fraction,
       fractionInterval,
       BaseSystem.HEXADECIMAL,
+      balanced,
     ];
     const revivedValues = JSON.parse(JSON.stringify(values), reviveCoreValue);
     expect(isInteger(revivedValues[0])).toBe(true);
@@ -233,6 +239,9 @@ describe("rounding and tagged JSON", () => {
     expect(revivedValues[1].toString()).toBe("2/4");
     expect(revivedValues[2].toString()).toBe("2/4:3/4");
     expect(revivedValues[3].equals(BaseSystem.HEXADECIMAL)).toBe(true);
+    expect(revivedValues[4].equals(balanced)).toBe(true);
+    expect(revivedValues[4].digitOffset).toBe(-1);
+    expect(revivedValues[4].fromDecimal(-5n)).toBe("T11");
     expect(isCoreNumber(fraction)).toBe(false);
     expect(reviveCoreValue("", { $ratmath: "Future", value: 1 })).toEqual({
       $ratmath: "Future",

@@ -2,11 +2,36 @@
 
 ## Unreleased
 
+## 0.4.0 — 2026-08-15
+
+### Added
+
 - Add `CertifiedApproximation`, decimal/base and continued-fraction `?`
   parsing, exact enclosure propagation, possible-relation masks, JSON revival,
-  and TypeScript declarations.
+  bounded approximation helpers, and TypeScript declarations.
+- Add signed-radix, balanced-digit, bijective-digit, and explicitly quoted
+  digit-alphabet support to `BaseSystem`, with capability flags that distinguish
+  integer conversion from ordinary fractional-place formatting.
+
+### Changed
+
 - Keep formatter ellipses display-only; certified uncertainty is represented
-  by an explicit approximation value.
+  by an explicit approximation value with an authoritative exact enclosure.
+- Require the publication gate to meet the configured coverage thresholds and
+  pin the development-only Bun declarations for reproducible installs.
+
+### Fixes
+
+- Preserve certified candidates and serializable dependency provenance across
+  string and tagged-JSON round trips, and freeze public representation metadata.
+- Reject unsafe JavaScript-number continued-fraction coefficients in certified
+  approximation constructors.
+- Preserve signed-radix `BaseSystem` options through tagged JSON revival, and
+  keep case folding valid when upper- and lowercase digits collapse.
+- Reject nonstandard digit systems in fractional expansion, period, and
+  certified radix-prefix algorithms instead of producing invalid digits.
+- Align TypeScript declarations and the manual with all public `BaseSystem` and
+  certified-approximation fields and options.
 
 ## 0.3.0 — 2026-08-07
 

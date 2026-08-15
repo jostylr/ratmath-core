@@ -50,6 +50,15 @@ export class BaseSystem {
    * @throws {Error} If entries are not unique single Unicode characters or contain conflicts
    */
   constructor(characters, name, options = {}) {
+    if (options === null || typeof options !== "object" || Array.isArray(options)) {
+      throw new TypeError("Base system options must be an object");
+    }
+    if (
+      options.allowReserved !== undefined &&
+      typeof options.allowReserved !== "boolean"
+    ) {
+      throw new TypeError("allowReserved must be a boolean");
+    }
     if (typeof characters === "string") {
       this.#characters = [...characters];
     } else if (Array.isArray(characters)) {
@@ -630,8 +639,9 @@ export class BaseSystem {
       // Convert to lowercase only
       const lowerChars = this.#characters.map((char) => char.toLowerCase());
       const uniqueLowerChars = [...new Set(lowerChars)];
+      const collapsed = uniqueLowerChars.length !== lowerChars.length;
 
-      if (uniqueLowerChars.length !== lowerChars.length) {
+      if (collapsed) {
         console.warn(
           "Case-insensitive conversion resulted in duplicate characters",
         );
@@ -640,7 +650,13 @@ export class BaseSystem {
       return new BaseSystem(
         uniqueLowerChars.join(""),
         `${this.#name} (case-insensitive)`,
-        { radix: this.#radix, digitOffset: this.#digitOffset, allowReserved: this.#allowReserved },
+        collapsed
+          ? { allowReserved: this.#allowReserved }
+          : {
+              radix: this.#radix,
+              digitOffset: this.#digitOffset,
+              allowReserved: this.#allowReserved,
+            },
       );
     }
 

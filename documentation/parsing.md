@@ -103,7 +103,9 @@ endpoint bracket is authoritative and round-trips as a certified scalar.
 For non-decimal bases, call `certifiedRadixPrefix` with a `BaseSystem`.
 `boundedDecimalApproximation` and `boundedContinuedFractionApproximation`
 explicitly convert an exact value at a work limit. Ordinary formatter
-ellipses remain nonparseable display truncation.
+ellipses remain nonparseable display truncation. See
+[`CertifiedApproximation`](certified-approximation.md) for arithmetic,
+relations, provenance, and serialization.
 
 ## Interval forms
 

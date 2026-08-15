@@ -216,12 +216,28 @@ new Rational(1, 3).toRepeatingBase(BaseSystem.BINARY); // "0.#01"
 new Rational(255).toBase(BaseSystem.HEXADECIMAL);       // "ff"
 ```
 
+Integer conversion also supports signed radices, balanced digits, and
+bijective digits through the optional `BaseSystem` constructor options:
+
+```js
+const balanced = new BaseSystem("T01", "Balanced ternary", {
+  radix: 3,
+  digitOffset: -1,
+});
+
+balanced.fromDecimal(-5n); // "T11"
+```
+
+These nonstandard systems support integers and exact numerator/denominator
+formatting. Repeating fractional expansions require an ordinary positional
+system; check `supportsPositionalFractions` before requesting one.
+
 The public API also includes `Integer`, `Fraction`, `FractionInterval`,
 `RationalInterval`, `BaseSystem`, and `TypePromotion`. TypeScript declarations
 ship with the package. `isInteger`, `isRational`, `isRationalInterval`,
-`isFraction`, `isFractionInterval`, `isBaseSystem`, and `isCoreNumber` are
-public type guards. Core values use tagged `toJSON()` output and can be restored
-with `JSON.parse(text, reviveCoreValue)`.
+`isCertifiedApproximation`, `isFraction`, `isFractionInterval`, `isBaseSystem`,
+and `isCoreNumber` are public type guards. Core values use tagged `toJSON()`
+output and can be restored with `JSON.parse(text, reviveCoreValue)`.
 
 ## Documentation
 

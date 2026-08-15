@@ -34,6 +34,7 @@ website:
           - integer.md
           - rational.md
           - rational-interval.md
+          - certified-approximation.md
           - fraction.md
           - fraction-interval.md
           - base-system.md

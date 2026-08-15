@@ -345,31 +345,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="citation" data-cites="ratmath/core">@ratmath/core</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./getting-started.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Getting started</span></a>
   </div>
 </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./parsing.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Number parsing</span></a>
   </div>
 </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./examples.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Examples</span></a>
   </div>
 </li>
         <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
+      <div class="sidebar-item-container">
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
  <span class="menu-text">Classes</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
@@ -378,43 +378,49 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </div>
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./integer.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Integer</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./rational.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Rational</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./rational-interval.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">RationalInterval</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
+  <a href="./certified-approximation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">CertifiedApproximation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container">
   <a href="./fraction.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Fraction</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./fraction-interval.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">FractionInterval</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./base-system.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">BaseSystem</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./type-promotion.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">TypePromotion</span></a>
   </div>
@@ -422,7 +428,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </ul>
   </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./api-index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">API index</span></a>
   </div>
@@ -438,6 +444,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#construct-a-system" id="toc-construct-a-system" class="nav-link active" data-scroll-target="#construct-a-system">Construct a system</a></li>
+  <li><a href="#signed-balanced-and-bijective-systems" id="toc-signed-balanced-and-bijective-systems" class="nav-link" data-scroll-target="#signed-balanced-and-bijective-systems">Signed, balanced, and bijective systems</a></li>
   <li><a href="#conversion-and-inspection" id="toc-conversion-and-inspection" class="nav-link" data-scroll-target="#conversion-and-inspection">Conversion and inspection</a></li>
   <li><a href="#presets" id="toc-presets" class="nav-link" data-scroll-target="#presets">Presets</a></li>
   <li><a href="#factories" id="toc-factories" class="nav-link" data-scroll-target="#factories">Factories</a></li>
@@ -473,14 +480,33 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="construct-a-system">Construct a system</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { BaseSystem } <span class="im">from</span> <span class="st">"@ratmath/core"</span><span class="op">;</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> balancedLooking <span class="op">=</span> <span class="kw">new</span> <span class="fu">BaseSystem</span>(<span class="st">"abc"</span><span class="op">,</span> <span class="st">"ABC digits"</span>)<span class="op">;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> custom <span class="op">=</span> <span class="kw">new</span> <span class="fu">BaseSystem</span>(<span class="st">"abc"</span><span class="op">,</span> <span class="st">"ABC digits"</span>)<span class="op">;</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>balancedLooking<span class="op">.</span><span class="at">base</span><span class="op">;</span>       <span class="co">// 3</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>balancedLooking<span class="op">.</span><span class="at">characters</span><span class="op">;</span> <span class="co">// ["a", "b", "c"]</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>balancedLooking<span class="op">.</span><span class="at">charMap</span><span class="op">.</span><span class="fu">get</span>(<span class="st">"c"</span>)<span class="op">;</span> <span class="co">// 2</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>balancedLooking<span class="op">.</span><span class="at">name</span><span class="op">;</span>       <span class="co">// "ABC digits"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>custom<span class="op">.</span><span class="at">base</span><span class="op">;</span>       <span class="co">// 3</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>custom<span class="op">.</span><span class="at">radix</span><span class="op">;</span>      <span class="co">// 3</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>custom<span class="op">.</span><span class="at">characters</span><span class="op">;</span> <span class="co">// ["a", "b", "c"]</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>custom<span class="op">.</span><span class="at">charMap</span><span class="op">.</span><span class="fu">get</span>(<span class="st">"c"</span>)<span class="op">;</span> <span class="co">// 2</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>custom<span class="op">.</span><span class="at">name</span><span class="op">;</span>       <span class="co">// "ABC digits"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>The first character has value zero, the second value one, and so on. The constructor accepts a string or an array and requires at least two unique single Unicode characters. It does <strong>not</strong> expand range syntax such as <code>"0-9a-f"</code>.</p>
-<p><code>+ - * / ^ ! ( ) [ ] : . # ~</code> are in <code>BaseSystem.RESERVED_SYMBOLS</code> and cannot be digits because they conflict with RatMath/RiX notation. The <code>characters</code> array and <code>charMap</code> getters return copies.</p>
+<p><code>+ - * / ^ ! ( ) [ ] : . # ~</code> are in <code>BaseSystem.RESERVED_SYMBOLS</code> and cannot be digits because they conflict with RatMath/RiX notation. A host that quotes the complete digit stream can opt in with <code>{ allowReserved: true }</code> and should check <code>requiresQuoting</code>. The <code>characters</code> array and <code>charMap</code> getters return copies.</p>
+</section>
+<section id="signed-balanced-and-bijective-systems" class="level2">
+<h2 class="anchored" data-anchor-id="signed-balanced-and-bijective-systems">Signed, balanced, and bijective systems</h2>
+<p>The optional third constructor argument changes the signed radix or the value of the first digit. Digit values remain consecutive.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> balanced <span class="op">=</span> <span class="kw">new</span> <span class="fu">BaseSystem</span>(<span class="st">"T01"</span><span class="op">,</span> <span class="st">"Balanced ternary"</span><span class="op">,</span> {</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">radix</span><span class="op">:</span> <span class="dv">3</span><span class="op">,</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">digitOffset</span><span class="op">:</span> <span class="op">-</span><span class="dv">1</span><span class="op">,</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> negabinary <span class="op">=</span> <span class="kw">new</span> <span class="fu">BaseSystem</span>(<span class="st">"01"</span><span class="op">,</span> <span class="st">"Negabinary"</span><span class="op">,</span> { <span class="dt">radix</span><span class="op">:</span> <span class="op">-</span><span class="dv">2</span> })<span class="op">;</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> bijective <span class="op">=</span> <span class="kw">new</span> <span class="fu">BaseSystem</span>(<span class="st">"ABCDEFGHIJKLMNOPQRSTUVWXYZ"</span><span class="op">,</span> <span class="st">"Bijective 26"</span><span class="op">,</span> {</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">radix</span><span class="op">:</span> <span class="dv">26</span><span class="op">,</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">digitOffset</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>balanced<span class="op">.</span><span class="fu">fromDecimal</span>(<span class="op">-</span><span class="dv">5</span>n)<span class="op">;</span> <span class="co">// "T11"</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>negabinary<span class="op">.</span><span class="fu">fromDecimal</span>(<span class="op">-</span><span class="dv">5</span>n)<span class="op">;</span> <span class="co">// "1111"</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>bijective<span class="op">.</span><span class="fu">fromDecimal</span>(<span class="dv">27</span>n)<span class="op">;</span> <span class="co">// "AA"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>base</code> is the alphabet size, while <code>radix</code> is the signed positional radix and <code>digitOffset</code> is the first character’s value. <code>supportsPositionalFractions</code> is true only for the ordinary configuration where <code>radix === base</code> and the first digit means zero. Nonstandard systems support exact integer conversion and numerator/denominator formatting. Repeating fractional expansions, period calculation, and certified radix-prefix construction reject them because those algorithms require ordinary nonnegative fractional-place digits. A bijective system has no representation for zero and throws if asked to format it.</p>
 </section>
 <section id="conversion-and-inspection" class="level2">
 <h2 class="anchored" data-anchor-id="conversion-and-inspection">Conversion and inspection</h2>
@@ -534,11 +560,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 </tbody>
 </table>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="at">HEXADECIMAL</span><span class="op">.</span><span class="fu">toDecimal</span>(<span class="st">"ff"</span>)<span class="op">;</span> <span class="co">// 255n</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="at">BINARY</span><span class="op">.</span><span class="fu">fromDecimal</span>(<span class="op">-</span><span class="dv">10</span>n)<span class="op">;</span>    <span class="co">// "-1010"</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="at">OCTAL</span><span class="op">.</span><span class="fu">isValidString</span>(<span class="st">"789"</span>)<span class="op">;</span>  <span class="co">// false</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="at">HEXADECIMAL</span><span class="op">.</span><span class="fu">getChar</span>(<span class="dv">15</span>)<span class="op">;</span>     <span class="co">// "f"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="at">HEXADECIMAL</span><span class="op">.</span><span class="fu">toDecimal</span>(<span class="st">"ff"</span>)<span class="op">;</span> <span class="co">// 255n</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="at">BINARY</span><span class="op">.</span><span class="fu">fromDecimal</span>(<span class="op">-</span><span class="dv">10</span>n)<span class="op">;</span>    <span class="co">// "-1010"</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="at">OCTAL</span><span class="op">.</span><span class="fu">isValidString</span>(<span class="st">"789"</span>)<span class="op">;</span>  <span class="co">// false</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="at">HEXADECIMAL</span><span class="op">.</span><span class="fu">getChar</span>(<span class="dv">15</span>)<span class="op">;</span>     <span class="co">// "f"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><code>toDecimal("-")</code> throws because a sign alone is not a numeral. Array entries containing more than one Unicode character and fractional, non-finite, or unsafe <code>getChar</code> indexes also throw.</p>
+<p>Case folding preserves signed-radix options when no digits collapse. When upper- and lowercase digits collapse to the same character, the result becomes an ordinary positional system whose base is the deduplicated alphabet size.</p>
 <p>Roman numerals are exposed as a custom alphabet named <code>ROMAN</code>, but conversion is positional base-7 conversion; it does not implement subtractive Roman numeral grammar.</p>
 </section>
 <section id="presets" class="level2">
@@ -617,7 +644,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="factories" class="level2">
 <h2 class="anchored" data-anchor-id="factories">Factories</h2>
 <p><code>BaseSystem.fromBase(base, name?)</code> builds the standard <code>0-9</code>, <code>a-z</code>, <code>A-Z</code> ordering for bases 2 through 62.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="fu">fromBase</span>(<span class="dv">16</span>)<span class="op">.</span><span class="fu">equals</span>(BaseSystem<span class="op">.</span><span class="at">HEXADECIMAL</span>)<span class="op">;</span> <span class="co">// true</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="fu">fromBase</span>(<span class="dv">16</span>)<span class="op">.</span><span class="fu">equals</span>(BaseSystem<span class="op">.</span><span class="at">HEXADECIMAL</span>)<span class="op">;</span> <span class="co">// true</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><code>BaseSystem.createPattern(pattern, size, name?)</code> accepts:</p>
 <table class="caption-top table">
 <thead>
@@ -685,9 +712,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 <p>Built-in prefixes are <code>b</code> (2), <code>t</code> (3), <code>q</code> (4), <code>f</code> (5), <code>s</code> (7), <code>o</code> (8), <code>d</code> (12), <code>x</code> (16), <code>v</code> (20), <code>u</code> (36), <code>m</code> (60), and <code>y</code> (64). Uppercase <code>D</code> is reserved and returns <code>null</code>; a missing prefix otherwise returns <code>undefined</code>.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="fu">getSystemForPrefix</span>(<span class="st">"x"</span>)<span class="op">.</span><span class="fu">equals</span>(BaseSystem<span class="op">.</span><span class="at">HEXADECIMAL</span>)<span class="op">;</span> <span class="co">// true</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="fu">getPrefixForSystem</span>(BaseSystem<span class="op">.</span><span class="at">BINARY</span>)<span class="op">;</span>                  <span class="co">// "b"</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="fu">getSystemForPrefix</span>(<span class="st">"D"</span>)<span class="op">;</span>                                <span class="co">// null</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Tagged JSON preserves <code>radix</code>, <code>digitOffset</code>, and <code>allowReserved</code>. Passing <code>reviveCoreValue</code> to <code>JSON.parse</code> restores the same conversion behavior.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="fu">getSystemForPrefix</span>(<span class="st">"x"</span>)<span class="op">.</span><span class="fu">equals</span>(BaseSystem<span class="op">.</span><span class="at">HEXADECIMAL</span>)<span class="op">;</span> <span class="co">// true</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="fu">getPrefixForSystem</span>(BaseSystem<span class="op">.</span><span class="at">BINARY</span>)<span class="op">;</span>                  <span class="co">// "b"</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="fu">getSystemForPrefix</span>(<span class="st">"D"</span>)<span class="op">;</span>                                <span class="co">// null</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>

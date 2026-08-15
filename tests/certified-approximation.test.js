@@ -6,10 +6,12 @@ import {
   Rational,
   RationalInterval,
   Relation,
+  certifiedContinuedFractionPrefix,
   certifiedRadixPrefix,
   boundedContinuedFractionApproximation,
   boundedDecimalApproximation,
   isCertifiedApproximation,
+  normalizeCertifiedApproximation,
   parseCertifiedApproximation,
   parseNumber,
   possibleRelations,
@@ -99,17 +101,105 @@ describe("CertifiedApproximation", () => {
       .toBe(Relation.LESS | Relation.EQUAL | Relation.GREATER);
     const value = parseNumber("2?");
     expect(possibleRelations(value, value.copy())).toBe(Relation.EQUAL);
+    expect(value.possibleRelationsTo(new Rational(5, 2))).toBe(
+      Relation.LESS | Relation.EQUAL | Relation.GREATER,
+    );
+    expect(new Integer(1).possibleRelationsTo(value)).toBe(Relation.LESS);
+    expect(new Rational(5, 2).possibleRelationsTo(value)).toBe(
+      Relation.LESS | Relation.EQUAL | Relation.GREATER,
+    );
+    expect(new RationalInterval(2, 3).possibleRelationsTo(new Integer(3))).toBe(
+      Relation.LESS | Relation.EQUAL,
+    );
+    expect(() => new RationalInterval(2, 3).possibleRelationsTo({})).toThrow(
+      "Core numeric value",
+    );
+  });
+
+  it("propagates unary operations and explicit conversions", () => {
+    const value = parseNumber("2.0?5");
+    const negated = value.negate();
+    const reciprocal = value.reciprocal();
+    const quotient = value.divide(new Integer(2));
+    const squared = value.pow(2);
+    const shiftedExponent = value.E(1);
+
+    expect(negated.candidate.toString()).toBe("-41/20");
+    expect(negated.enclosure.toString()).toBe("-21/10:-2");
+    expect(reciprocal.candidate.toString()).toBe("20/41");
+    expect(reciprocal.enclosure.toString()).toBe("10/21:1/2");
+    expect(quotient.enclosure.toString()).toBe("1:21/20");
+    expect(value.divide(value).toString()).toBe("1");
+    const zeroContaining = parseNumber("0?");
+    expect(() => zeroContaining.divide(zeroContaining.copy()))
+      .toThrow("containing zero");
+    expect(squared.candidate.toString()).toBe("1681/400");
+    expect(squared.enclosure.toString()).toBe("4:441/100");
+    expect(shiftedExponent.candidate.toString()).toBe("41/2");
+    expect(shiftedExponent.enclosure.toString()).toBe("20:21");
+    expect(value.toRationalInterval()).toBe(value.enclosure);
+    expect(() => value.toRational()).toThrow("non-point");
+
+    const point = new CertifiedApproximation(
+      new Integer(2),
+      RationalInterval.point(2),
+    );
+    expect(point.toRational().toString()).toBe("2");
+    expect(normalizeCertifiedApproximation(
+      new Integer(2),
+      RationalInterval.point(2),
+    ).toString()).toBe("2");
   });
 
   it("round-trips portable JSON while preserving a stable source id", () => {
     const value = new CertifiedApproximation(
       new Rational(3n, 2n),
       new RationalInterval(1, 2),
-      { sourceId: "sensor-7", representation: { kind: "derived", reason: "derived" } },
+      {
+        sourceId: "sensor-7",
+        dependencies: ["calibration-2", Symbol("local-only")],
+        representation: {
+          kind: "derived",
+          reason: "derived",
+          requested: { fractionalDigits: 8 },
+        },
+      },
     );
+    expect(Object.isFrozen(value.representation.requested)).toBe(true);
     const revived = JSON.parse(JSON.stringify(value), reviveCoreValue);
     expect(revived).toBeInstanceOf(CertifiedApproximation);
     expect(revived.sameSource(value)).toBe(true);
+    expect(revived.dependencies).toEqual(["calibration-2"]);
+  });
+
+  it("preserves a derived candidate in parseable string output", () => {
+    const value = parseNumber("2?").add(new Rational(1, 2));
+    const spelling = value.toString();
+    const revived = parseNumber(spelling);
+
+    expect(spelling).toBe("5/2?[=5/2:7/2]");
+    expect(revived.candidate.equals(value.candidate)).toBe(true);
+    expect(revived.enclosure.equals(value.enclosure)).toBe(true);
+  });
+
+  it("validates public construction and exact coefficient inputs", () => {
+    const interval = new RationalInterval(1, 2);
+    expect(() => new CertifiedApproximation(1, interval, null)).toThrow(
+      "options must be an object",
+    );
+    expect(() => new CertifiedApproximation(1, interval, { dependencies: "source" }))
+      .toThrow("dependencies must be an array");
+    expect(() => certifiedContinuedFractionPrefix({
+      coefficients: [0, Number.MAX_SAFE_INTEGER + 1],
+    })).toThrow("safe integer");
+
+    const balanced = new BaseSystem("T01", "Balanced ternary", {
+      digitOffset: -1,
+    });
+    expect(() => certifiedRadixPrefix({
+      integerDigits: "1",
+      baseSystem: balanced,
+    })).toThrow("conventional positional");
   });
 
   it("makes bounded conversion explicit and leaves ordinary ellipses display-only", () => {

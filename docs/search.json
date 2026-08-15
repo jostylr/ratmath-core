@@ -64,7 +64,19 @@
     "href": "base-system.html#construct-a-system",
     "title": "BaseSystem",
     "section": "Construct a system",
-    "text": "Construct a system\nimport { BaseSystem } from \"@ratmath/core\";\n\nconst balancedLooking = new BaseSystem(\"abc\", \"ABC digits\");\n\nbalancedLooking.base;       // 3\nbalancedLooking.characters; // [\"a\", \"b\", \"c\"]\nbalancedLooking.charMap.get(\"c\"); // 2\nbalancedLooking.name;       // \"ABC digits\"\nThe first character has value zero, the second value one, and so on. The constructor accepts a string or an array and requires at least two unique single Unicode characters. It does not expand range syntax such as \"0-9a-f\".\n+ - * / ^ ! ( ) [ ] : . # ~ are in BaseSystem.RESERVED_SYMBOLS and cannot be digits because they conflict with RatMath/RiX notation. The characters array and charMap getters return copies.",
+    "text": "Construct a system\nimport { BaseSystem } from \"@ratmath/core\";\n\nconst custom = new BaseSystem(\"abc\", \"ABC digits\");\n\ncustom.base;       // 3\ncustom.radix;      // 3\ncustom.characters; // [\"a\", \"b\", \"c\"]\ncustom.charMap.get(\"c\"); // 2\ncustom.name;       // \"ABC digits\"\nThe first character has value zero, the second value one, and so on. The constructor accepts a string or an array and requires at least two unique single Unicode characters. It does not expand range syntax such as \"0-9a-f\".\n+ - * / ^ ! ( ) [ ] : . # ~ are in BaseSystem.RESERVED_SYMBOLS and cannot be digits because they conflict with RatMath/RiX notation. A host that quotes the complete digit stream can opt in with { allowReserved: true } and should check requiresQuoting. The characters array and charMap getters return copies.",
+    "crumbs": [
+      "Overview",
+      "Classes",
+      "BaseSystem"
+    ]
+  },
+  {
+    "objectID": "base-system.html#signed-balanced-and-bijective-systems",
+    "href": "base-system.html#signed-balanced-and-bijective-systems",
+    "title": "BaseSystem",
+    "section": "Signed, balanced, and bijective systems",
+    "text": "Signed, balanced, and bijective systems\nThe optional third constructor argument changes the signed radix or the value of the first digit. Digit values remain consecutive.\nconst balanced = new BaseSystem(\"T01\", \"Balanced ternary\", {\n  radix: 3,\n  digitOffset: -1,\n});\nconst negabinary = new BaseSystem(\"01\", \"Negabinary\", { radix: -2 });\nconst bijective = new BaseSystem(\"ABCDEFGHIJKLMNOPQRSTUVWXYZ\", \"Bijective 26\", {\n  radix: 26,\n  digitOffset: 1,\n});\n\nbalanced.fromDecimal(-5n); // \"T11\"\nnegabinary.fromDecimal(-5n); // \"1111\"\nbijective.fromDecimal(27n); // \"AA\"\nbase is the alphabet size, while radix is the signed positional radix and digitOffset is the first character’s value. supportsPositionalFractions is true only for the ordinary configuration where radix === base and the first digit means zero. Nonstandard systems support exact integer conversion and numerator/denominator formatting. Repeating fractional expansions, period calculation, and certified radix-prefix construction reject them because those algorithms require ordinary nonnegative fractional-place digits. A bijective system has no representation for zero and throws if asked to format it.",
     "crumbs": [
       "Overview",
       "Classes",
@@ -76,7 +88,7 @@
     "href": "base-system.html#conversion-and-inspection",
     "title": "BaseSystem",
     "section": "Conversion and inspection",
-    "text": "Conversion and inspection\n\n\n\n\n\n\n\nMethod\nResult\n\n\n\n\ngetChar(value)\nDigit at an in-range safe integer value; otherwise throws\n\n\ntoDecimal(text)\nSigned digit string converted to bigint\n\n\nfromDecimal(value)\nbigint converted to a signed digit string\n\n\nisValidString(text)\nWhether the optional-minus string contains only digits in the system\n\n\ngetMinDigit()\nZero digit\n\n\ngetMaxDigit()\nHighest-value digit\n\n\ntoString()\nHuman-readable name and alphabet preview\n\n\nequals(other)\nEquality of the ordered digit alphabets\n\n\nwithCaseSensitivity(flag)\nthis for true; a lowercased/deduplicated system for false\n\n\n\nBaseSystem.HEXADECIMAL.toDecimal(\"ff\"); // 255n\nBaseSystem.BINARY.fromDecimal(-10n);    // \"-1010\"\nBaseSystem.OCTAL.isValidString(\"789\");  // false\nBaseSystem.HEXADECIMAL.getChar(15);     // \"f\"\ntoDecimal(\"-\") throws because a sign alone is not a numeral. Array entries containing more than one Unicode character and fractional, non-finite, or unsafe getChar indexes also throw.\nRoman numerals are exposed as a custom alphabet named ROMAN, but conversion is positional base-7 conversion; it does not implement subtractive Roman numeral grammar.",
+    "text": "Conversion and inspection\n\n\n\n\n\n\n\nMethod\nResult\n\n\n\n\ngetChar(value)\nDigit at an in-range safe integer value; otherwise throws\n\n\ntoDecimal(text)\nSigned digit string converted to bigint\n\n\nfromDecimal(value)\nbigint converted to a signed digit string\n\n\nisValidString(text)\nWhether the optional-minus string contains only digits in the system\n\n\ngetMinDigit()\nZero digit\n\n\ngetMaxDigit()\nHighest-value digit\n\n\ntoString()\nHuman-readable name and alphabet preview\n\n\nequals(other)\nEquality of the ordered digit alphabets\n\n\nwithCaseSensitivity(flag)\nthis for true; a lowercased/deduplicated system for false\n\n\n\nBaseSystem.HEXADECIMAL.toDecimal(\"ff\"); // 255n\nBaseSystem.BINARY.fromDecimal(-10n);    // \"-1010\"\nBaseSystem.OCTAL.isValidString(\"789\");  // false\nBaseSystem.HEXADECIMAL.getChar(15);     // \"f\"\ntoDecimal(\"-\") throws because a sign alone is not a numeral. Array entries containing more than one Unicode character and fractional, non-finite, or unsafe getChar indexes also throw.\nCase folding preserves signed-radix options when no digits collapse. When upper- and lowercase digits collapse to the same character, the result becomes an ordinary positional system whose base is the deduplicated alphabet size.\nRoman numerals are exposed as a custom alphabet named ROMAN, but conversion is positional base-7 conversion; it does not implement subtractive Roman numeral grammar.",
     "crumbs": [
       "Overview",
       "Classes",
@@ -112,7 +124,7 @@
     "href": "base-system.html#prefix-registry",
     "title": "BaseSystem",
     "section": "Prefix registry",
-    "text": "Prefix registry\nThe registry is metadata for parser integrations; the core number parser does not itself parse prefixed values.\n\n\n\n\n\n\n\nMethod\nBehavior\n\n\n\n\nregisterPrefix(prefix, system)\nRegister one ASCII letter\n\n\nunregisterPrefix(prefix)\nRemove its exact entry\n\n\nhasExactPrefix(prefix)\nExact-case membership\n\n\ngetSystemForPrefix(prefix)\nExact match, then mostly case-insensitive lookup\n\n\ngetPrefixForSystem(system)\nFirst registered prefix for an equal alphabet\n\n\n\nBuilt-in prefixes are b (2), t (3), q (4), f (5), s (7), o (8), d (12), x (16), v (20), u (36), m (60), and y (64). Uppercase D is reserved and returns null; a missing prefix otherwise returns undefined.\nBaseSystem.getSystemForPrefix(\"x\").equals(BaseSystem.HEXADECIMAL); // true\nBaseSystem.getPrefixForSystem(BaseSystem.BINARY);                  // \"b\"\nBaseSystem.getSystemForPrefix(\"D\");                                // null",
+    "text": "Prefix registry\nThe registry is metadata for parser integrations; the core number parser does not itself parse prefixed values.\n\n\n\n\n\n\n\nMethod\nBehavior\n\n\n\n\nregisterPrefix(prefix, system)\nRegister one ASCII letter\n\n\nunregisterPrefix(prefix)\nRemove its exact entry\n\n\nhasExactPrefix(prefix)\nExact-case membership\n\n\ngetSystemForPrefix(prefix)\nExact match, then mostly case-insensitive lookup\n\n\ngetPrefixForSystem(system)\nFirst registered prefix for an equal alphabet\n\n\n\nBuilt-in prefixes are b (2), t (3), q (4), f (5), s (7), o (8), d (12), x (16), v (20), u (36), m (60), and y (64). Uppercase D is reserved and returns null; a missing prefix otherwise returns undefined.\nTagged JSON preserves radix, digitOffset, and allowReserved. Passing reviveCoreValue to JSON.parse restores the same conversion behavior.\nBaseSystem.getSystemForPrefix(\"x\").equals(BaseSystem.HEXADECIMAL); // true\nBaseSystem.getPrefixForSystem(BaseSystem.BINARY);                  // \"b\"\nBaseSystem.getSystemForPrefix(\"D\");                                // null",
     "crumbs": [
       "Overview",
       "Classes",
@@ -194,7 +206,7 @@
     "href": "parsing.html#scalar-forms",
     "title": "Number parsing",
     "section": "Scalar forms",
-    "text": "Scalar forms\nimport {\n  parseNumber,\n  parseRational,\n  parseDecimal,\n  parseMixedNumber,\n  parseContinuedFraction,\n} from \"@ratmath/core\";\n\nparseNumber(\"-1_000\").toString();          // \"-1000\"\nparseRational(\"-3/4\").toString();          // \"-3/4\"\nparseDecimal(\".125\").toString();           // \"1/8\"\nparseDecimal(\"0.1#6\").toString();          // \"1/6\"\nparseMixedNumber(\"-2..1/4\").toString();    // \"-9/4\"\nparseContinuedFraction(\"3.~7~15\").toString(); // \"333/106\"\nparseContinuedFraction([3n, 7n, 15n]).toString(); // \"333/106\"\n\nRepeating decimals\n# starts the repeating block:\n\n\n\nLiteral\nExact value\n\n\n\n\n0.#3\n1/3\n\n\n0.1#6\n1/6\n\n\n12.34#56\nnon-repeating 34, then repeating 56\n\n\n1.25#0\n5/4; an all-zero repeat is terminating\n\n\n\nDigit-run compression is accepted inside a decimal: {digits~count} repeats the digit string count times. For example, 0.{0~8}1 is exactly 0.000000001. Expansion is capped at 100,000 digits.\n\n\nMixed fractions\nThe syntax is whole..numerator/denominator. A leading minus applies to the whole value:\nparseMixedNumber(\"2..1/4\").toString();  // \"9/4\"\nparseMixedNumber(\"-2..1/4\").toString(); // \"-9/4\"\n\n\nContinued fractions\nA finite simple continued fraction [a0; a1, a2, ...] is written a0.~a1~a2.... Tail coefficients are unsigned decimal integers. An explicit leading ~ is accepted for compatibility with RiX negative literal syntax:\nparseContinuedFraction(\"-3.~1~3\").toString();  // \"-9/4\"\nparseContinuedFraction(\"~-3.~1~3\").toString(); // \"-9/4\"\n\n\nCertified approximation prefixes\n? embedded in a decimal or continued fraction denies exact completion. Text to its left is certified; text to its right is provisional candidate data:\nconst reading = parseNumber(\"23.456?789\");\nreading.candidate.toString(); // \"23456789/1000000\"\nreading.enclosure.toString(); // \"2932/125:23457/1000\"\n\nparseNumber(\"3.~7~15?\").enclosure.toString();\n// \"333/106:355/113\"\nAn explicit bracket, such as 23.456?789[+-12], narrows the authoritative enclosure and is rejected if it lies outside the certified prefix cell. Bare ? is not a Core number and is rejected.\nThe serialization form candidate?[=low:high] is reserved for derived approximations whose enclosure has no useful common radix prefix. Its exact endpoint bracket is authoritative and round-trips as a certified scalar.\nFor non-decimal bases, call certifiedRadixPrefix with a BaseSystem. boundedDecimalApproximation and boundedContinuedFractionApproximation explicitly convert an exact value at a work limit. Ordinary formatter ellipses remain nonparseable display truncation.",
+    "text": "Scalar forms\nimport {\n  parseNumber,\n  parseRational,\n  parseDecimal,\n  parseMixedNumber,\n  parseContinuedFraction,\n} from \"@ratmath/core\";\n\nparseNumber(\"-1_000\").toString();          // \"-1000\"\nparseRational(\"-3/4\").toString();          // \"-3/4\"\nparseDecimal(\".125\").toString();           // \"1/8\"\nparseDecimal(\"0.1#6\").toString();          // \"1/6\"\nparseMixedNumber(\"-2..1/4\").toString();    // \"-9/4\"\nparseContinuedFraction(\"3.~7~15\").toString(); // \"333/106\"\nparseContinuedFraction([3n, 7n, 15n]).toString(); // \"333/106\"\n\nRepeating decimals\n# starts the repeating block:\n\n\n\nLiteral\nExact value\n\n\n\n\n0.#3\n1/3\n\n\n0.1#6\n1/6\n\n\n12.34#56\nnon-repeating 34, then repeating 56\n\n\n1.25#0\n5/4; an all-zero repeat is terminating\n\n\n\nDigit-run compression is accepted inside a decimal: {digits~count} repeats the digit string count times. For example, 0.{0~8}1 is exactly 0.000000001. Expansion is capped at 100,000 digits.\n\n\nMixed fractions\nThe syntax is whole..numerator/denominator. A leading minus applies to the whole value:\nparseMixedNumber(\"2..1/4\").toString();  // \"9/4\"\nparseMixedNumber(\"-2..1/4\").toString(); // \"-9/4\"\n\n\nContinued fractions\nA finite simple continued fraction [a0; a1, a2, ...] is written a0.~a1~a2.... Tail coefficients are unsigned decimal integers. An explicit leading ~ is accepted for compatibility with RiX negative literal syntax:\nparseContinuedFraction(\"-3.~1~3\").toString();  // \"-9/4\"\nparseContinuedFraction(\"~-3.~1~3\").toString(); // \"-9/4\"\n\n\nCertified approximation prefixes\n? embedded in a decimal or continued fraction denies exact completion. Text to its left is certified; text to its right is provisional candidate data:\nconst reading = parseNumber(\"23.456?789\");\nreading.candidate.toString(); // \"23456789/1000000\"\nreading.enclosure.toString(); // \"2932/125:23457/1000\"\n\nparseNumber(\"3.~7~15?\").enclosure.toString();\n// \"333/106:355/113\"\nAn explicit bracket, such as 23.456?789[+-12], narrows the authoritative enclosure and is rejected if it lies outside the certified prefix cell. Bare ? is not a Core number and is rejected.\nThe serialization form candidate?[=low:high] is reserved for derived approximations whose enclosure has no useful common radix prefix. Its exact endpoint bracket is authoritative and round-trips as a certified scalar.\nFor non-decimal bases, call certifiedRadixPrefix with a BaseSystem. boundedDecimalApproximation and boundedContinuedFractionApproximation explicitly convert an exact value at a work limit. Ordinary formatter ellipses remain nonparseable display truncation. See CertifiedApproximation for arithmetic, relations, provenance, and serialization.",
     "crumbs": [
       "Overview",
       "Number parsing"
@@ -238,7 +250,7 @@
     "href": "api-index.html#classes",
     "title": "API index",
     "section": "Classes",
-    "text": "Classes\n\n\n\nExport\nConstructor\n\n\n\n\nInteger\nnew Integer(value)\n\n\nRational\nnew Rational(numerator, denominator?)\n\n\nRationalInterval\nnew RationalInterval(a, b)\n\n\nCertifiedApproximation\nnew CertifiedApproximation(candidate, enclosure, options?)\n\n\nFraction\nnew Fraction(numerator, denominator?, options?)\n\n\nFractionInterval\nnew FractionInterval(a, b)\n\n\nBaseSystem\nnew BaseSystem(characters, name?)\n\n\nTypePromotion\nStatic utility class; do not instantiate",
+    "text": "Classes\n\n\n\nExport\nConstructor\n\n\n\n\nInteger\nnew Integer(value)\n\n\nRational\nnew Rational(numerator, denominator?)\n\n\nRationalInterval\nnew RationalInterval(a, b)\n\n\nCertifiedApproximation\nnew CertifiedApproximation(candidate, enclosure, options?)\n\n\nFraction\nnew Fraction(numerator, denominator?, options?)\n\n\nFractionInterval\nnew FractionInterval(a, b)\n\n\nBaseSystem\nnew BaseSystem(characters, name?, options?)\n\n\nTypePromotion\nStatic utility class; do not instantiate",
     "crumbs": [
       "Overview",
       "API index"
@@ -282,7 +294,7 @@
     "href": "api-index.html#method-checklist",
     "title": "API index",
     "section": "Method checklist",
-    "text": "Method checklist\nThis is a compact inventory; the linked class pages document behavior, examples, edge cases, and return types.\n\n\n\n\n\n\n\nClass\nPublic members\n\n\n\n\nInteger\nvalue; add, subtract, multiply, divide, modulo, negate, pow; comparisons; abs, sign, sign/parity predicates; gcd, lcm; toString, toBase, toNumber, toRational; E, factorial, doubleFactorial, bitLength; static zero, one, from, fromRational\n\n\nRational\nnumerator, denominator; arithmetic, comparison, abs; fraction/mixed/decimal/base/scientific formatters; period metadata; continued fractions, convergents, and bounded approximations; E, bitLength; static construction helpers and formatting limits\n\n\nRationalInterval\nstart, end, isAscending, low, high; arithmetic, pow, mpow; containment/set operations; interval formatters; mediant, midpoint, shortestDecimal, denominatorInterval, randomRational, E, bitLength; static zero, one, unitInterval, point, fromString\n\n\nCertifiedApproximation\ncandidate, authoritative enclosure, immutable representation, sourceId; scalar enclosure arithmetic; exact/interval conversions; possibleRelationsTo; copy, formatting, and JSON\n\n\nFraction\nnumerator, denominator, isInfinite; unreduced arithmetic, comparisons, scale, reduce, E; mediant/Farey operations; Stern–Brocot navigation; static conversion and relationship helpers\n\n\nFractionInterval\nlow, high; mediantSplit, partitionWithMediants, partitionWith; conversion, string/equality, E; static fromRationalInterval\n\n\nBaseSystem\nbase, characters, charMap, name; digit conversion/validation; equality/case behavior; presets, factories, and prefix registry\n\n\nTypePromotion\nType-level inspection/promotion; arithmetic dispatch; power, E notation, negation; syntactic type classification\n\n\n\nThe installed package’s index.d.ts is the authoritative machine-readable signature reference.",
+    "text": "Method checklist\nThis is a compact inventory; the linked class pages document behavior, examples, edge cases, and return types.\n\n\n\nClass\nPublic members\n\n\n\n\nInteger\nvalue; add, subtract, multiply, divide, modulo, negate, pow; comparisons; abs, sign, sign/parity predicates; gcd, lcm; toString, toBase, toNumber, toRational; E, factorial, doubleFactorial, bitLength; static zero, one, from, fromRational\n\n\nRational\nnumerator, denominator; arithmetic, comparison, abs; fraction/mixed/decimal/base/scientific formatters; period metadata; continued fractions, convergents, and bounded approximations; E, bitLength; static construction helpers and formatting limits\n\n\nRationalInterval\nstart, end, isAscending, low, high; arithmetic, pow, mpow; containment/set operations; interval formatters; mediant, midpoint, shortestDecimal, denominatorInterval, randomRational, E, bitLength; static zero, one, unitInterval, point, fromString\n\n\nCertifiedApproximation\ncandidate, authoritative enclosure, immutable representation, sourceId, dependencies; scalar enclosure arithmetic; exact/interval conversions; possibleRelationsTo; copy, formatting, and JSON\n\n\nFraction\nnumerator, denominator, isInfinite; unreduced arithmetic, comparisons, scale, reduce, E; mediant/Farey operations; Stern–Brocot navigation; static conversion and relationship helpers\n\n\nFractionInterval\nlow, high; mediantSplit, partitionWithMediants, partitionWith; conversion, string/equality, E; static fromRationalInterval\n\n\nBaseSystem\nbase, signed radix, digitOffset, fractional/quoting capability flags, characters, charMap, name; digit conversion/validation; equality/case behavior; presets, factories, and prefix registry\n\n\nTypePromotion\nType-level inspection/promotion; arithmetic dispatch; power, E notation, negation; syntactic type classification\n\n\n\nThe installed package’s index.d.ts is the authoritative machine-readable signature reference.",
     "crumbs": [
       "Overview",
       "API index"
@@ -358,6 +370,66 @@
       "Overview",
       "Classes",
       "Integer"
+    ]
+  },
+  {
+    "objectID": "certified-approximation.html",
+    "href": "certified-approximation.html",
+    "title": "CertifiedApproximation",
+    "section": "",
+    "text": "CertifiedApproximation represents one uncertain scalar. It stores a finite candidate for display or downstream estimation and a closed, exact RationalInterval that is the authoritative guarantee.\nThe candidate must lie inside the enclosure. Constructor inputs that violate that invariant throw. representation, its standard metadata records, and dependencies are frozen copies, so later caller mutation cannot change the approximation contract.",
+    "crumbs": [
+      "Overview",
+      "Classes",
+      "CertifiedApproximation"
+    ]
+  },
+  {
+    "objectID": "certified-approximation.html#construction-helpers",
+    "href": "certified-approximation.html#construction-helpers",
+    "title": "CertifiedApproximation",
+    "section": "Construction helpers",
+    "text": "Construction helpers\nLiteral parsing is usually the shortest route; see Parsing. Programmatic APIs are also available:\n\n\n\n\n\n\n\nExport\nResult\n\n\n\n\ncertifiedRadixPrefix(options)\nCertified ordinary positional-radix prefix and optional provisional digits\n\n\ncertifiedContinuedFractionPrefix(options)\nCertified continued-fraction coefficient prefix\n\n\nboundedDecimalApproximation(value, options?)\nExact terminating scalar or certified decimal prefix at the requested digit bound\n\n\nboundedContinuedFractionApproximation(value, options?)\nExact finite scalar or certified coefficient prefix at the requested term bound\n\n\nnormalizeCertifiedApproximation(candidate, enclosure, options?)\nExact scalar for a point enclosure unless preserveWrapper is true; otherwise a wrapper\n\n\n\ncertifiedRadixPrefix requires a conventional positional BaseSystem whose first digit means zero. Signed, balanced, and bijective systems support integer conversion but do not define the ordinary fractional cylinders this helper certifies.",
+    "crumbs": [
+      "Overview",
+      "Classes",
+      "CertifiedApproximation"
+    ]
+  },
+  {
+    "objectID": "certified-approximation.html#arithmetic",
+    "href": "certified-approximation.html#arithmetic",
+    "title": "CertifiedApproximation",
+    "section": "Arithmetic",
+    "text": "Arithmetic\nadd, subtract, multiply, divide, negate, reciprocal, pow, and E propagate the exact enclosure. Arithmetic with Integer, Rational, or another CertifiedApproximation keeps scalar-uncertainty semantics. An explicit operation with RationalInterval returns interval arithmetic instead.\nconst shifted = reading.add(parseNumber(\"0.5\"));\n\nshifted.candidate.toString(); // \"23956789/1000000\"\nshifted.enclosure.toString(); // \"5989/250:23957/1000\"\nSubtracting two wrappers with the same sourceId is exactly zero. Dividing a wrapper by the same source is exactly one unless its enclosure contains zero. Derived wrappers receive a new source identity and record serializable source dependencies when available.",
+    "crumbs": [
+      "Overview",
+      "Classes",
+      "CertifiedApproximation"
+    ]
+  },
+  {
+    "objectID": "certified-approximation.html#relations",
+    "href": "certified-approximation.html#relations",
+    "title": "CertifiedApproximation",
+    "section": "Relations",
+    "text": "Relations\nOverlapping enclosures do not justify a single Boolean comparison. Use possibleRelations(left, right) or value.possibleRelationsTo(other). The result is a bit mask composed from Relation.LESS, Relation.EQUAL, and Relation.GREATER.\nimport { Relation, possibleRelations } from \"@ratmath/core\";\n\nconst mask = possibleRelations(parseNumber(\"2?\"), parseNumber(\"2.5?\"));\nconst couldBeLess = (mask & Relation.LESS) !== 0;\nWrappers copied from the same source compare as Relation.EQUAL; this records identity of the uncertain scalar rather than a claim that its unknown exact value equals every point in its enclosure.",
+    "crumbs": [
+      "Overview",
+      "Classes",
+      "CertifiedApproximation"
+    ]
+  },
+  {
+    "objectID": "certified-approximation.html#conversion-and-serialization",
+    "href": "certified-approximation.html#conversion-and-serialization",
+    "title": "CertifiedApproximation",
+    "section": "Conversion and serialization",
+    "text": "Conversion and serialization\n\n\n\n\n\n\n\nMember\nResult\n\n\n\n\ntoRationalInterval()\nAuthoritative enclosure\n\n\ntoRational()\nPoint value, or throws for a non-point enclosure\n\n\ncopy()\nNew wrapper preserving source identity and metadata\n\n\ntoString()\nParseable prefix notation or candidate?[=low:high]\n\n\ntoJSON()\nTagged candidate, enclosure, representation, serializable source ID, and dependencies\n\n\n\ntoString() preserves both candidate and enclosure across a parseNumber round trip. Tagged JSON additionally preserves representation metadata and all string or number provenance identifiers:\nimport { reviveCoreValue } from \"@ratmath/core\";\n\nconst restored = JSON.parse(JSON.stringify(reading), reviveCoreValue);\nrestored.enclosure.equals(reading.enclosure); // true\nJavaScript symbols are process-local and cannot be represented in JSON. A symbol source receives a new local identity after revival, and symbol dependencies are omitted from serialized output.",
+    "crumbs": [
+      "Overview",
+      "Classes",
+      "CertifiedApproximation"
     ]
   },
   {
@@ -834,7 +906,7 @@
     "href": "index.html#what-is-included",
     "title": "@ratmath/core",
     "section": "What is included",
-    "text": "What is included\n\n\n\nAPI\nPurpose\n\n\n\n\nInteger\nArbitrary-precision integer arithmetic\n\n\nRational\nReduced exact rational arithmetic, repeating expansions, and finite continued fractions\n\n\nRationalInterval\nClosed exact intervals with arithmetic and compact display forms\n\n\nFraction\nUnreduced fractions and Farey/Stern–Brocot operations\n\n\nFractionInterval\nIntervals that preserve unreduced endpoint representations\n\n\nBaseSystem\nOrdered digit alphabets and integer/rational conversion\n\n\nTypePromotion\nExplicit promotion and arithmetic dispatch across core number types\n\n\nParsing helpers\nNumber-only parsing for decimals, mixed numbers, continued fractions, and intervals\n\n\n\nAll classes are immutable in normal use: operations construct new values. Rational normalizes its sign and reduces to lowest terms, while Fraction deliberately preserves the numerator and denominator supplied by the caller.",
+    "text": "What is included\n\n\n\nAPI\nPurpose\n\n\n\n\nInteger\nArbitrary-precision integer arithmetic\n\n\nRational\nReduced exact rational arithmetic, repeating expansions, and finite continued fractions\n\n\nRationalInterval\nClosed exact intervals with arithmetic and compact display forms\n\n\nCertifiedApproximation\nFinite scalar candidates with authoritative exact enclosures\n\n\nFraction\nUnreduced fractions and Farey/Stern–Brocot operations\n\n\nFractionInterval\nIntervals that preserve unreduced endpoint representations\n\n\nBaseSystem\nOrdered digit alphabets and integer/rational conversion\n\n\nTypePromotion\nExplicit promotion and arithmetic dispatch across core number types\n\n\nParsing helpers\nNumber-only parsing for decimals, mixed numbers, continued fractions, and intervals\n\n\n\nAll classes are immutable in normal use: operations construct new values. Rational normalizes its sign and reduces to lowest terms, while Fraction deliberately preserves the numerator and denominator supplied by the caller.",
     "crumbs": [
       "Overview",
       "@ratmath/core"

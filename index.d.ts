@@ -8,6 +8,7 @@ export type ApproximationReason =
   | "truncated"
   | "rounded"
   | "derived"
+  | "serialized"
   | "budgetExhausted";
 export type SternBrocotDirection = "L" | "R";
 export type LimitBehavior = "trunc" | "null" | "error";
@@ -53,6 +54,13 @@ export interface ContinuedFractionOptions {
   long?: boolean;
 }
 
+export interface ApproximationPresentationHint {
+  base: number;
+  characters: string;
+  certifiedFractionalDigits: number;
+  provisionalDigits: number;
+}
+
 export interface ApproximationRepresentation {
   kind: "radix" | "continuedFraction" | "derived";
   reason?: ApproximationReason;
@@ -64,6 +72,7 @@ export interface ApproximationRepresentation {
   requested?: Readonly<Record<string, unknown>>;
   achieved?: Readonly<Record<string, unknown>>;
   roundingMode?: RoundingMode;
+  presentationHint?: Readonly<ApproximationPresentationHint>;
 }
 
 export interface CertifiedApproximationOptions {
@@ -113,6 +122,7 @@ export class CertifiedApproximation {
     enclosure: RationalInterval;
     representation: Readonly<ApproximationRepresentation> | null;
     sourceId: string | number | null;
+    dependencies: ReadonlyArray<string | number>;
   };
 }
 
@@ -460,6 +470,12 @@ export class FractionInterval {
   static fromRationalInterval(interval: RationalInterval): FractionInterval;
 }
 
+export interface BaseSystemOptions {
+  radix?: number;
+  digitOffset?: number;
+  allowReserved?: boolean;
+}
+
 export class BaseSystem {
   static RESERVED_SYMBOLS: Set<string>;
   static BINARY: BaseSystem;
@@ -478,8 +494,17 @@ export class BaseSystem {
   static BASE64: BaseSystem;
   static ROMAN: BaseSystem;
 
-  constructor(characters: string | string[], name?: string);
+  constructor(
+    characters: string | string[],
+    name?: string,
+    options?: BaseSystemOptions,
+  );
   readonly base: number;
+  readonly radix: number;
+  readonly digitOffset: number;
+  readonly supportsPositionalFractions: boolean;
+  readonly requiresQuoting: boolean;
+  readonly allowsReservedDigits: boolean;
   readonly characters: string[];
   readonly charMap: Map<string, number>;
   readonly name: string;
@@ -497,6 +522,9 @@ export class BaseSystem {
     $ratmath: "BaseSystem";
     characters: string[];
     name: string;
+    radix: number;
+    digitOffset: number;
+    allowReserved: boolean;
   };
 
   static fromBase(base: number, name?: string): BaseSystem;

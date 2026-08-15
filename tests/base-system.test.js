@@ -1,5 +1,5 @@
-import { describe, expect, it } from "bun:test";
-import { BaseSystem } from "../index.js";
+import { describe, expect, it, spyOn } from "bun:test";
+import { BaseSystem, Rational } from "../index.js";
 
 describe("BaseSystem public API", () => {
   it("constructs named Unicode systems and returns defensive copies", () => {
@@ -24,6 +24,11 @@ describe("BaseSystem public API", () => {
     expect(() => new BaseSystem("001")).toThrow("duplicate");
     expect(() => new BaseSystem(["0", "ten"])).toThrow("single Unicode");
     expect(() => new BaseSystem(["0", "+"])).toThrow("parser symbols");
+    expect(() => new BaseSystem("01", "Binary", null)).toThrow(
+      "options must be an object",
+    );
+    expect(() => new BaseSystem("0+", "Quoted", { allowReserved: "yes" }))
+      .toThrow("allowReserved must be a boolean");
   });
 
   it("validates digit indexes", () => {
@@ -157,6 +162,15 @@ describe("BaseSystem public API", () => {
     const insensitive = system.withCaseSensitivity(false);
     expect(insensitive.characters).toEqual(["a", "b"]);
     expect(insensitive.name).toContain("case-insensitive");
+    const warning = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const foldedBase62 = BaseSystem.BASE62.withCaseSensitivity(false);
+      expect(foldedBase62.base).toBe(36);
+      expect(foldedBase62.fromDecimal(35n)).toBe("z");
+      expect(warning).toHaveBeenCalledTimes(1);
+    } finally {
+      warning.mockRestore();
+    }
     expect(() => system.withCaseSensitivity("false")).toThrow("boolean");
   });
 
@@ -174,6 +188,13 @@ describe("BaseSystem public API", () => {
     expect(balanced.toDecimal("T11")).toBe(-5n);
     expect(negabinary.fromDecimal(-5n)).toBe("1111");
     expect(negabinary.toDecimal("1111")).toBe(-5n);
+    expect(new Rational(-5).toRepeatingBase(negabinary)).toBe("1111");
+    expect(() => new Rational(1, 2).toRepeatingBase(negabinary)).toThrow(
+      "conventional positional",
+    );
+    expect(() => new Rational(1, 2).periodModulo(negabinary)).toThrow(
+      "conventional positional",
+    );
   });
 
   it("supports bijective digits while rejecting unrepresentable zero", () => {
@@ -192,6 +213,7 @@ describe("BaseSystem public API", () => {
     expect(() => new BaseSystem("0+", "Unsafe binary")).toThrow("conflict");
     const quoted = new BaseSystem("0+", "Quoted binary", { allowReserved: true });
     expect(quoted.requiresQuoting).toBe(true);
+    expect(quoted.allowsReservedDigits).toBe(true);
     expect(quoted.fromDecimal(3n)).toBe("++");
     expect(quoted.toDecimal("++")).toBe(3n);
   });

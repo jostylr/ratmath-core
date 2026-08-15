@@ -1,7 +1,7 @@
 {
   "name": "@ratmath/core",
-  "version": "0.3.0",
-  "description": "Exact integers, rational numbers, rational intervals, and number-only parsing",
+  "version": "0.4.0",
+  "description": "Exact integers, rational numbers, fractions, rational intervals, and certified approximations",
   "main": "index.js",
   "types": "index.d.ts",
   "type": "module",
@@ -24,8 +24,8 @@
     "test": "bun test",
     "test:coverage": "bun test --coverage",
     "test:examples": "bash scripts/test-examples.sh",
-    "test:pack": "npm pack --dry-run",
-    "prepublishOnly": "bun test && npm run test:examples && npm run test:pack",
+    "test:pack": "npm pack --dry-run --cache ./tmp/npm-cache",
+    "prepublishOnly": "bun test --coverage && npm run test:examples && npm run test:pack",
     "docs:build": "bash scripts/build-docs.sh"
   },
   "keywords": [
@@ -35,6 +35,8 @@
     "interval",
     "continued-fraction",
     "repeating-decimal",
+    "certified-approximation",
+    "uncertainty",
     "exact",
     "mathematics",
     "bigint"
@@ -56,6 +58,6 @@
     "access": "public"
   },
   "devDependencies": {
-    "bun-types": "latest"
+    "bun-types": "1.3.14"
   }
 }

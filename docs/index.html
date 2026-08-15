@@ -345,31 +345,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./index.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text"><span class="citation" data-cites="ratmath/core">@ratmath/core</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./getting-started.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Getting started</span></a>
   </div>
 </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./parsing.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Number parsing</span></a>
   </div>
 </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./examples.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Examples</span></a>
   </div>
 </li>
         <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
+      <div class="sidebar-item-container">
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
  <span class="menu-text">Classes</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
@@ -378,43 +378,49 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </div>
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./integer.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Integer</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./rational.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Rational</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./rational-interval.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">RationalInterval</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
+  <a href="./certified-approximation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">CertifiedApproximation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container">
   <a href="./fraction.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Fraction</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./fraction-interval.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">FractionInterval</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./base-system.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">BaseSystem</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./type-promotion.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">TypePromotion</span></a>
   </div>
@@ -422,7 +428,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </ul>
   </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./api-index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">API index</span></a>
   </div>
@@ -450,7 +456,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
 <h1 class="title"><span class="citation" data-cites="ratmath/core">@ratmath/core</span></h1>
-<p class="subtitle lead">Exact integers, rationals, fractions, and rational intervals</p>
+<p class="subtitle lead">Exact integers, rationals, fractions, intervals, and certified approximations</p>
 </div>
 
 
@@ -503,22 +509,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>Closed exact intervals with arithmetic and compact display forms</td>
 </tr>
 <tr class="even">
+<td><a href="./certified-approximation.html"><code>CertifiedApproximation</code></a></td>
+<td>Finite scalar candidates with authoritative exact enclosures</td>
+</tr>
+<tr class="odd">
 <td><a href="./fraction.html"><code>Fraction</code></a></td>
 <td>Unreduced fractions and Farey/Stern–Brocot operations</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="./fraction-interval.html"><code>FractionInterval</code></a></td>
 <td>Intervals that preserve unreduced endpoint representations</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><a href="./base-system.html"><code>BaseSystem</code></a></td>
 <td>Ordered digit alphabets and integer/rational conversion</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="./type-promotion.html"><code>TypePromotion</code></a></td>
 <td>Explicit promotion and arithmetic dispatch across core number types</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><a href="./parsing.html">Parsing helpers</a></td>
 <td>Number-only parsing for decimals, mixed numbers, continued fractions, and intervals</td>
 </tr>

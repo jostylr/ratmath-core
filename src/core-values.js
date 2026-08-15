@@ -33,6 +33,7 @@ export function reviveCoreValue(_key, value) {
       return new CertifiedApproximation(value.candidate, value.enclosure, {
         representation: value.representation,
         sourceId: value.sourceId ?? undefined,
+        dependencies: value.dependencies ?? [],
       });
     case "Fraction":
       return new Fraction(value.numerator, value.denominator, {
@@ -41,7 +42,11 @@ export function reviveCoreValue(_key, value) {
     case "FractionInterval":
       return new FractionInterval(value.low, value.high);
     case "BaseSystem":
-      return new BaseSystem(value.characters, value.name);
+      return new BaseSystem(value.characters, value.name, {
+        radix: value.radix,
+        digitOffset: value.digitOffset,
+        allowReserved: value.allowReserved,
+      });
     default:
       return value;
   }

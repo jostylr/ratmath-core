@@ -749,6 +749,18 @@ export class Rational {
     if (!Number.isSafeInteger(limit) || limit < 1) {
       throw new RangeError("Base-expansion limit must be a positive safe integer");
     }
+    if (!baseSystem.supportsPositionalFractions) {
+      if (this.#denominator === 1n) {
+        return {
+          baseStr: baseSystem.fromDecimal(this.#numerator),
+          period: 0,
+          limitHit: false,
+        };
+      }
+      throw new RangeError(
+        "Fractional radix expansion requires a conventional positional BaseSystem; use toBase() for an exact fraction",
+      );
+    }
 
     // Handle negative numbers
     if (this.#numerator < 0n) {
@@ -857,11 +869,15 @@ export class Rational {
 
     let den = this.#denominator;
 
+    if (den === 1n) return 0;
+    if (!baseSystem.supportsPositionalFractions) {
+      throw new RangeError(
+        "Period calculation requires a conventional positional BaseSystem",
+      );
+    }
+
     // Remove factors of base from denominator to find "non-terminating part"
     const baseBigInt = BigInt(baseSystem.base);
-
-    // Simplify fraction first
-    if (den === 1n) return 0;
 
     // Remove factors of base from denominator (pre-period part)
     // gcd(den, base)

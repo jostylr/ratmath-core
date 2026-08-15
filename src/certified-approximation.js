@@ -2,6 +2,7 @@ import { Integer } from "./integer.js";
 import { Rational } from "./rational.js";
 import { RationalInterval } from "./rational-interval.js";
 import { BaseSystem } from "./base-system.js";
+import { toExactBigInt } from "./bigint.js";
 
 export const Relation = Object.freeze({
   LESS: 0b001,
@@ -41,6 +42,12 @@ function freezeRepresentation(value) {
   }
   if (copy.presentationHint && typeof copy.presentationHint === "object") {
     copy.presentationHint = Object.freeze({ ...copy.presentationHint });
+  }
+  if (copy.requested && typeof copy.requested === "object") {
+    copy.requested = Object.freeze({ ...copy.requested });
+  }
+  if (copy.achieved && typeof copy.achieved === "object") {
+    copy.achieved = Object.freeze({ ...copy.achieved });
   }
   return Object.freeze(copy);
 }
@@ -176,6 +183,18 @@ export class CertifiedApproximation {
   #dependencies;
 
   constructor(candidate, enclosure, options = {}) {
+    if (options === null || typeof options !== "object" || Array.isArray(options)) {
+      throw new TypeError("Certified approximation options must be an object");
+    }
+    if (options.dependencies !== undefined && !Array.isArray(options.dependencies)) {
+      throw new TypeError("Certified approximation dependencies must be an array");
+    }
+    if (
+      options.sourceId !== undefined &&
+      !["string", "number", "symbol"].includes(typeof options.sourceId)
+    ) {
+      throw new TypeError("Certified approximation sourceId must be a string, number, or symbol");
+    }
     const exactCandidate = exactScalar(candidate);
     if (!(enclosure instanceof RationalInterval)) {
       throw new TypeError("Certified approximation enclosure must be a RationalInterval");
@@ -302,8 +321,10 @@ export class CertifiedApproximation {
         : "";
       return `${entirelyNegative ? "-" : ""}${prefix}?${provisional}`;
     }
-    const displayCandidate = displayEnclosure.shortestDecimal();
-    const candidateText = displayCandidate.toRepeatingDecimal().replace(/#0$/, "");
+    const displayCandidate = entirelyNegative
+      ? this.#candidate.negate()
+      : this.#candidate;
+    const candidateText = displayCandidate.toString();
     return `${entirelyNegative ? "-" : ""}${candidateText}?[=${displayEnclosure.low}:${displayEnclosure.high}]`;
   }
 
@@ -314,6 +335,9 @@ export class CertifiedApproximation {
       enclosure: this.#enclosure,
       representation: this.#representation,
       sourceId: serializeSourceId(this.#sourceId),
+      dependencies: this.#dependencies
+        .map(serializeSourceId)
+        .filter((dependency) => dependency !== null),
     };
   }
 }
@@ -344,6 +368,11 @@ export function certifiedRadixPrefix({
   sourceId,
 }) {
   if (!(baseSystem instanceof BaseSystem)) throw new TypeError("baseSystem must be a BaseSystem");
+  if (!baseSystem.supportsPositionalFractions) {
+    throw new RangeError(
+      "Certified radix prefixes require a conventional positional BaseSystem",
+    );
+  }
   if (!baseSystem.isValidString(integerDigits || "0")) throw new Error("Invalid radix integer digits");
   if (fractionalDigits && !baseSystem.isValidString(fractionalDigits)) throw new Error("Invalid radix fractional digits");
   if (provisionalDigits && !baseSystem.isValidString(provisionalDigits)) throw new Error("Invalid provisional radix digits");
@@ -386,8 +415,10 @@ export function certifiedContinuedFractionPrefix({
   achieved = null,
   sourceId,
 }) {
-  const certified = coefficients.map((value) => BigInt(value));
-  const provisional = provisionalCoefficients.map((value) => BigInt(value));
+  const certified = coefficients.map((value) =>
+    toExactBigInt(value, "Continued-fraction coefficient"));
+  const provisional = provisionalCoefficients.map((value) =>
+    toExactBigInt(value, "Provisional continued-fraction coefficient"));
   if (certified.length === 0) throw new Error("Continued-fraction approximation requires a certified coefficient");
   if (certified.slice(1).some((value) => value <= 0n) || provisional.some((value) => value <= 0n)) {
     throw new Error("Continued-fraction tail coefficients must be positive");

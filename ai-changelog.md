@@ -2,6 +2,16 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## RatMath Core 0.4.0 publication audit
+**Model:** OpenAI Codex
+**Date:** 2026-08-15
+
+Audited the standalone core package for publication and prepared version 0.4.0.
+Aligned the new base-system and certified-approximation APIs across runtime
+behavior, tagged JSON, TypeScript declarations, tests, CI, changelog, and the
+Quarto manual; strengthened exact-input validation and the local publication
+coverage gate.
+
 ## Improved Precision Control UI and Extended Range
 **Model:** claude-opus-4-20250514  
 **Date:** 2025-06-30

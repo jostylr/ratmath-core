@@ -1,6 +1,6 @@
 ---
 title: "@ratmath/core"
-subtitle: Exact integers, rationals, fractions, and rational intervals
+subtitle: Exact integers, rationals, fractions, intervals, and certified approximations
 ---
 
 `@ratmath/core` is a dependency-free ES module for exact arithmetic in
@@ -30,6 +30,7 @@ tolerance.containsValue(new Rational(123, 100)); // true
 | [`Integer`](integer.md) | Arbitrary-precision integer arithmetic |
 | [`Rational`](rational.md) | Reduced exact rational arithmetic, repeating expansions, and finite continued fractions |
 | [`RationalInterval`](rational-interval.md) | Closed exact intervals with arithmetic and compact display forms |
+| [`CertifiedApproximation`](certified-approximation.md) | Finite scalar candidates with authoritative exact enclosures |
 | [`Fraction`](fraction.md) | Unreduced fractions and Farey/Stern–Brocot operations |
 | [`FractionInterval`](fraction-interval.md) | Intervals that preserve unreduced endpoint representations |
 | [`BaseSystem`](base-system.md) | Ordered digit alphabets and integer/rational conversion |

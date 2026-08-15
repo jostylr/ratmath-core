@@ -345,31 +345,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="citation" data-cites="ratmath/core">@ratmath/core</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./getting-started.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Getting started</span></a>
   </div>
 </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./parsing.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Number parsing</span></a>
   </div>
 </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./examples.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Examples</span></a>
   </div>
 </li>
         <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
+      <div class="sidebar-item-container">
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
  <span class="menu-text">Classes</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
@@ -378,43 +378,49 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </div>
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./integer.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Integer</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./rational.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Rational</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./rational-interval.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">RationalInterval</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
+  <a href="./certified-approximation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">CertifiedApproximation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container">
   <a href="./fraction.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Fraction</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./fraction-interval.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">FractionInterval</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./base-system.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">BaseSystem</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./type-promotion.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">TypePromotion</span></a>
   </div>
@@ -422,7 +428,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </ul>
   </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
+  <div class="sidebar-item-container">
   <a href="./api-index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">API index</span></a>
   </div>
@@ -605,7 +611,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co">// "333/106:355/113"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>An explicit bracket, such as <code>23.456?789[+-12]</code>, narrows the authoritative enclosure and is rejected if it lies outside the certified prefix cell. Bare <code>?</code> is not a Core number and is rejected.</p>
 <p>The serialization form <code>candidate?[=low:high]</code> is reserved for derived approximations whose enclosure has no useful common radix prefix. Its exact endpoint bracket is authoritative and round-trips as a certified scalar.</p>
-<p>For non-decimal bases, call <code>certifiedRadixPrefix</code> with a <code>BaseSystem</code>. <code>boundedDecimalApproximation</code> and <code>boundedContinuedFractionApproximation</code> explicitly convert an exact value at a work limit. Ordinary formatter ellipses remain nonparseable display truncation.</p>
+<p>For non-decimal bases, call <code>certifiedRadixPrefix</code> with a <code>BaseSystem</code>. <code>boundedDecimalApproximation</code> and <code>boundedContinuedFractionApproximation</code> explicitly convert an exact value at a work limit. Ordinary formatter ellipses remain nonparseable display truncation. See <a href="./certified-approximation.html"><code>CertifiedApproximation</code></a> for arithmetic, relations, provenance, and serialization.</p>
 </section>
 </section>
 <section id="interval-forms" class="level2">
