@@ -1,8 +1,8 @@
 # @ratmath/core
 
-Exact integer, rational, fraction, rational-interval, and certified-approximation arithmetic for
-JavaScript. Values use `BigInt`, have no runtime dependencies, and work in Node
-and browser bundles.
+Exact integer, rational, fraction, rational-interval, rational-interval-set,
+and certified-approximation arithmetic for JavaScript. Values use `BigInt`,
+have no runtime dependencies, and work in Node and browser bundles.
 
 RatMath also includes a number-only parser for the exact literal formats used
 by RiX. It parses numbers, not arithmetic expressions.
@@ -96,6 +96,40 @@ integer base value, the last-visible-digit unit is `1`.
 When a bracket contains two values, colon is the required separator.
 
 `parseInterval("3/4")` creates the point interval `3/4:3/4`.
+
+## Exact interval sets
+
+`RationalInterval` is one bounded closed interval. Use
+`RationalIntervalSet` when a domain or range is disconnected, open, or
+unbounded:
+
+```js
+import { RationalInterval, RationalIntervalSet } from "@ratmath/core";
+
+const outside = new RationalIntervalSet([
+  { low: null, high: -1, lowClosed: false, highClosed: true },
+  { low: 1, high: null, lowClosed: true, highClosed: false },
+]);
+
+outside.toString(); // "(-inf,-1] U [1,inf)"
+outside.containsValue(0); // false
+outside.containsValue(2); // true
+
+const middle = RationalIntervalSet.fromInterval(new RationalInterval(-2, 2));
+outside.intersection(middle).toString(); // "[-2,-1] U [1,2]"
+outside.hull().toString(); // "(-inf,inf)"
+```
+
+In component objects, `low: null` means `-Infinity` and `high: null` means
+`+Infinity`; infinite endpoints must be open. Construction sorts and merges
+components but preserves an omitted touching point, so `[0,1) U (1,2]` stays
+disconnected. Open single-point components normalize to the empty set.
+
+The value is immutable and provides exact `union`, `intersection`,
+`contains`, `containsValue`, `equals`, and `hull` operations. A set converts
+back with `toRationalInterval()` only when it has exactly one bounded closed
+component. It is deliberately not a `CoreNumber`: range arithmetic belongs to
+a domain-aware certified provider that can account for undefined points.
 
 ## Certified finite approximations
 
@@ -233,8 +267,9 @@ formatting. Repeating fractional expansions require an ordinary positional
 system; check `supportsPositionalFractions` before requesting one.
 
 The public API also includes `Integer`, `Fraction`, `FractionInterval`,
-`RationalInterval`, `BaseSystem`, and `TypePromotion`. TypeScript declarations
-ship with the package. `isInteger`, `isRational`, `isRationalInterval`,
+`RationalInterval`, `RationalIntervalSet`, `BaseSystem`, and `TypePromotion`.
+TypeScript declarations ship with the package. `isInteger`, `isRational`, `isRationalInterval`,
+`isRationalIntervalSet`,
 `isCertifiedApproximation`, `isFraction`, `isFractionInterval`, `isBaseSystem`,
 and `isCoreNumber` are public type guards. Core values use tagged `toJSON()`
 output and can be restored with `JSON.parse(text, reviveCoreValue)`.

@@ -1,7 +1,7 @@
 {
   "name": "@ratmath/core",
   "version": "0.4.0",
-  "description": "Exact integers, rational numbers, fractions, rational intervals, and certified approximations",
+  "description": "Exact integers, rational numbers, fractions, rational intervals and interval sets, and certified approximations",
   "main": "index.js",
   "types": "index.d.ts",
   "type": "module",

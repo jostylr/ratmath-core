@@ -387,6 +387,58 @@ export class RationalInterval {
   static fromString(value: string): RationalInterval;
 }
 
+export interface RationalIntervalSetComponentInput {
+  /** `null` denotes -Infinity in this position. */
+  low: RationalInput | null;
+  /** `null` denotes +Infinity in this position. */
+  high: RationalInput | null;
+  lowClosed?: boolean;
+  highClosed?: boolean;
+}
+
+export interface RationalIntervalSetComponent {
+  readonly low: Rational | null;
+  readonly high: Rational | null;
+  readonly lowClosed: boolean;
+  readonly highClosed: boolean;
+}
+
+export type RationalIntervalSetInput =
+  | RationalInterval
+  | RationalIntervalSet
+  | RationalIntervalSetComponentInput
+  | ReadonlyArray<RationalInterval | RationalIntervalSetComponentInput>;
+
+/** A normalized finite union of exact rational intervals. */
+export class RationalIntervalSet {
+  static empty: RationalIntervalSet;
+  static allReals: RationalIntervalSet;
+
+  constructor(components?: RationalIntervalSetInput);
+
+  readonly components: ReadonlyArray<RationalIntervalSetComponent>;
+  readonly isEmpty: boolean;
+  readonly isConnected: boolean;
+  readonly isBounded: boolean;
+  readonly componentCount: number;
+
+  containsValue(value: RationalInput): boolean;
+  contains(other: RationalIntervalSetInput): boolean;
+  equals(other: RationalIntervalSetInput): boolean;
+  union(other: RationalIntervalSetInput): RationalIntervalSet;
+  intersection(other: RationalIntervalSetInput): RationalIntervalSet;
+  hull(): RationalIntervalSet;
+  toRationalInterval(): RationalInterval | null;
+  toString(): string;
+  toJSON(): {
+    $ratmath: "RationalIntervalSet";
+    components: RationalIntervalSetComponent[];
+  };
+
+  static point(value: RationalInput): RationalIntervalSet;
+  static fromInterval(interval: RationalInterval): RationalIntervalSet;
+}
+
 export class Fraction {
   static DEFAULT_STERN_BROCOT_PATH_LIMIT: number;
 
@@ -606,6 +658,9 @@ export function parseInterval(value: string): RationalInterval;
 export function isInteger(value: unknown): value is Integer;
 export function isRational(value: unknown): value is Rational;
 export function isRationalInterval(value: unknown): value is RationalInterval;
+export function isRationalIntervalSet(
+  value: unknown,
+): value is RationalIntervalSet;
 export function isCertifiedApproximation(
   value: unknown,
 ): value is CertifiedApproximation;
@@ -619,6 +674,7 @@ declare const core: {
   Integer: typeof Integer;
   Rational: typeof Rational;
   RationalInterval: typeof RationalInterval;
+  RationalIntervalSet: typeof RationalIntervalSet;
   Fraction: typeof Fraction;
   FractionInterval: typeof FractionInterval;
   TypePromotion: typeof TypePromotion;
@@ -642,6 +698,7 @@ declare const core: {
   isInteger: typeof isInteger;
   isRational: typeof isRational;
   isRationalInterval: typeof isRationalInterval;
+  isRationalIntervalSet: typeof isRationalIntervalSet;
   isCertifiedApproximation: typeof isCertifiedApproximation;
   isFraction: typeof isFraction;
   isFractionInterval: typeof isFractionInterval;

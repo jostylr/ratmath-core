@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+
+- Add immutable `RationalIntervalSet` values for normalized finite unions with
+  exact rational open/closed endpoints, structural infinities, exact set
+  operations, tagged JSON revival, a public type guard, and TypeScript types.
+
 ## 0.4.0 — 2026-08-15
 
 ### Added

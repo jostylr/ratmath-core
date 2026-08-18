@@ -7,6 +7,7 @@
 
 import { Rational } from "./src/rational.js";
 import { RationalInterval } from "./src/rational-interval.js";
+import { RationalIntervalSet } from "./src/rational-interval-set.js";
 import { Fraction } from "./src/fraction.js";
 import { FractionInterval } from "./src/fraction-interval.js";
 import { Integer } from "./src/integer.js";
@@ -41,6 +42,7 @@ import {
   isInteger,
   isRational,
   isRationalInterval,
+  isRationalIntervalSet,
   reviveCoreValue,
 } from "./src/core-values.js";
 
@@ -48,6 +50,7 @@ import {
 export {
   Rational,
   RationalInterval,
+  RationalIntervalSet,
   Fraction,
   FractionInterval,
   Integer,
@@ -77,6 +80,7 @@ export {
   isInteger,
   isRational,
   isRationalInterval,
+  isRationalIntervalSet,
   reviveCoreValue,
 };
 
@@ -84,6 +88,7 @@ export {
 export default {
   Rational,
   RationalInterval,
+  RationalIntervalSet,
   Fraction,
   FractionInterval,
   Integer,
@@ -113,5 +118,6 @@ export default {
   isInteger,
   isRational,
   isRationalInterval,
+  isRationalIntervalSet,
   reviveCoreValue,
 };
