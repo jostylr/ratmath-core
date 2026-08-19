@@ -128,8 +128,45 @@ disconnected. Open single-point components normalize to the empty set.
 The value is immutable and provides exact `union`, `intersection`,
 `contains`, `containsValue`, `equals`, and `hull` operations. A set converts
 back with `toRationalInterval()` only when it has exactly one bounded closed
-component. It is deliberately not a `CoreNumber`: range arithmetic belongs to
-a domain-aware certified provider that can account for undefined points.
+component. It is deliberately not a `CoreNumber`; proof-safe range arithmetic
+uses explicitly named functions whose result records account for undefined
+points:
+
+```js
+import {
+  rangeAdd,
+  rangeDivide,
+  rangeIntegerPower,
+  rangeReciprocal,
+} from "@ratmath/core";
+
+rangeAdd(new RationalIntervalSet({ low: 1, high: 2 }), 3)
+  .range.toString(); // "[4,5]"
+
+const reciprocal = rangeReciprocal(
+  new RationalIntervalSet({ low: -1, high: 1 }),
+);
+reciprocal.range.toString();       // "(-inf,-1] U [1,inf)"
+reciprocal.domain.coverage;        // "partiallyDefined"
+reciprocal.domain.exclusions[0].reason; // "divisionByZero"
+
+rangeDivide(0, RationalIntervalSet.point(0)).range.isEmpty; // true
+rangeIntegerPower(RationalIntervalSet.point(0), 0)
+  .domain.coverage; // "noDefinedInputs"
+```
+
+The public primitives are `rangeNegate`, `rangeAbsoluteValue`, `rangeAdd`,
+`rangeSubtract`, `rangeMultiply`, `rangeReciprocal`, `rangeDivide`, and
+`rangeIntegerPower`. They compute the image of every mathematically defined
+input tuple. Undefined tuples add no value and are recorded with coverage
+`allDefined`, `partiallyDefined`, or `noDefinedInputs`; inability to compute a
+defined tuple is never disguised as an exclusion. `0^0` is undefined by
+default and may be explicitly changed with `{ zeroPowerZero: "one" }`.
+
+`checkRangeOperationResult(record)` independently recomputes the primitive
+claim and rejects changed ranges or domain coverage. The Core record contains
+mathematical facts only; RiX attaches its portable form as `rangeEvidence`
+metadata and applies report/throw policy at the language boundary.
 
 ## Certified finite approximations
 

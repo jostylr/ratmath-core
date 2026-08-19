@@ -32,6 +32,9 @@ export function reviveCoreValue(_key, value) {
     case "RationalInterval":
       return new RationalInterval(value.start, value.end);
     case "RationalIntervalSet":
+      if (value.version !== undefined && value.version !== 1) {
+        throw new Error(`Unsupported RationalIntervalSet JSON version: ${value.version}`);
+      }
       return new RationalIntervalSet(value.components);
     case "CertifiedApproximation":
       return new CertifiedApproximation(value.candidate, value.enclosure, {

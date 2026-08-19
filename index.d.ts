@@ -432,12 +432,84 @@ export class RationalIntervalSet {
   toString(): string;
   toJSON(): {
     $ratmath: "RationalIntervalSet";
+    version: 1;
     components: RationalIntervalSetComponent[];
   };
 
   static point(value: RationalInput): RationalIntervalSet;
   static fromInterval(interval: RationalInterval): RationalIntervalSet;
 }
+
+export type RationalIntervalSetOperand =
+  | RationalIntervalSetInput
+  | RationalInput;
+
+export type RangeDomainCoverage =
+  | "allDefined"
+  | "partiallyDefined"
+  | "noDefinedInputs"
+  | "unresolved";
+
+export interface RangeDomainExclusion {
+  readonly reason: string;
+  readonly operand: number;
+  readonly excludedSet: RationalIntervalSet;
+}
+
+export interface RangeOperationDomain {
+  readonly coverage: RangeDomainCoverage;
+  readonly definedInput?: RationalIntervalSet;
+  readonly exclusions: ReadonlyArray<RangeDomainExclusion>;
+}
+
+export interface RangeOperationResult {
+  readonly schema: "ratmath.range-operation-result@1";
+  readonly operation: string;
+  readonly operands: ReadonlyArray<RationalIntervalSet>;
+  readonly parameters: Readonly<Record<string, unknown>>;
+  readonly range: RationalIntervalSet;
+  readonly domain: RangeOperationDomain;
+  readonly certified: true;
+  readonly evidenceLevel: "checkedEvidence";
+  readonly evidence: Readonly<{
+    schema: "rix.numerics.range-evidence-node@1";
+    rule: string;
+    checkedBy: string;
+  }>;
+}
+
+export interface RangeOperationCheck {
+  readonly accepted: boolean;
+  readonly reason: string | null;
+  readonly checkedBy: string;
+  readonly operation?: string;
+  readonly domainCoverage?: RangeDomainCoverage;
+}
+
+export const RANGE_OPERATION_RESULT_SCHEMA: "ratmath.range-operation-result@1";
+export const RANGE_ARITHMETIC_CHECKER_ID: "ratmath.core.range-arithmetic@1";
+
+export function asRationalIntervalSet(value: RationalIntervalSetOperand): RationalIntervalSet;
+export function rangeNegate(value: RationalIntervalSetOperand): RangeOperationResult;
+export function rangeAbsoluteValue(value: RationalIntervalSetOperand): RangeOperationResult;
+export function rangeAdd(left: RationalIntervalSetOperand, right: RationalIntervalSetOperand): RangeOperationResult;
+export function rangeSubtract(left: RationalIntervalSetOperand, right: RationalIntervalSetOperand): RangeOperationResult;
+export function rangeMultiply(left: RationalIntervalSetOperand, right: RationalIntervalSetOperand): RangeOperationResult;
+export function rangeReciprocal(value: RationalIntervalSetOperand): RangeOperationResult;
+export function rangeDivide(left: RationalIntervalSetOperand, right: RationalIntervalSetOperand): RangeOperationResult;
+export function rangeIntegerPower(
+  value: RationalIntervalSetOperand,
+  exponent: IntegerInput | Rational,
+  options?: { zeroPowerZero?: "undefined" | "one" },
+): RangeOperationResult;
+export function checkRangeOperationResult(
+  candidate: RangeOperationResult | unknown,
+  expected?: {
+    operation?: string;
+    operands?: ReadonlyArray<RationalIntervalSetOperand>;
+    parameters?: Readonly<Record<string, unknown>>;
+  },
+): RangeOperationCheck;
 
 export class Fraction {
   static DEFAULT_STERN_BROCOT_PATH_LIMIT: number;
@@ -675,6 +747,18 @@ declare const core: {
   Rational: typeof Rational;
   RationalInterval: typeof RationalInterval;
   RationalIntervalSet: typeof RationalIntervalSet;
+  RANGE_ARITHMETIC_CHECKER_ID: typeof RANGE_ARITHMETIC_CHECKER_ID;
+  RANGE_OPERATION_RESULT_SCHEMA: typeof RANGE_OPERATION_RESULT_SCHEMA;
+  asRationalIntervalSet: typeof asRationalIntervalSet;
+  checkRangeOperationResult: typeof checkRangeOperationResult;
+  rangeAbsoluteValue: typeof rangeAbsoluteValue;
+  rangeAdd: typeof rangeAdd;
+  rangeDivide: typeof rangeDivide;
+  rangeIntegerPower: typeof rangeIntegerPower;
+  rangeMultiply: typeof rangeMultiply;
+  rangeNegate: typeof rangeNegate;
+  rangeReciprocal: typeof rangeReciprocal;
+  rangeSubtract: typeof rangeSubtract;
   Fraction: typeof Fraction;
   FractionInterval: typeof FractionInterval;
   TypePromotion: typeof TypePromotion;

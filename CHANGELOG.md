@@ -7,6 +7,12 @@
 - Add immutable `RationalIntervalSet` values for normalized finite unions with
   exact rational open/closed endpoints, structural infinities, exact set
   operations, tagged JSON revival, a public type guard, and TypeScript types.
+- Add proof-safe exact range arithmetic for negation, absolute value, the four
+  basic binary operations, reciprocal, and integer powers, including exact
+  disconnected/unbounded images, domain-coverage records, configurable
+  `0^0`, and a recomputing checker.
+- Version the `RationalIntervalSet` tagged JSON form as v1 while accepting the
+  unversioned pre-release shape during revival.
 
 ## 0.4.0 — 2026-08-15
 

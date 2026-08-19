@@ -8,6 +8,20 @@
 import { Rational } from "./src/rational.js";
 import { RationalInterval } from "./src/rational-interval.js";
 import { RationalIntervalSet } from "./src/rational-interval-set.js";
+import {
+  RANGE_ARITHMETIC_CHECKER_ID,
+  RANGE_OPERATION_RESULT_SCHEMA,
+  asRationalIntervalSet,
+  checkRangeOperationResult,
+  rangeAbsoluteValue,
+  rangeAdd,
+  rangeDivide,
+  rangeIntegerPower,
+  rangeMultiply,
+  rangeNegate,
+  rangeReciprocal,
+  rangeSubtract,
+} from "./src/range-arithmetic.js";
 import { Fraction } from "./src/fraction.js";
 import { FractionInterval } from "./src/fraction-interval.js";
 import { Integer } from "./src/integer.js";
@@ -51,6 +65,18 @@ export {
   Rational,
   RationalInterval,
   RationalIntervalSet,
+  RANGE_ARITHMETIC_CHECKER_ID,
+  RANGE_OPERATION_RESULT_SCHEMA,
+  asRationalIntervalSet,
+  checkRangeOperationResult,
+  rangeAbsoluteValue,
+  rangeAdd,
+  rangeDivide,
+  rangeIntegerPower,
+  rangeMultiply,
+  rangeNegate,
+  rangeReciprocal,
+  rangeSubtract,
   Fraction,
   FractionInterval,
   Integer,
@@ -89,6 +115,18 @@ export default {
   Rational,
   RationalInterval,
   RationalIntervalSet,
+  RANGE_ARITHMETIC_CHECKER_ID,
+  RANGE_OPERATION_RESULT_SCHEMA,
+  asRationalIntervalSet,
+  checkRangeOperationResult,
+  rangeAbsoluteValue,
+  rangeAdd,
+  rangeDivide,
+  rangeIntegerPower,
+  rangeMultiply,
+  rangeNegate,
+  rangeReciprocal,
+  rangeSubtract,
   Fraction,
   FractionInterval,
   Integer,

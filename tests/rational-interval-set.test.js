@@ -135,5 +135,10 @@ describe("RationalIntervalSet", () => {
     expect(isRationalIntervalSet(revived)).toBe(true);
     expect(revived.equals(original)).toBe(true);
     expect(isCoreNumber(revived)).toBe(false);
+    expect(original.toJSON().version).toBe(1);
+    expect(() => JSON.parse(
+      JSON.stringify({ ...original.toJSON(), version: 3 }),
+      reviveCoreValue,
+    )).toThrow("Unsupported RationalIntervalSet JSON version: 3");
   });
 });

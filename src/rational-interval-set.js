@@ -334,6 +334,7 @@ export class RationalIntervalSet {
   toJSON() {
     return {
       $ratmath: "RationalIntervalSet",
+      version: 1,
       components: this.#components.map((component) => ({ ...component })),
     };
   }
