@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
+  Integer,
+  RANGE_OPERATION_RESULT_SCHEMA,
+  Rational,
   RationalIntervalSet,
   checkRangeOperationResult,
   rangeAbsoluteValue,
@@ -123,6 +126,19 @@ describe("exact RationalIntervalSet arithmetic images", () => {
       .toBe("(-inf,-1] U [1,inf)");
   });
 
+  test("integer powers validate every exact exponent form and policy option", () => {
+    expect(rangeIntegerPower(2, "3").range.toString()).toBe("[8,8]");
+    expect(rangeIntegerPower(2, new Integer(3)).range.toString()).toBe("[8,8]");
+    expect(rangeIntegerPower(2, new Rational(3)).range.toString()).toBe("[8,8]");
+
+    expect(() => rangeIntegerPower(2, new Rational(1, 2))).toThrow(
+      "Exponent must be an exact integer",
+    );
+    expect(() => rangeIntegerPower(2, 3, { zeroPowerZero: "reject" })).toThrow(
+      "zeroPowerZero must be 'undefined' or 'one'",
+    );
+  });
+
   test("the exact checker accepts generated records and rejects changed claims", () => {
     const result = rangeDivide({ low: 1, high: 2 }, { low: -1, high: 1 });
     expect(checkRangeOperationResult(result)).toMatchObject({
@@ -134,6 +150,37 @@ describe("exact RationalIntervalSet arithmetic images", () => {
     expect(checkRangeOperationResult(changed)).toMatchObject({
       accepted: false,
       reason: "claimMismatch",
+    });
+  });
+
+  test("the exact checker recomputes every primitive and rejects unknown records", () => {
+    const records = [
+      rangeNegate({ low: -1, high: 2 }),
+      rangeAbsoluteValue({ low: -1, high: 2 }),
+      rangeAdd({ low: -1, high: 2 }, 3),
+      rangeSubtract({ low: -1, high: 2 }, 3),
+      rangeMultiply({ low: -1, high: 2 }, 3),
+      rangeReciprocal({ low: -1, high: 2 }),
+      rangeDivide({ low: -1, high: 2 }, 3),
+      rangeIntegerPower({ low: -1, high: 2 }, 2),
+    ];
+
+    for (const record of records) {
+      expect(checkRangeOperationResult(record).accepted).toBe(true);
+    }
+
+    expect(checkRangeOperationResult(null)).toMatchObject({
+      accepted: false,
+      reason: "unsupportedSchema",
+    });
+    expect(checkRangeOperationResult({
+      schema: RANGE_OPERATION_RESULT_SCHEMA,
+      operation: "rix.core.range.unknown@1",
+      operands: [],
+      parameters: {},
+    })).toMatchObject({
+      accepted: false,
+      reason: "unsupportedRule",
     });
   });
 

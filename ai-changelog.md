@@ -2,6 +2,15 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## Range arithmetic publication coverage
+**Model:** OpenAI Codex
+**Date:** 2026-08-22 09:43 EDT
+
+Added focused range-arithmetic tests for exact exponent input forms, invalid
+power policy options, every checker recomputation rule, and unsupported checker
+records. The range-arithmetic module now has 100% function and line coverage,
+and the complete prepublication gate passes.
+
 ## RatMath Core 0.4.0 publication audit
 **Model:** OpenAI Codex
 **Date:** 2026-08-15
