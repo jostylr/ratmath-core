@@ -26,6 +26,7 @@ import { Fraction } from "./src/fraction.js";
 import { FractionInterval } from "./src/fraction-interval.js";
 import { Integer } from "./src/integer.js";
 import { TypePromotion } from "./src/type-promotion.js";
+import { NumeralSystem, NUMERAL_SYSTEM_SCHEMA, NUMERAL_LIMITS } from "./src/numeral-system.js";
 import { BaseSystem } from "./src/base-system.js";
 import {
   CertifiedApproximation,
@@ -82,6 +83,9 @@ export {
   Integer,
   TypePromotion,
   BaseSystem,
+  NumeralSystem,
+  NUMERAL_SYSTEM_SCHEMA,
+  NUMERAL_LIMITS,
   CertifiedApproximation,
   Relation,
   boundedContinuedFractionApproximation,
@@ -132,6 +136,9 @@ export default {
   Integer,
   TypePromotion,
   BaseSystem,
+  NumeralSystem,
+  NUMERAL_SYSTEM_SCHEMA,
+  NUMERAL_LIMITS,
   CertifiedApproximation,
   Relation,
   boundedContinuedFractionApproximation,

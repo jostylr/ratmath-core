@@ -763,6 +763,9 @@ declare const core: {
   FractionInterval: typeof FractionInterval;
   TypePromotion: typeof TypePromotion;
   BaseSystem: typeof BaseSystem;
+  NumeralSystem: typeof NumeralSystem;
+  NUMERAL_SYSTEM_SCHEMA: typeof NUMERAL_SYSTEM_SCHEMA;
+  NUMERAL_LIMITS: typeof NUMERAL_LIMITS;
   CertifiedApproximation: typeof CertifiedApproximation;
   Relation: typeof Relation;
   boundedDecimalApproximation: typeof boundedDecimalApproximation;
@@ -792,3 +795,46 @@ declare const core: {
 };
 
 export default core;
+
+/** Versioned, prefix-free exact positional numeral systems. Labels are host-owned. */
+export interface NumeralSystemSpec {
+  schema?: "ratmath.numeral-system@1";
+  kind?: "ordinary" | "multiToken" | "balanced" | "negative";
+  radix: number;
+  tokens: string[];
+}
+export interface NumeralFormatOptions { maxDigits?: number; mode?: "expansion" | "fraction"; }
+export interface NumeralLocaleOptions { point?: string; group?: string; groupSize?: number; }
+export interface NumeralIntegerResult {
+  status: "complete" | "budgetExhausted"; spelling: string | null;
+  digits: number[]; negative: boolean; remaining: bigint;
+  carries: Array<{before: bigint; digit: number; radix: number; after: bigint}>;
+}
+export interface NumeralExpansion {
+  schema: "ratmath.numeral-expansion@1"; system: NumeralSystemSpec;
+  source: Rational; mode: "expansion" | "fraction"; status: "complete" | "budgetExhausted";
+  spelling: string | null; partial?: string | null; negative?: boolean;
+  integer?: NumeralIntegerResult; numerator?: NumeralIntegerResult; denominator?: NumeralIntegerResult;
+  prefix?: number[]; repeat?: number[]; remaining?: Rational; maxDigits?: number; work?: number;
+  steps?: Array<{before: Rational; scaled: Rational; digit: number; after: Rational}>;
+}
+export class NumeralSystem {
+  constructor(spec: NumeralSystemSpec);
+  readonly schema: "ratmath.numeral-system@1";
+  readonly kind: "ordinary" | "multiToken" | "balanced" | "negative";
+  readonly radix: number; readonly offset: number; readonly tokens: readonly string[];
+  toJSON(): NumeralSystemSpec;
+  tokenize(source: string, options?: {allowEmpty?: boolean}): number[];
+  fromDigits(digits: number[]): bigint;
+  parseInteger(source: string): bigint;
+  parse(source: string): Rational;
+  integer(value: bigint, maxDigits?: number): NumeralIntegerResult;
+  digitText(digits: number[]): string;
+  format(value: Rational | Integer | bigint, options?: NumeralFormatOptions): NumeralExpansion;
+  normalize(source: string, options?: NumeralFormatOptions): NumeralExpansion;
+  locale(source: string, options?: NumeralLocaleOptions, direction?: "format"): string;
+  locale(source: string, options: NumeralLocaleOptions, direction: "parse"): Rational;
+  places(source: string): {value: Rational; diagnostic?: string; places: Array<{token: string; digit: number; exponent: number; weight: Rational; contribution: Rational}>};
+}
+export const NUMERAL_SYSTEM_SCHEMA: "ratmath.numeral-system@1";
+export const NUMERAL_LIMITS: Readonly<{tokens: 256; tokenLength: 32; sourceLength: 65536; digits: 4096; bits: 16384}>;

@@ -160,3 +160,20 @@ BaseSystem.getSystemForPrefix("x").equals(BaseSystem.HEXADECIMAL); // true
 BaseSystem.getPrefixForSystem(BaseSystem.BINARY);                  // "b"
 BaseSystem.getSystemForPrefix("D");                                // null
 ```
+
+## Versioned numeral systems
+
+`NumeralSystem` is the bounded multi-token and signed-positional companion to
+`BaseSystem`. It does not change the existing prefix registry or `BaseSystem`
+semantics. Construct it with `{kind, radix, tokens}`; `kind` is `ordinary`,
+`multiToken`, `balanced` or `negative`. `toJSON()` records schema
+`ratmath.numeral-system@1`; `new NumeralSystem(record)` validates an import.
+Labels and host parser registration belong to RiX.
+
+`parse(source)` returns an exact Rational. `format(value,{maxDigits,mode})`
+returns an expansion record, exact source, integer carry steps, remainder steps,
+period and explicit exhaustion. `normalize` parses then formats; `places` returns
+exact weights/contributions; `locale` applies reversible point/group separators.
+All alphabets are prefix-free and punctuation-safe. No algorithm uses binary
+floating-point approximations to determine digits or equality. Families,
+grammar, limits and examples are specified in the RiX Radix numeral-systems guide.
