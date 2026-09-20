@@ -2,6 +2,12 @@
 title: BaseSystem
 ---
 
+For versioned four-family numeral parsing, exact repeating expansions in balanced
+or negative bases, and bounded conversion evidence, see
+[`NumeralSystem`](numeral-system.md). It is a separate workspace API; the
+`BaseSystem` methods documented here remain unchanged.
+
+
 `BaseSystem` defines an ordered single-character digit alphabet. It converts
 integers to and from that alphabet and supplies digit systems for rational
 formatting.

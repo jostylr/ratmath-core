@@ -303,6 +303,34 @@ These nonstandard systems support integers and exact numerator/denominator
 formatting. Repeating fractional expansions require an ordinary positional
 system; check `supportsPositionalFractions` before requesting one.
 
+### Versioned numeral systems (workspace feature)
+
+The current checkout also exports `NumeralSystem`, `NUMERAL_SYSTEM_SCHEMA`, and
+`NUMERAL_LIMITS`. These exports are **not in the published npm 0.5.0 release**;
+use the matching workspace package until a coordinated release is available.
+Unlike `BaseSystem`, `NumeralSystem` supports exact repeating fractional parsing
+and bounded expansion for ordinary, multi-token, balanced, and negative-base
+families. It does not implement bijective systems.
+
+```js
+import { NumeralSystem, Rational } from "@ratmath/core";
+
+const ternary = new NumeralSystem({
+  kind: "balanced", radix: 3, tokens: ["T", "0", "1"],
+});
+ternary.parse("1T").toString(); // "2"
+const result = ternary.format(new Rational(1, 97), { maxDigits: 3 });
+result.status;   // "budgetExhausted"
+result.spelling; // null: an unfinished prefix is not an exact answer
+```
+
+A versioned JSON descriptor reconstructs the same validated alphabet. Expansion
+records preserve exact source, carries and remainders; locale adapters and place
+explanations preserve exact values too. Intervals and certified-approximation
+source grammar belong to the ordinary number parsers, not this scalar parser.
+See the [NumeralSystem manual](documentation/numeral-system.md) for all four
+families, supported forms, bounded failures and method contracts.
+
 The public API also includes `Integer`, `Fraction`, `FractionInterval`,
 `RationalInterval`, `RationalIntervalSet`, `BaseSystem`, and `TypePromotion`.
 TypeScript declarations ship with the package. `isInteger`, `isRational`, `isRationalInterval`,

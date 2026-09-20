@@ -38,6 +38,7 @@ website:
           - fraction.md
           - fraction-interval.md
           - base-system.md
+          - numeral-system.md
           - type-promotion.md
       - api-index.md
 

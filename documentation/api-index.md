@@ -16,7 +16,11 @@ contains the classes, parsing functions, type guards, and JSON reviver.
 | [`Fraction`](fraction.md) | `new Fraction(numerator, denominator?, options?)` |
 | [`FractionInterval`](fraction-interval.md) | `new FractionInterval(a, b)` |
 | [`BaseSystem`](base-system.md) | `new BaseSystem(characters, name?, options?)` |
+| [`NumeralSystem`](numeral-system.md) | `new NumeralSystem({schema?, kind?, radix, tokens})` (workspace; not npm 0.5.0) |
 | [`TypePromotion`](type-promotion.md) | Static utility class; do not instantiate |
+
+`NUMERAL_SYSTEM_SCHEMA` and `NUMERAL_LIMITS` accompany `NumeralSystem` in the
+current checkout. These exports await a coordinated package release.
 
 ## Parsing functions
 
