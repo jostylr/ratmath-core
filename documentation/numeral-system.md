@@ -3,9 +3,9 @@ title: NumeralSystem
 description: Exact, bounded positional numeral parsing and explanations for four digit families.
 ---
 
-`NumeralSystem` is available in the **current workspace checkout**. It is not
-exported by the published npm `@ratmath/core@0.5.0`; a coordinated package release
-is still pending. The imports below require the matching workspace package.
+`NumeralSystem` is available starting with **Core 0.6.0**. The imports below
+require `@ratmath/core@^0.6.0` or the matching workspace package. Core 0.5.x
+does not export this API.
 
 ## Choose the representation API
 

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.6.0 — 2026-09-20
+
+### Added
+
+- Add `NumeralSystem`, `NUMERAL_SYSTEM_SCHEMA`, and `NUMERAL_LIMITS`, with
+  TypeScript declarations and versioned `ratmath.numeral-system@1` descriptors.
+- Support exact finite and repeating numeral parsing in ordinary, multi-token,
+  balanced, and negative-base positional systems.
+- Provide bounded expansion, exact place contributions, integer carry traces,
+  and explicit completion status when a digit budget is exhausted.
+- Add a runnable numeral-system example and a complete API manual covering
+  descriptor validation, limits, provenance, and representation boundaries.
+
+### Compatibility
+
+- `NumeralSystem` supplements the existing `BaseSystem` API; it does not replace
+  it or add bijective fractional expansions. Existing math APIs are unchanged.
+- RiX checkouts using the new numeral API require Core 0.6.0 or later within
+  the 0.6 line. Core 0.5.0 does not export `NumeralSystem`.
+
 ## 0.5.0 — 2026-08-22
 
 ### Added

@@ -485,7 +485,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p><code>NumeralSystem</code> is available in the <strong>current workspace checkout</strong>. It is not exported by the published npm <code>@ratmath/core@0.5.0</code>; a coordinated package release is still pending. The imports below require the matching workspace package.</p>
+<p><code>NumeralSystem</code> is available starting with <strong>Core 0.6.0</strong>. The imports below require <code>@ratmath/core@^0.6.0</code> or the matching workspace package. Core 0.5.x does not export this API.</p>
 <section id="choose-the-representation-api" class="level2">
 <h2 class="anchored" data-anchor-id="choose-the-representation-api">Choose the representation API</h2>
 <p><a href="./base-system.html"><code>BaseSystem</code></a> remains the existing conversion API used by <code>Rational.toBase</code> and <code>toRepeatingBase</code>, including presets and bijective integer systems. Its nonordinary systems do not support repeating fractional expansion. <code>NumeralSystem</code> supplies a separate versioned descriptor, exact parsing and bounded repeating expansion across these four families:</p>

@@ -4,7 +4,7 @@
     "href": "numeral-system.html",
     "title": "NumeralSystem",
     "section": "",
-    "text": "NumeralSystem is available in the current workspace checkout. It is not exported by the published npm @ratmath/core@0.5.0; a coordinated package release is still pending. The imports below require the matching workspace package.",
+    "text": "NumeralSystem is available starting with Core 0.6.0. The imports below require @ratmath/core@^0.6.0 or the matching workspace package. Core 0.5.x does not export this API.",
     "crumbs": [
       "Overview",
       "Classes",
@@ -75,7 +75,7 @@
     "href": "index.html#what-is-included",
     "title": "@ratmath/core",
     "section": "What is included",
-    "text": "What is included\n\n\n\nAPI\nPurpose\n\n\n\n\nInteger\nArbitrary-precision integer arithmetic\n\n\nRational\nReduced exact rational arithmetic, repeating expansions, and finite continued fractions\n\n\nRationalInterval\nClosed exact intervals with arithmetic and compact display forms\n\n\nCertifiedApproximation\nFinite scalar candidates with authoritative exact enclosures\n\n\nFraction\nUnreduced fractions and Farey/Stern–Brocot operations\n\n\nFractionInterval\nIntervals that preserve unreduced endpoint representations\n\n\nBaseSystem\nOrdered digit alphabets and integer/rational conversion\n\n\nNumeralSystem\nVersioned exact four-family numerals and bounded expansion (workspace feature; not npm 0.5.0)\n\n\nTypePromotion\nExplicit promotion and arithmetic dispatch across core number types\n\n\nParsing helpers\nNumber-only parsing for decimals, mixed numbers, continued fractions, and intervals\n\n\n\nAll classes are immutable in normal use: operations construct new values. Rational normalizes its sign and reduces to lowest terms, while Fraction deliberately preserves the numerator and denominator supplied by the caller.",
+    "text": "What is included\n\n\n\nAPI\nPurpose\n\n\n\n\nInteger\nArbitrary-precision integer arithmetic\n\n\nRational\nReduced exact rational arithmetic, repeating expansions, and finite continued fractions\n\n\nRationalInterval\nClosed exact intervals with arithmetic and compact display forms\n\n\nCertifiedApproximation\nFinite scalar candidates with authoritative exact enclosures\n\n\nFraction\nUnreduced fractions and Farey/Stern–Brocot operations\n\n\nFractionInterval\nIntervals that preserve unreduced endpoint representations\n\n\nBaseSystem\nOrdered digit alphabets and integer/rational conversion\n\n\nNumeralSystem\nVersioned exact four-family numerals and bounded expansion (since 0.6.0)\n\n\nTypePromotion\nExplicit promotion and arithmetic dispatch across core number types\n\n\nParsing helpers\nNumber-only parsing for decimals, mixed numbers, continued fractions, and intervals\n\n\n\nAll classes are immutable in normal use: operations construct new values. Rational normalizes its sign and reduces to lowest terms, while Fraction deliberately preserves the numerator and denominator supplied by the caller.",
     "crumbs": [
       "Overview",
       "@ratmath/core"
@@ -709,7 +709,7 @@
     "href": "api-index.html#classes",
     "title": "API index",
     "section": "Classes",
-    "text": "Classes\n\n\n\nExport\nConstructor\n\n\n\n\nInteger\nnew Integer(value)\n\n\nRational\nnew Rational(numerator, denominator?)\n\n\nRationalInterval\nnew RationalInterval(a, b)\n\n\nCertifiedApproximation\nnew CertifiedApproximation(candidate, enclosure, options?)\n\n\nFraction\nnew Fraction(numerator, denominator?, options?)\n\n\nFractionInterval\nnew FractionInterval(a, b)\n\n\nBaseSystem\nnew BaseSystem(characters, name?, options?)\n\n\nNumeralSystem\nnew NumeralSystem({schema?, kind?, radix, tokens}) (workspace; not npm 0.5.0)\n\n\nTypePromotion\nStatic utility class; do not instantiate\n\n\n\nNUMERAL_SYSTEM_SCHEMA and NUMERAL_LIMITS accompany NumeralSystem in the current checkout. These exports await a coordinated package release.",
+    "text": "Classes\n\n\n\nExport\nConstructor\n\n\n\n\nInteger\nnew Integer(value)\n\n\nRational\nnew Rational(numerator, denominator?)\n\n\nRationalInterval\nnew RationalInterval(a, b)\n\n\nCertifiedApproximation\nnew CertifiedApproximation(candidate, enclosure, options?)\n\n\nFraction\nnew Fraction(numerator, denominator?, options?)\n\n\nFractionInterval\nnew FractionInterval(a, b)\n\n\nBaseSystem\nnew BaseSystem(characters, name?, options?)\n\n\nNumeralSystem\nnew NumeralSystem({schema?, kind?, radix, tokens}) (since 0.6.0)\n\n\nTypePromotion\nStatic utility class; do not instantiate\n\n\n\nNUMERAL_SYSTEM_SCHEMA and NUMERAL_LIMITS accompany NumeralSystem in the current checkout. These exports await a coordinated package release.",
     "crumbs": [
       "Overview",
       "API index"

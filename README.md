@@ -303,11 +303,11 @@ These nonstandard systems support integers and exact numerator/denominator
 formatting. Repeating fractional expansions require an ordinary positional
 system; check `supportsPositionalFractions` before requesting one.
 
-### Versioned numeral systems (workspace feature)
+### Versioned numeral systems (since 0.6.0)
 
-The current checkout also exports `NumeralSystem`, `NUMERAL_SYSTEM_SCHEMA`, and
-`NUMERAL_LIMITS`. These exports are **not in the published npm 0.5.0 release**;
-use the matching workspace package until a coordinated release is available.
+Core 0.6.0 introduces `NumeralSystem`, `NUMERAL_SYSTEM_SCHEMA`, and
+`NUMERAL_LIMITS`. Use `@ratmath/core@^0.6.0` for these APIs; they are absent
+from 0.5.x.
 Unlike `BaseSystem`, `NumeralSystem` supports exact repeating fractional parsing
 and bounded expansion for ordinary, multi-token, balanced, and negative-base
 families. It does not implement bijective systems.

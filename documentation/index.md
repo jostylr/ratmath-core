@@ -34,7 +34,7 @@ tolerance.containsValue(new Rational(123, 100)); // true
 | [`Fraction`](fraction.md) | Unreduced fractions and Farey/Stern–Brocot operations |
 | [`FractionInterval`](fraction-interval.md) | Intervals that preserve unreduced endpoint representations |
 | [`BaseSystem`](base-system.md) | Ordered digit alphabets and integer/rational conversion |
-| [`NumeralSystem`](numeral-system.md) | Versioned exact four-family numerals and bounded expansion (workspace feature; not npm 0.5.0) |
+| [`NumeralSystem`](numeral-system.md) | Versioned exact four-family numerals and bounded expansion (since 0.6.0) |
 | [`TypePromotion`](type-promotion.md) | Explicit promotion and arithmetic dispatch across core number types |
 | [Parsing helpers](parsing.md) | Number-only parsing for decimals, mixed numbers, continued fractions, and intervals |
 
