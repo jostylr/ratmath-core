@@ -1,55 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://jostylr.github.io/ratmath-core/fraction-interval.html</loc>
-    <lastmod>2026-07-27T00:03:46.748Z</lastmod>
+    <loc>https://jostylr.github.io/ratmath-core/numeral-system.html</loc>
+    <lastmod>2026-09-20T13:18:11.521Z</lastmod>
   </url>
   <url>
-    <loc>https://jostylr.github.io/ratmath-core/base-system.html</loc>
-    <lastmod>2026-08-15T11:16:56.030Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jostylr.github.io/ratmath-core/type-promotion.html</loc>
-    <lastmod>2026-07-27T00:03:46.749Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jostylr.github.io/ratmath-core/parsing.html</loc>
-    <lastmod>2026-08-15T11:22:53.813Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jostylr.github.io/ratmath-core/api-index.html</loc>
-    <lastmod>2026-08-15T11:18:08.056Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jostylr.github.io/ratmath-core/integer.html</loc>
-    <lastmod>2026-08-06T21:03:09.864Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jostylr.github.io/ratmath-core/certified-approximation.html</loc>
-    <lastmod>2026-08-15T11:18:13.034Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jostylr.github.io/ratmath-core/examples.html</loc>
-    <lastmod>2026-08-09T00:59:02.362Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jostylr.github.io/ratmath-core/rational-interval.html</loc>
-    <lastmod>2026-08-07T21:17:35.513Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jostylr.github.io/ratmath-core/getting-started.html</loc>
-    <lastmod>2026-07-29T15:33:37.091Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jostylr.github.io/ratmath-core/fraction.html</loc>
-    <lastmod>2026-08-07T21:18:48.315Z</lastmod>
+    <loc>https://jostylr.github.io/ratmath-core/index.html</loc>
+    <lastmod>2026-09-20T13:18:11.540Z</lastmod>
   </url>
   <url>
     <loc>https://jostylr.github.io/ratmath-core/rational.html</loc>
     <lastmod>2026-08-07T21:18:48.274Z</lastmod>
   </url>
   <url>
-    <loc>https://jostylr.github.io/ratmath-core/index.html</loc>
-    <lastmod>2026-08-15T11:18:08.019Z</lastmod>
+    <loc>https://jostylr.github.io/ratmath-core/fraction.html</loc>
+    <lastmod>2026-08-07T21:18:48.315Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jostylr.github.io/ratmath-core/getting-started.html</loc>
+    <lastmod>2026-07-29T15:33:37.091Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jostylr.github.io/ratmath-core/rational-interval.html</loc>
+    <lastmod>2026-08-07T21:17:35.513Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jostylr.github.io/ratmath-core/examples.html</loc>
+    <lastmod>2026-08-09T00:59:02.362Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jostylr.github.io/ratmath-core/certified-approximation.html</loc>
+    <lastmod>2026-08-15T11:18:13.034Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jostylr.github.io/ratmath-core/integer.html</loc>
+    <lastmod>2026-08-06T21:03:09.864Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jostylr.github.io/ratmath-core/api-index.html</loc>
+    <lastmod>2026-09-20T13:18:11.540Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jostylr.github.io/ratmath-core/parsing.html</loc>
+    <lastmod>2026-08-15T11:22:53.813Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jostylr.github.io/ratmath-core/type-promotion.html</loc>
+    <lastmod>2026-07-27T00:03:46.749Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jostylr.github.io/ratmath-core/base-system.html</loc>
+    <lastmod>2026-09-20T13:18:11.540Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jostylr.github.io/ratmath-core/fraction-interval.html</loc>
+    <lastmod>2026-07-27T00:03:46.748Z</lastmod>
   </url>
 </urlset>

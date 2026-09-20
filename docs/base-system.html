@@ -345,31 +345,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
-  <div class="sidebar-item-container">
+  <div class="sidebar-item-container"> 
   <a href="./index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="citation" data-cites="ratmath/core">@ratmath/core</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container">
+  <div class="sidebar-item-container"> 
   <a href="./getting-started.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Getting started</span></a>
   </div>
 </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container">
+  <div class="sidebar-item-container"> 
   <a href="./parsing.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Number parsing</span></a>
   </div>
 </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container">
+  <div class="sidebar-item-container"> 
   <a href="./examples.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Examples</span></a>
   </div>
 </li>
         <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container">
+      <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
  <span class="menu-text">Classes</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
@@ -378,49 +378,55 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </div>
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
-  <div class="sidebar-item-container">
+  <div class="sidebar-item-container"> 
   <a href="./integer.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Integer</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container">
+  <div class="sidebar-item-container"> 
   <a href="./rational.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Rational</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container">
+  <div class="sidebar-item-container"> 
   <a href="./rational-interval.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">RationalInterval</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container">
+  <div class="sidebar-item-container"> 
   <a href="./certified-approximation.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">CertifiedApproximation</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container">
+  <div class="sidebar-item-container"> 
   <a href="./fraction.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Fraction</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container">
+  <div class="sidebar-item-container"> 
   <a href="./fraction-interval.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">FractionInterval</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container">
+  <div class="sidebar-item-container"> 
   <a href="./base-system.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">BaseSystem</span></a>
   </div>
 </li>
           <li class="sidebar-item">
-  <div class="sidebar-item-container">
+  <div class="sidebar-item-container"> 
+  <a href="./numeral-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">NumeralSystem</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./type-promotion.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">TypePromotion</span></a>
   </div>
@@ -428,7 +434,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </ul>
   </li>
         <li class="sidebar-item">
-  <div class="sidebar-item-container">
+  <div class="sidebar-item-container"> 
   <a href="./api-index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">API index</span></a>
   </div>
@@ -449,6 +455,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#presets" id="toc-presets" class="nav-link" data-scroll-target="#presets">Presets</a></li>
   <li><a href="#factories" id="toc-factories" class="nav-link" data-scroll-target="#factories">Factories</a></li>
   <li><a href="#prefix-registry" id="toc-prefix-registry" class="nav-link" data-scroll-target="#prefix-registry">Prefix registry</a></li>
+  <li><a href="#versioned-numeral-systems" id="toc-versioned-numeral-systems" class="nav-link" data-scroll-target="#versioned-numeral-systems">Versioned numeral systems</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/jostylr/ratmath-core/blob/main/base-system.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/jostylr/ratmath-core/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -475,6 +482,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<p>For versioned four-family numeral parsing, exact repeating expansions in balanced or negative bases, and bounded conversion evidence, see <a href="./numeral-system.html"><code>NumeralSystem</code></a>. It is a separate workspace API; the <code>BaseSystem</code> methods documented here remain unchanged.</p>
 <p><code>BaseSystem</code> defines an ordered single-character digit alphabet. It converts integers to and from that alphabet and supplies digit systems for rational formatting.</p>
 <section id="construct-a-system" class="level2">
 <h2 class="anchored" data-anchor-id="construct-a-system">Construct a system</h2>
@@ -716,6 +724,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="fu">getSystemForPrefix</span>(<span class="st">"x"</span>)<span class="op">.</span><span class="fu">equals</span>(BaseSystem<span class="op">.</span><span class="at">HEXADECIMAL</span>)<span class="op">;</span> <span class="co">// true</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="fu">getPrefixForSystem</span>(BaseSystem<span class="op">.</span><span class="at">BINARY</span>)<span class="op">;</span>                  <span class="co">// "b"</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>BaseSystem<span class="op">.</span><span class="fu">getSystemForPrefix</span>(<span class="st">"D"</span>)<span class="op">;</span>                                <span class="co">// null</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="versioned-numeral-systems" class="level2">
+<h2 class="anchored" data-anchor-id="versioned-numeral-systems">Versioned numeral systems</h2>
+<p><code>NumeralSystem</code> is the bounded multi-token and signed-positional companion to <code>BaseSystem</code>. It does not change the existing prefix registry or <code>BaseSystem</code> semantics. Construct it with <code>{kind, radix, tokens}</code>; <code>kind</code> is <code>ordinary</code>, <code>multiToken</code>, <code>balanced</code> or <code>negative</code>. <code>toJSON()</code> records schema <code>ratmath.numeral-system@1</code>; <code>new NumeralSystem(record)</code> validates an import. Labels and host parser registration belong to RiX.</p>
+<p><code>parse(source)</code> returns an exact Rational. <code>format(value,{maxDigits,mode})</code> returns an expansion record, exact source, integer carry steps, remainder steps, period and explicit exhaustion. <code>normalize</code> parses then formats; <code>places</code> returns exact weights/contributions; <code>locale</code> applies reversible point/group separators. All alphabets are prefix-free and punctuation-safe. No algorithm uses binary floating-point approximations to determine digits or equality. Families, grammar, limits and examples are specified in the RiX Radix numeral-systems guide.</p>
 
 
 </section>

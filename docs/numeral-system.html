@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="description" content="Exact, bounded positional numeral parsing and explanations for four digit families.">
 
-<title>CertifiedApproximation – @ratmath/core</title>
+<title>NumeralSystem – @ratmath/core</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -324,7 +325,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./integer.html">Classes</a></li><li class="breadcrumb-item"><a href="./certified-approximation.html">CertifiedApproximation</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./integer.html">Classes</a></li><li class="breadcrumb-item"><a href="./numeral-system.html">NumeralSystem</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -397,7 +398,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./certified-approximation.html" class="sidebar-item-text sidebar-link active">
+  <a href="./certified-approximation.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">CertifiedApproximation</span></a>
   </div>
 </li>
@@ -421,7 +422,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./numeral-system.html" class="sidebar-item-text sidebar-link">
+  <a href="./numeral-system.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">NumeralSystem</span></a>
   </div>
 </li>
@@ -449,22 +450,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#construction-helpers" id="toc-construction-helpers" class="nav-link active" data-scroll-target="#construction-helpers">Construction helpers</a></li>
-  <li><a href="#arithmetic" id="toc-arithmetic" class="nav-link" data-scroll-target="#arithmetic">Arithmetic</a></li>
-  <li><a href="#relations" id="toc-relations" class="nav-link" data-scroll-target="#relations">Relations</a></li>
-  <li><a href="#conversion-and-serialization" id="toc-conversion-and-serialization" class="nav-link" data-scroll-target="#conversion-and-serialization">Conversion and serialization</a></li>
+  <li><a href="#choose-the-representation-api" id="toc-choose-the-representation-api" class="nav-link active" data-scroll-target="#choose-the-representation-api">Choose the representation API</a></li>
+  <li><a href="#parse-exact-scalar-source" id="toc-parse-exact-scalar-source" class="nav-link" data-scroll-target="#parse-exact-scalar-source">Parse exact scalar source</a></li>
+  <li><a href="#bound-expansion-and-preserve-unfinished-evidence" id="toc-bound-expansion-and-preserve-unfinished-evidence" class="nav-link" data-scroll-target="#bound-expansion-and-preserve-unfinished-evidence">Bound expansion and preserve unfinished evidence</a></li>
+  <li><a href="#locale-adapters-and-place-values" id="toc-locale-adapters-and-place-values" class="nav-link" data-scroll-target="#locale-adapters-and-place-values">Locale adapters and place values</a></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/jostylr/ratmath-core/blob/main/certified-approximation.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/jostylr/ratmath-core/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/jostylr/ratmath-core/blob/main/numeral-system.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/jostylr/ratmath-core/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./integer.html">Classes</a></li><li class="breadcrumb-item"><a href="./certified-approximation.html">CertifiedApproximation</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./integer.html">Classes</a></li><li class="breadcrumb-item"><a href="./numeral-system.html">NumeralSystem</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">CertifiedApproximation</h1>
+<h1 class="title">NumeralSystem</h1>
 </div>
 
+<div>
+  <div class="description">
+    Exact, bounded positional numeral parsing and explanations for four digit families.
+  </div>
+</div>
 
 
 <div class="quarto-title-meta">
@@ -479,115 +485,134 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p><code>CertifiedApproximation</code> represents one uncertain scalar. It stores a finite candidate for display or downstream estimation and a closed, exact <code>RationalInterval</code> that is the authoritative guarantee.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { parseNumber } <span class="im">from</span> <span class="st">"@ratmath/core"</span><span class="op">;</span></span>
+<p><code>NumeralSystem</code> is available in the <strong>current workspace checkout</strong>. It is not exported by the published npm <code>@ratmath/core@0.5.0</code>; a coordinated package release is still pending. The imports below require the matching workspace package.</p>
+<section id="choose-the-representation-api" class="level2">
+<h2 class="anchored" data-anchor-id="choose-the-representation-api">Choose the representation API</h2>
+<p><a href="./base-system.html"><code>BaseSystem</code></a> remains the existing conversion API used by <code>Rational.toBase</code> and <code>toRepeatingBase</code>, including presets and bijective integer systems. Its nonordinary systems do not support repeating fractional expansion. <code>NumeralSystem</code> supplies a separate versioned descriptor, exact parsing and bounded repeating expansion across these four families:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th><code>kind</code></th>
+<th>Radix</th>
+<th>Digit values in token order</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ordinary</code> (default)</td>
+<td>2–256</td>
+<td>0 through radix−1; one Unicode character per token</td>
+</tr>
+<tr class="even">
+<td><code>multiToken</code></td>
+<td>2–256</td>
+<td>0 through radix−1; prefix-free token strings</td>
+</tr>
+<tr class="odd">
+<td><code>balanced</code></td>
+<td>Odd positive radix, 3–255</td>
+<td>−(radix−1)/2 through +(radix−1)/2</td>
+</tr>
+<tr class="even">
+<td><code>negative</code></td>
+<td>−2 through −256</td>
+<td>0 through abs(radix)−1</td>
+</tr>
+</tbody>
+</table>
+<p>There is no bijective <code>NumeralSystem</code> family. Neither API automatically replaces the other, and a <code>BaseSystem</code> instance is not a numeral-system descriptor.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { NumeralSystem<span class="op">,</span> Rational } <span class="im">from</span> <span class="st">"@ratmath/core"</span><span class="op">;</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> reading <span class="op">=</span> <span class="fu">parseNumber</span>(<span class="st">"23.456?789"</span>)<span class="op">;</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>reading<span class="op">.</span><span class="at">candidate</span><span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span> <span class="co">// "23456789/1000000"</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>reading<span class="op">.</span><span class="at">enclosure</span><span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span> <span class="co">// "2932/125:23457/1000"</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>reading<span class="op">.</span><span class="at">low</span><span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span>       <span class="co">// "2932/125"</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>reading<span class="op">.</span><span class="at">high</span><span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span>      <span class="co">// "23457/1000"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The candidate must lie inside the enclosure. Constructor inputs that violate that invariant throw. <code>representation</code>, its standard metadata records, and <code>dependencies</code> are frozen copies, so later caller mutation cannot change the approximation contract.</p>
-<section id="construction-helpers" class="level2">
-<h2 class="anchored" data-anchor-id="construction-helpers">Construction helpers</h2>
-<p>Literal parsing is usually the shortest route; see <a href="./parsing.html">Parsing</a>. Programmatic APIs are also available:</p>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> decimal <span class="op">=</span> <span class="kw">new</span> <span class="fu">NumeralSystem</span>({ <span class="dt">radix</span><span class="op">:</span> <span class="dv">10</span><span class="op">,</span> <span class="dt">tokens</span><span class="op">:</span> [<span class="op">...</span><span class="st">"0123456789"</span>] })<span class="op">;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> words <span class="op">=</span> <span class="kw">new</span> <span class="fu">NumeralSystem</span>({ <span class="dt">kind</span><span class="op">:</span> <span class="st">"multiToken"</span><span class="op">,</span> <span class="dt">radix</span><span class="op">:</span> <span class="dv">3</span><span class="op">,</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">tokens</span><span class="op">:</span> [<span class="st">"zero"</span><span class="op">,</span> <span class="st">"one"</span><span class="op">,</span> <span class="st">"two"</span>] })<span class="op">;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> balanced <span class="op">=</span> <span class="kw">new</span> <span class="fu">NumeralSystem</span>({ <span class="dt">kind</span><span class="op">:</span> <span class="st">"balanced"</span><span class="op">,</span> <span class="dt">radix</span><span class="op">:</span> <span class="dv">3</span><span class="op">,</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">tokens</span><span class="op">:</span> [<span class="st">"T"</span><span class="op">,</span> <span class="st">"0"</span><span class="op">,</span> <span class="st">"1"</span>] })<span class="op">;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> negative <span class="op">=</span> <span class="kw">new</span> <span class="fu">NumeralSystem</span>({ <span class="dt">kind</span><span class="op">:</span> <span class="st">"negative"</span><span class="op">,</span> <span class="dt">radix</span><span class="op">:</span> <span class="op">-</span><span class="dv">2</span><span class="op">,</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">tokens</span><span class="op">:</span> [<span class="st">"0"</span><span class="op">,</span> <span class="st">"1"</span>] })<span class="op">;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>words<span class="op">.</span><span class="fu">parse</span>(<span class="st">"onezero.two"</span>)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span> <span class="co">// "11/3"</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>balanced<span class="op">.</span><span class="fu">parse</span>(<span class="st">"1T"</span>)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span>       <span class="co">// "2"</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>negative<span class="op">.</span><span class="fu">parse</span>(<span class="st">"110.1"</span>)<span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span>    <span class="co">// "3/2"</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>balanced<span class="op">.</span><span class="fu">format</span>(<span class="kw">new</span> <span class="fu">Rational</span>(<span class="op">-</span><span class="dv">5</span>))<span class="op">.</span><span class="at">spelling</span><span class="op">;</span> <span class="co">// "T11"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Descriptors have schema <code>ratmath.numeral-system@1</code>, exported as <code>NUMERAL_SYSTEM_SCHEMA</code>. <code>toJSON()</code> returns <code>{schema, kind, radix, tokens}</code>; restore with <code>new NumeralSystem(JSON.parse(JSON.stringify(system)))</code>. The constructor validates and freezes the system and a copy of its token array. Duplicate tokens, prefixes such as <code>a</code>/<code>ab</code>, punctuation collisions, incompatible radix/family combinations, and unknown schema versions are rejected. Each token has at most 32 Unicode characters and may not contain numeral grammar punctuation or whitespace. <code>NUMERAL_LIMITS</code> exports the implementation ceilings.</p>
+</section>
+<section id="parse-exact-scalar-source" class="level2">
+<h2 class="anchored" data-anchor-id="parse-exact-scalar-source">Parse exact scalar source</h2>
+<p><code>parse(source)</code> returns a <code>Rational</code>. All components, including shift exponents, use the selected system’s tokens; the following examples use decimal:</p>
 <table class="caption-top table">
-<colgroup>
-<col style="width: 50%">
-<col style="width: 50%">
-</colgroup>
 <thead>
 <tr class="header">
-<th>Export</th>
-<th>Result</th>
+<th>Source</th>
+<th>Exact value</th>
+<th>Form</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>certifiedRadixPrefix(options)</code></td>
-<td>Certified ordinary positional-radix prefix and optional provisional digits</td>
+<td><code>1_000/2</code></td>
+<td>500</td>
+<td>Group separators and rational fraction</td>
 </tr>
 <tr class="even">
-<td><code>certifiedContinuedFractionPrefix(options)</code></td>
-<td>Certified continued-fraction coefficient prefix</td>
+<td><code>-2..1/3</code></td>
+<td>−7/3</td>
+<td>Signed mixed number</td>
 </tr>
 <tr class="odd">
-<td><code>boundedDecimalApproximation(value, options?)</code></td>
-<td>Exact terminating scalar or certified decimal prefix at the requested digit bound</td>
+<td><code>0.1#6</code></td>
+<td>1/6</td>
+<td>Finite prefix plus repeating block</td>
 </tr>
 <tr class="even">
-<td><code>boundedContinuedFractionApproximation(value, options?)</code></td>
-<td>Exact finite scalar or certified coefficient prefix at the requested term bound</td>
+<td><code>3.~7~16</code></td>
+<td>355/113</td>
+<td>Continued fraction</td>
 </tr>
 <tr class="odd">
-<td><code>normalizeCertifiedApproximation(candidate, enclosure, options?)</code></td>
-<td>Exact scalar for a point enclosure unless <code>preserveWrapper</code> is true; otherwise a wrapper</td>
+<td><code>12.5_^2</code></td>
+<td>1250</td>
+<td>Radix-power shift</td>
 </tr>
 </tbody>
 </table>
-<p><code>certifiedRadixPrefix</code> requires a conventional positional <code>BaseSystem</code> whose first digit means zero. Signed, balanced, and bijective systems support integer conversion but do not define the ordinary fractional cylinders this helper certifies.</p>
+<p>A leading <code>+</code>/<code>-</code> is accepted even for balanced or negative-base input. <code>_</code> must separate tokens; it cannot lead, trail, or repeat. Mixed fractional components must be nonnegative with positive denominator. Continued-fraction tails must be positive. This is scalar numeral parsing, not arithmetic expression evaluation.</p>
+<p>Intervals (<code>1:2</code>), uncertainty/certified-approximation source (<code>1?2</code>), host labels, and RiX backtick wrappers are not accepted here. Use the public <a href="./parsing.html">number parsers</a> for the supported ordinary interval/certified grammar, or a host’s explicit numeral syntax adapter. Formatting likewise requires an exact <code>Rational</code>, <code>Integer</code>, or <code>bigint</code>; JavaScript floating-point <code>number</code>, intervals, and certified-approximation objects are not silently coerced.</p>
 </section>
-<section id="arithmetic" class="level2">
-<h2 class="anchored" data-anchor-id="arithmetic">Arithmetic</h2>
-<p><code>add</code>, <code>subtract</code>, <code>multiply</code>, <code>divide</code>, <code>negate</code>, <code>reciprocal</code>, <code>pow</code>, and <code>E</code> propagate the exact enclosure. Arithmetic with <code>Integer</code>, <code>Rational</code>, or another <code>CertifiedApproximation</code> keeps scalar-uncertainty semantics. An explicit operation with <code>RationalInterval</code> returns interval arithmetic instead.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> shifted <span class="op">=</span> reading<span class="op">.</span><span class="fu">add</span>(<span class="fu">parseNumber</span>(<span class="st">"0.5"</span>))<span class="op">;</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>shifted<span class="op">.</span><span class="at">candidate</span><span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span> <span class="co">// "23956789/1000000"</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>shifted<span class="op">.</span><span class="at">enclosure</span><span class="op">.</span><span class="fu">toString</span>()<span class="op">;</span> <span class="co">// "5989/250:23957/1000"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Subtracting two wrappers with the same <code>sourceId</code> is exactly zero. Dividing a wrapper by the same source is exactly one unless its enclosure contains zero. Derived wrappers receive a new source identity and record serializable source dependencies when available.</p>
+<section id="bound-expansion-and-preserve-unfinished-evidence" class="level2">
+<h2 class="anchored" data-anchor-id="bound-expansion-and-preserve-unfinished-evidence">Bound expansion and preserve unfinished evidence</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> complete <span class="op">=</span> decimal<span class="op">.</span><span class="fu">format</span>(<span class="kw">new</span> <span class="fu">Rational</span>(<span class="dv">1</span><span class="op">,</span> <span class="dv">6</span>))<span class="op">;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>complete<span class="op">.</span><span class="at">status</span><span class="op">;</span>   <span class="co">// "complete"</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>complete<span class="op">.</span><span class="at">spelling</span><span class="op">;</span> <span class="co">// "0.1#6"</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> partial <span class="op">=</span> decimal<span class="op">.</span><span class="fu">format</span>(<span class="kw">new</span> <span class="fu">Rational</span>(<span class="dv">1</span><span class="op">,</span> <span class="dv">97</span>)<span class="op">,</span> { <span class="dt">maxDigits</span><span class="op">:</span> <span class="dv">3</span> })<span class="op">;</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>partial<span class="op">.</span><span class="at">status</span><span class="op">;</span>   <span class="co">// "budgetExhausted"</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>partial<span class="op">.</span><span class="at">spelling</span><span class="op">;</span> <span class="co">// null</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>partial<span class="op">.</span><span class="at">source</span><span class="op">.</span><span class="fu">equals</span>(<span class="kw">new</span> <span class="fu">Rational</span>(<span class="dv">1</span><span class="op">,</span> <span class="dv">97</span>))<span class="op">;</span> <span class="co">// true</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>partial<span class="op">.</span><span class="at">work</span><span class="op">;</span>     <span class="co">// 3</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>maxDigits</code> defaults to 256 and can be 0–4096. Expansion counts both integer and fractional digits. A result is complete only when the integer finishes and the fractional remainder reaches zero or repeats. On exhaustion, <code>partial</code> may contain an unfinished prefix; it is <strong>not an exact spelling</strong> of <code>source</code>. Retain <code>source</code>, <code>remaining</code>, and <code>integer.remaining</code>, and increase the budget explicitly if needed. Even zero needs a digit of work.</p>
+<p>Expansion records use schema <code>ratmath.numeral-expansion@1</code>. They include the system descriptor, integer digits/carries, fractional <code>prefix</code> and <code>repeat</code>, <code>steps</code>, exact remaining rational, <code>work</code>, and status. Each integer carry satisfies <code>before = after * radix + digit</code>; each fractional step satisfies <code>after = before * radix - digit</code>. These explain exact conversion without replacing its bounded failure status with a rounded answer.</p>
+<p><code>format(value, {mode: "fraction", maxDigits})</code> formats numerator and denominator separately, each with the specified digit budget. The result has <code>numerator</code> and <code>denominator</code> records instead of expansion <code>steps</code>/<code>remaining</code>; its spelling is null if either integer conversion exhausts its budget. <code>normalize(source, options)</code> is shorthand for parsing and then formatting; it returns the same result record, not a bare string.</p>
+<p>Other limits are 65,536 source code units, 4096 tokens per parsed digit sequence, 16,384 bits per checked exact component, 256 continued-fraction terms, and absolute shift exponent 4096. Malformed or oversized input throws an error prefixed <code>Numeral system:</code>; work exhaustion during otherwise valid formatting is a result status. These are algorithmic bounds, not process memory isolation.</p>
 </section>
-<section id="relations" class="level2">
-<h2 class="anchored" data-anchor-id="relations">Relations</h2>
-<p>Overlapping enclosures do not justify a single Boolean comparison. Use <code>possibleRelations(left, right)</code> or <code>value.possibleRelationsTo(other)</code>. The result is a bit mask composed from <code>Relation.LESS</code>, <code>Relation.EQUAL</code>, and <code>Relation.GREATER</code>.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { Relation<span class="op">,</span> possibleRelations } <span class="im">from</span> <span class="st">"@ratmath/core"</span><span class="op">;</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> mask <span class="op">=</span> <span class="fu">possibleRelations</span>(<span class="fu">parseNumber</span>(<span class="st">"2?"</span>)<span class="op">,</span> <span class="fu">parseNumber</span>(<span class="st">"2.5?"</span>))<span class="op">;</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> couldBeLess <span class="op">=</span> (mask <span class="op">&amp;</span> Relation<span class="op">.</span><span class="at">LESS</span>) <span class="op">!==</span> <span class="dv">0</span><span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Wrappers copied from the same source compare as <code>Relation.EQUAL</code>; this records identity of the uncertain scalar rather than a claim that its unknown exact value equals every point in its enclosure.</p>
-</section>
-<section id="conversion-and-serialization" class="level2">
-<h2 class="anchored" data-anchor-id="conversion-and-serialization">Conversion and serialization</h2>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 50%">
-<col style="width: 50%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Member</th>
-<th>Result</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><code>toRationalInterval()</code></td>
-<td>Authoritative enclosure</td>
-</tr>
-<tr class="even">
-<td><code>toRational()</code></td>
-<td>Point value, or throws for a non-point enclosure</td>
-</tr>
-<tr class="odd">
-<td><code>copy()</code></td>
-<td>New wrapper preserving source identity and metadata</td>
-</tr>
-<tr class="even">
-<td><code>toString()</code></td>
-<td>Parseable prefix notation or <code>candidate?[=low:high]</code></td>
-</tr>
-<tr class="odd">
-<td><code>toJSON()</code></td>
-<td>Tagged candidate, enclosure, representation, serializable source ID, and dependencies</td>
-</tr>
-</tbody>
-</table>
-<p><code>toString()</code> preserves both candidate and enclosure across a <code>parseNumber</code> round trip. Tagged JSON additionally preserves representation metadata and all string or number provenance identifiers:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { reviveCoreValue } <span class="im">from</span> <span class="st">"@ratmath/core"</span><span class="op">;</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> restored <span class="op">=</span> <span class="bu">JSON</span><span class="op">.</span><span class="fu">parse</span>(<span class="bu">JSON</span><span class="op">.</span><span class="fu">stringify</span>(reading)<span class="op">,</span> reviveCoreValue)<span class="op">;</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>restored<span class="op">.</span><span class="at">enclosure</span><span class="op">.</span><span class="fu">equals</span>(reading<span class="op">.</span><span class="at">enclosure</span>)<span class="op">;</span> <span class="co">// true</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>JavaScript symbols are process-local and cannot be represented in JSON. A symbol source receives a new local identity after revival, and symbol dependencies are omitted from serialized output.</p>
+<section id="locale-adapters-and-place-values" class="level2">
+<h2 class="anchored" data-anchor-id="locale-adapters-and-place-values">Locale adapters and place values</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> locale <span class="op">=</span> { <span class="dt">point</span><span class="op">:</span> <span class="st">","</span><span class="op">,</span> <span class="dt">group</span><span class="op">:</span> <span class="st">" "</span><span class="op">,</span> <span class="dt">groupSize</span><span class="op">:</span> <span class="dv">3</span> }<span class="op">;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>decimal<span class="op">.</span><span class="fu">locale</span>(<span class="st">"12345.6#7"</span><span class="op">,</span> locale)<span class="op">;</span> <span class="co">// "12 345,6#7"</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>decimal<span class="op">.</span><span class="fu">locale</span>(<span class="st">"12 345,6#7"</span><span class="op">,</span> locale<span class="op">,</span> <span class="st">"parse"</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">.</span><span class="fu">equals</span>(decimal<span class="op">.</span><span class="fu">parse</span>(<span class="st">"12345.6#7"</span>))<span class="op">;</span> <span class="co">// true</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> explanation <span class="op">=</span> negative<span class="op">.</span><span class="fu">places</span>(<span class="st">"110.11"</span>)<span class="op">;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>explanation<span class="op">.</span><span class="at">places</span><span class="op">.</span><span class="fu">reduce</span>((sum<span class="op">,</span> row) <span class="kw">=&gt;</span> sum<span class="op">.</span><span class="fu">add</span>(row<span class="op">.</span><span class="at">contribution</span>)<span class="op">,</span> <span class="kw">new</span> <span class="fu">Rational</span>(<span class="dv">0</span>))</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="op">.</span><span class="fu">equals</span>(explanation<span class="op">.</span><span class="at">value</span>)<span class="op">;</span> <span class="co">// true</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Locale formatting accepts positional expansions only, not fractions, mixed numbers, continued fractions, or shifts. Parsing requires canonical grouping; for example <code>1 2345,6</code> is rejected. Separators must be distinct, nonempty, at most four code units, and disjoint from tokens and reserved punctuation. Group size is 1–8 tokens, not a count of characters in a multi-token alphabet. Localization changes spelling only; parsing returns the exact rational again.</p>
+<p><code>places(source)</code> returns <code>{value, places}</code> for a finite positional spelling. Each row has <code>token</code>, <code>digit</code>, <code>exponent</code>, exact <code>weight</code>, and signed exact <code>contribution</code>. Contributions sum to the parsed value, including negative radices. For compound or repeating source, it returns the exact value, empty rows and a diagnostic directing the caller to the normalized expansion.</p>
+<p>Lower-level helpers are <code>tokenize(source, {allowEmpty?})</code> (digit-value array), <code>fromDigits(digits)</code> (exact <code>bigint</code>), <code>parseInteger(source)</code> (signed <code>bigint</code>), <code>integer(bigint, maxDigits?)</code> (bounded carry record; default 4096 digits), and <code>digitText(digits)</code> (tokens joined into a string). Use validated digit arrays with <code>digitText</code>; <code>fromDigits</code> validates digit ranges and size.</p>
 
 
 </section>
@@ -1016,4 +1041,4 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/jostylr/ratmath-core/blob/main/certified-approximation.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/jostylr/ratmath-core/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/jostylr/ratmath-core/blob/main/numeral-system.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/jostylr/ratmath-core/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
