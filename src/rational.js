@@ -194,7 +194,10 @@ export class Rational {
 
             // Convert decimal to fraction
             const isNegative = integerPart.startsWith("-");
-            const wholePart = BigInt(integerPart);
+            // A signed leading decimal has an implicit zero whole part.
+            const wholePart = integerPart === "-" && fractionalPart.length > 0
+              ? 0n
+              : BigInt(integerPart);
             const fractionalValue = BigInt(fractionalPart);
             const denomValue = 10n ** BigInt(fractionalPart.length);
 

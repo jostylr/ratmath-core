@@ -2,6 +2,21 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## Signed leading decimal constructor fix
+**Model:** OpenAI Codex (GPT-6)
+**Date:** 2026-10-17 EDT
+
+Fixed `Rational("-.5")` by treating the omitted whole part as zero while
+retaining the fractional sign. The normalization applies only when fractional
+digits are present, preserving rejection of `"-."` and malformed signs.
+
+Added focused regression coverage for leading decimals, negative zero,
+whitespace, explicit-zero equivalence across fractional scales, and malformed
+inputs. First tested the same fix in an isolated experimental fast core and
+in a clean archive of the committed core, then ran the complete production
+core suite and Bun/Node constructor contracts. Existing local exponentiation
+changes are independent and excluded from this fix.
+
 ## RatMath Core 0.5.0 release preparation
 **Model:** OpenAI Codex
 **Date:** 2026-08-22 09:43 EDT

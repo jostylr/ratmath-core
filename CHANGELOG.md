@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Parse signed leading decimals such as `Rational("-.5")` with an implicit zero whole part, preserving the negative sign and rejecting malformed inputs.
+
 ## 0.6.0 — 2026-09-20
 
 ### Added
