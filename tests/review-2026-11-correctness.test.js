@@ -76,3 +76,23 @@ describe("interval decimal text encloses the interval", () => {
     expect(text).toBe("0.[33333333333333333333:66666666666666666667]");
   });
 });
+
+describe("shared literal grammar edge cases", () => {
+  it("rejects zero denominators and non-positive continued-fraction terms", async () => {
+    const { parseRational, parseContinuedFraction, parseRepeatingDecimal } = await import("../index.js");
+    expect(() => parseRational("1/0")).toThrow("Denominator cannot be zero");
+    expect(() => new Rational("3/0")).toThrow("Denominator cannot be zero");
+    expect(() => parseContinuedFraction("1.~0~2")).toThrow("Continued fraction terms must be positive");
+    expect(() => parseRational("23.456?")).toThrow("non-point CertifiedApproximation");
+    expect(parseRepeatingDecimal("0.1#6").equals(new Rational(1, 6))).toBe(true);
+  });
+
+  it("parses provisional continued-fraction terms and negative derived approximations", async () => {
+    const { parseNumber } = await import("../index.js");
+    const cf = parseNumber("3.~7~15?1~2");
+    expect(cf.isCertifiedApproximation).toBe(true);
+    const derived = parseNumber("-1/3?[=1/4:1/2]");
+    expect(derived.enclosure.low.equals(new Rational(-1, 2))).toBe(true);
+    expect(derived.enclosure.high.equals(new Rational(-1, 4))).toBe(true);
+  });
+});

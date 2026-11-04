@@ -40,9 +40,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # Pinned: Bun 1.4.4 counts covered lines differently (unchanged code
+      # reports ~96% instead of 99.9%), which breaks the 99% line threshold
+      # in bunfig.toml. Re-check thresholds before moving to a newer Bun.
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.4.2
 
       - uses: actions/setup-node@v6
         with:
