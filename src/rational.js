@@ -9,6 +9,7 @@
 import { BaseSystem } from "./base-system.js";
 import { parseRationalParts } from "./rational-literal.js";
 import { toExactBigInt } from "./bigint.js";
+import { reducedProduct, reducedQuotient, reducedSum } from "./reduced-arithmetic.js";
 
 const POWERS_OF_5 = Object.freeze({
   16: 5n ** 16n,
@@ -198,6 +199,41 @@ export class Rational {
   }
 
   /**
+   * Build a Rational from a pair already known to be canonical (reduced,
+   * positive denominator). Private so arbitrary fractions cannot bypass
+   * normalization.
+   * @private
+   */
+  static #fromCanonical(numerator, denominator) {
+    const result = new Rational(0n, 1n);
+    result.#numerator = numerator;
+    result.#denominator = denominator;
+    result.#isNegative = numerator < 0n;
+    return result;
+  }
+
+  /**
+   * Canonical [numerator, denominator] of a plain Rational or plain Integer
+   * operand, or null when the operand needs the general (dispatching) path:
+   * subclasses, own accessor overrides, intervals and certified values.
+   * @private
+   */
+  static #canonicalParts(other) {
+    if (other == null || typeof other !== "object") return null;
+    const prototype = Object.getPrototypeOf(other);
+    if (prototype === Rational.prototype) {
+      return Object.hasOwn(other, "numerator") || Object.hasOwn(other, "denominator")
+        ? null
+        : [other.#numerator, other.#denominator];
+    }
+    if (prototype?.constructor?.name === "Integer" && !Object.hasOwn(other, "value")) {
+      const value = other.value;
+      return typeof value === "bigint" ? [value, 1n] : null;
+    }
+    return null;
+  }
+
+  /**
    * Convert the rational to lowest terms and ensure denominator is positive
    * @private
    */
@@ -261,6 +297,10 @@ export class Rational {
    * @returns {Rational|RationalInterval} The sum with appropriate type
    */
   add(other) {
+    const parts = Rational.#canonicalParts(other);
+    if (parts) {
+      return Rational.#fromCanonical(...reducedSum(this.#numerator, this.#denominator, parts[0], parts[1]));
+    }
     if (other?.isCertifiedApproximation === true) {
       return other._operateExactLeft("add", this);
     }
@@ -303,6 +343,10 @@ export class Rational {
    * @returns {Rational|RationalInterval} The difference with appropriate type
    */
   subtract(other) {
+    const parts = Rational.#canonicalParts(other);
+    if (parts) {
+      return Rational.#fromCanonical(...reducedSum(this.#numerator, this.#denominator, -parts[0], parts[1]));
+    }
     if (other?.isCertifiedApproximation === true) {
       return other._operateExactLeft("subtract", this);
     }
@@ -344,6 +388,10 @@ export class Rational {
    * @returns {Rational|RationalInterval} The product with appropriate type
    */
   multiply(other) {
+    const parts = Rational.#canonicalParts(other);
+    if (parts) {
+      return Rational.#fromCanonical(...reducedProduct(this.#numerator, this.#denominator, parts[0], parts[1]));
+    }
     if (other?.isCertifiedApproximation === true) {
       return other._operateExactLeft("multiply", this);
     }
@@ -384,6 +432,11 @@ export class Rational {
    * @throws {Error} If other is zero
    */
   divide(other) {
+    const parts = Rational.#canonicalParts(other);
+    if (parts) {
+      if (parts[0] === 0n) throw new Error("Division by zero");
+      return Rational.#fromCanonical(...reducedQuotient(this.#numerator, this.#denominator, parts[0], parts[1]));
+    }
     if (other?.isCertifiedApproximation === true) {
       return other._operateExactLeft("divide", this);
     }

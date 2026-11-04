@@ -2,6 +2,20 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## Integer floor operations and canonical Rational fast paths
+**Model:** Claude Opus 5.5
+**Date:** 2026-11-04
+
+Added `Integer.floorDivide`, `floorModulo` and `divmod`, and Rational
+add/subtract/multiply/divide fast paths for plain Rational or Integer operands.
+
+The fast paths use Knuth/Henrici reduced-pair formulas (`reduced-arithmetic.js`,
+internal) and a private `#fromCanonical` factory, so the only way to skip
+normalization is from a pair proved canonical. Subclasses, own accessor
+overrides, intervals and certified values keep the general path. A RiX harmonic
+sum to 4000 went from 0.304s to 0.019s; differential tests cover 2000 random
+pairs with shared factors.
+
 ## Review correctness fixes: comparisons, toNumber, string parsing, outward interval text
 **Model:** Claude Opus 5.5
 **Date:** 2026-11-04
