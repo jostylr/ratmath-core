@@ -55,6 +55,25 @@ function exactOffsetString(value) {
   return exactTerminatingDecimal(value) ?? value.toString();
 }
 
+const OUTWARD_DECIMAL_DIGITS = 20;
+
+// Decimal text for value rounded toward -infinity ("down") or +infinity ("up")
+// at a fixed number of fractional digits, so printed bounds still enclose.
+function directedDecimal(value, direction, digits = OUTWARD_DECIMAL_DIGITS) {
+  const scale = 10n ** BigInt(digits);
+  const scaled = value.numerator * scale;
+  let units = scaled / value.denominator;
+  const exact = scaled % value.denominator === 0n;
+  if (!exact && direction === "down" && scaled < 0n) units -= 1n;
+  if (!exact && direction === "up" && scaled > 0n) units += 1n;
+  const negative = units < 0n;
+  const magnitude = (negative ? -units : units).toString().padStart(digits + 1, "0");
+  const whole = magnitude.slice(0, -digits);
+  const fraction = magnitude.slice(-digits).replace(/0+$/, "");
+  const text = fraction ? `${whole}.${fraction}` : whole;
+  return negative && text !== "0" ? `-${text}` : text;
+}
+
 function gcd(a, b) {
   while (b !== 0n) [a, b] = [b, a % b];
   return a < 0n ? -a : a;
@@ -731,9 +750,10 @@ export class RationalInterval {
    * @returns {string} Compacted decimal interval string (e.g., "1.2356:1.2367" becomes "1.23[56:67]")
    */
   compactedDecimalInterval() {
-    // Convert both endpoints to decimal strings
-    const startStr = this.#start.toDecimal();
-    const endStr = this.#end.toDecimal();
+    // Round each endpoint outward so the text still encloses the interval.
+    const lowerFirst = this.#start.lessThanOrEqual(this.#end);
+    const startStr = directedDecimal(this.#start, lowerFirst ? "down" : "up");
+    const endStr = directedDecimal(this.#end, lowerFirst ? "up" : "down");
 
     // Find the longest common prefix
     let commonPrefix = "";
@@ -778,40 +798,43 @@ export class RationalInterval {
    * @returns {string} Relative midpoint decimal interval string (e.g., "1.224:1.235" becomes "1.2295[+-55]")
    */
   relativeMidDecimalInterval() {
-    // Calculate the midpoint based on actual bounds
-    const midpoint = this.#low.add(this.#high).divide(new Rational(2));
-
-    // Calculate offsets based on start and end
-    const offsetEnd = this.#end.subtract(midpoint);
-    const offsetStart = this.#start.subtract(midpoint);
-
-    // Convert to decimal strings
-    const midpointStr = midpoint.toDecimal();
+    // The printed midpoint is a rounded decimal; offsets are measured from
+    // that printed value and rounded outward so the text encloses the interval.
+    const exactMidpoint = this.#low.add(this.#high).divide(new Rational(2));
+    let midpointStr = exactTerminatingDecimal(exactMidpoint);
+    if (midpointStr === null || midpointStr.split(".")[1]?.length > OUTWARD_DECIMAL_DIGITS) {
+      // Keep one digit beyond the half-width's leading digit.
+      const halfWidth = this.#high.subtract(exactMidpoint);
+      let places = 0;
+      while (places < OUTWARD_DECIMAL_DIGITS && halfWidth.multiply(new Rational(10n ** BigInt(places))).lessThan(Rational.one)) {
+        places += 1;
+      }
+      midpointStr = directedDecimal(exactMidpoint, "down", Math.min(places + 1, OUTWARD_DECIMAL_DIGITS));
+    }
+    const midpoint = new Rational(midpointStr);
     const decimalPlaces = midpointStr.includes(".")
       ? midpointStr.split(".")[1].length
       : 0;
-    const scaleFactor =
-      decimalPlaces === 0
-        ? Rational.one
-        : new Rational(10).pow(decimalPlaces);
-    const scaledOffsetStart = offsetStart.multiply(scaleFactor);
-    const scaledOffsetEnd = offsetEnd.multiply(scaleFactor);
+    const scaleFactor = new Rational(10n ** BigInt(decimalPlaces));
+    const below = midpoint.subtract(this.#low).multiply(scaleFactor);
+    const above = this.#high.subtract(midpoint).multiply(scaleFactor);
 
-    if (offsetStart.equals(offsetEnd.negate())) {
-      // Symmetric
-      const offsetStr = scaledOffsetEnd.abs().toDecimal();
-      return `${midpointStr}[+-${offsetStr}]`;
+    if (below.equals(above) || below.lessThan(Rational.zero) || above.lessThan(Rational.zero)) {
+      // A rounded midpoint can fall outside a very narrow interval; then a
+      // symmetric offset covering both ends is the valid notation.
+      const radius = below.abs().greaterThan(above.abs()) ? below.abs() : above.abs();
+      return `${midpointStr}[+-${directedDecimal(radius, "up")}]`;
     }
 
-    // Asymmetric (though shouldn't happen strictly speaking unless we implement custom betweenness offsets)
-    const offStartStr = scaledOffsetStart.toDecimal();
-    const offEndStr = scaledOffsetEnd.toDecimal();
-
-    const startSign =
-      scaledOffsetStart.compareTo(Rational.zero) > 0 ? "+" : "";
-    const endSign =
-      scaledOffsetEnd.compareTo(Rational.zero) > 0 ? "+" : "";
-    return `${midpointStr}[${startSign}${offStartStr}:${endSign}${offEndStr}]`;
+    const lowOffset = below.negate();
+    const lowStr = directedDecimal(lowOffset, "down");
+    const highStr = directedDecimal(above, "up");
+    const lowSign = lowOffset.compareTo(Rational.zero) > 0 ? "+" : "";
+    const highSign = above.compareTo(Rational.zero) > 0 ? "+" : "";
+    const [first, second] = this.#start.lessThanOrEqual(this.#end)
+      ? [`${lowSign}${lowStr}`, `${highSign}${highStr}`]
+      : [`${highSign}${highStr}`, `${lowSign}${lowStr}`];
+    return `${midpointStr}[${first}:${second}]`;
   }
 
   /**

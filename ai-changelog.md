@@ -2,6 +2,22 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## Review correctness fixes: comparisons, toNumber, string parsing, outward interval text
+**Model:** Claude Opus 5.5
+**Date:** 2026-11-04
+
+Integer comparisons accept Rational operands and Rational comparisons accept
+Integer operands; `toNumber()` stays finite for parts beyond the double range;
+string construction uses the shared literal grammar and rejects garbage.
+
+The scalar literal grammar moved from `number-parser.js` into the import-free
+`rational-literal.js` (returning BigInt pairs) so `Rational` can use it without
+an import cycle. `new Rational("")`, `"."` and `"/2"` now throw, `"0.#3"`,
+`"1_000"` and continued fractions are accepted, and a second argument divides
+(`new Rational("3/4", 5)` is 3/20). `compactedDecimalInterval()` and
+`relativeMidDecimalInterval()` round outward at 20 digits, so the printed text
+encloses the interval; terminating cases print exactly as before.
+
 ## Signed leading decimal constructor fix
 **Model:** OpenAI Codex (GPT-6)
 **Date:** 2026-10-17 EDT

@@ -234,54 +234,60 @@ export class Integer {
    * @returns {boolean} True if the integers are equal
    */
   equals(other) {
-    return this.#value === other.value;
+    if (other instanceof Rational) {
+      return other.denominator === 1n && this.#value === other.numerator;
+    }
+    return this.#value === other?.value;
   }
 
   /**
-   * Compares this integer with another
-   * @param {Integer} other - The integer to compare with
+   * Compares this integer with another integer or rational
+   * @param {Integer|Rational} other - The value to compare with
    * @returns {number} -1 if this < other, 0 if equal, 1 if this > other
    */
   compareTo(other) {
-    if (this.#value < other.value) return -1;
-    if (this.#value > other.value) return 1;
+    const order = this.#order(other);
+    // Non-numeric operands historically compared as 0; keep that contract.
+    return Number.isNaN(order) ? 0 : order;
+  }
+
+  // -1, 0 or 1 against an Integer or Rational; NaN when not comparable, so
+  // every relational test below is false for such operands, as before.
+  #order(other) {
+    // a ⋛ p/q  <=>  aq ⋛ p, since q > 0
+    let left = this.#value;
+    let right;
+    if (other instanceof Rational) {
+      left *= other.denominator;
+      right = other.numerator;
+    } else if (typeof other?.value === "bigint") {
+      right = other.value;
+    } else {
+      return NaN;
+    }
+    if (left < right) return -1;
+    if (left > right) return 1;
     return 0;
   }
 
-  /**
-   * Checks if this integer is less than another
-   * @param {Integer} other - The integer to compare with
-   * @returns {boolean} True if this integer is less than other
-   */
+  /** @param {Integer|Rational} other @returns {boolean} this < other */
   lessThan(other) {
-    return this.#value < other.value;
+    return this.#order(other) < 0;
   }
 
-  /**
-   * Checks if this integer is less than or equal to another
-   * @param {Integer} other - The integer to compare with
-   * @returns {boolean} True if this integer is less than or equal to other
-   */
+  /** @param {Integer|Rational} other @returns {boolean} this <= other */
   lessThanOrEqual(other) {
-    return this.#value <= other.value;
+    return this.#order(other) <= 0;
   }
 
-  /**
-   * Checks if this integer is greater than another
-   * @param {Integer} other - The integer to compare with
-   * @returns {boolean} True if this integer is greater than other
-   */
+  /** @param {Integer|Rational} other @returns {boolean} this > other */
   greaterThan(other) {
-    return this.#value > other.value;
+    return this.#order(other) > 0;
   }
 
-  /**
-   * Checks if this integer is greater than or equal to another
-   * @param {Integer} other - The integer to compare with
-   * @returns {boolean} True if this integer is greater than or equal to other
-   */
+  /** @param {Integer|Rational} other @returns {boolean} this >= other */
   greaterThanOrEqual(other) {
-    return this.#value >= other.value;
+    return this.#order(other) >= 0;
   }
 
   /**

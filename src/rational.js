@@ -7,6 +7,7 @@
 
 
 import { BaseSystem } from "./base-system.js";
+import { parseRationalParts } from "./rational-literal.js";
 import { toExactBigInt } from "./bigint.js";
 
 const POWERS_OF_5 = Object.freeze({
@@ -82,6 +83,14 @@ const convergentOptions = function (options, defaultLimit) {
 };
 
 
+// Rational comparisons also accept Integer operands (denominator 1).
+function exactParts(other) {
+  if (typeof other?.value === "bigint" && other.denominator === undefined) {
+    return [other.value, 1n];
+  }
+  return [other.numerator, other.denominator];
+}
+
 export class Rational {
   #numerator;
   #denominator;
@@ -156,81 +165,17 @@ export class Rational {
       return;
     }
 
-    // Handle string representation (e.g., "3/4" or "5..2/3")
+    // Strings use the shared exact literal grammar; a second argument divides.
     if (typeof numerator === "string") {
-      // Check for mixed number notation with double dot
-      if (numerator.includes("..")) {
-        const mixed = numerator.trim().match(/^([+-]?)(\d+)\.\.(\d+)\/(\d+)$/);
-        if (!mixed) {
-          throw new Error("Invalid mixed number format. Use 'a..b/c'");
-        }
-
-        const sign = mixed[1] === "-" ? -1n : 1n;
-        const wholePart = BigInt(mixed[2]);
-        const fracNumerator = BigInt(mixed[3]);
-        const fracDenominator = BigInt(mixed[4]);
-        if (fracDenominator === 0n) {
-          throw new Error("Denominator cannot be zero");
-        }
-
-        this.#numerator =
-          sign * (wholePart * fracDenominator + fracNumerator);
-        this.#denominator = fracDenominator;
-      } else {
-        // Check if it's a decimal string like "1.23" or contains repeat notation
-        if (numerator.includes(".")) {
-          // First, expand any repeat notation
-          const expandedNumerator = Rational.#parseRepeatedDigits(numerator);
-
-          const decimalParts = expandedNumerator.trim().split(".");
-          if (decimalParts.length === 2) {
-            const integerPart = decimalParts[0] || "0";
-            const fractionalPart = decimalParts[1];
-
-            // Validate parts contain only digits (and optional minus for integer part)
-            if (!/^-?\d*$/.test(integerPart) || !/^\d*$/.test(fractionalPart)) {
-              throw new Error("Invalid decimal format");
-            }
-
-            // Convert decimal to fraction
-            const isNegative = integerPart.startsWith("-");
-            // A signed leading decimal has an implicit zero whole part.
-            const wholePart = integerPart === "-" && fractionalPart.length > 0
-              ? 0n
-              : BigInt(integerPart);
-            const fractionalValue = BigInt(fractionalPart);
-            const denomValue = 10n ** BigInt(fractionalPart.length);
-
-            // Combine: wholePart + fractionalPart/denomValue
-            this.#numerator =
-              wholePart * denomValue +
-              (isNegative ? -fractionalValue : fractionalValue);
-            this.#denominator = denomValue;
-          } else {
-            throw new Error("Invalid decimal format - multiple decimal points");
-          }
-        } else {
-          // Standard fraction notation
-          const parts = numerator.trim().split("/");
-
-          if (parts.length === 1) {
-            // Just a number like "3"
-            this.#numerator = BigInt(parts[0]);
-            this.#denominator = toExactBigInt(
-              denominator,
-              "Rational denominator",
-            );
-          } else if (parts.length === 2) {
-            // Fraction like "3/4"
-            this.#numerator = BigInt(parts[0]);
-            this.#denominator = BigInt(parts[1]);
-          } else {
-            throw new Error(
-              "Invalid rational format. Use 'a/b', 'a', or 'a..b/c'",
-            );
-          }
-        }
+      const [parsedNumerator, parsedDenominator] = parseRationalParts(numerator);
+      let divisor = 1n;
+      if (arguments.length > 1) {
+        divisor = denominator && typeof denominator === "object" && denominator.constructor.name === "Integer"
+          ? denominator.value
+          : toExactBigInt(denominator, "Rational denominator");
       }
+      this.#numerator = parsedNumerator;
+      this.#denominator = parsedDenominator * divisor;
     } else {
       // Handle numeric inputs
       this.#numerator = toExactBigInt(numerator, "Rational numerator");
@@ -553,10 +498,8 @@ export class Rational {
   equals(other) {
     // Since both rationals are in lowest terms with positive denominators,
     // they are equal iff their numerators and denominators are equal
-    return (
-      this.#numerator === other.numerator &&
-      this.#denominator === other.denominator
-    );
+    const [numerator, denominator] = exactParts(other);
+    return this.#numerator === numerator && this.#denominator === denominator;
   }
 
   /**
@@ -566,8 +509,9 @@ export class Rational {
    */
   compareTo(other) {
     // a/b ⋛ c/d  <=>  ad ⋛ bc
-    const crossProduct1 = this.#numerator * other.denominator;
-    const crossProduct2 = this.#denominator * other.numerator;
+    const [numerator, denominator] = exactParts(other);
+    const crossProduct1 = this.#numerator * denominator;
+    const crossProduct2 = this.#denominator * numerator;
 
     if (crossProduct1 < crossProduct2) return -1;
     if (crossProduct1 > crossProduct2) return 1;
@@ -955,7 +899,24 @@ export class Rational {
    * @returns {number} Floating-point approximation
    */
   toNumber() {
-    return Number(this.#numerator) / Number(this.#denominator);
+    const numerator = this.#numerator;
+    const denominator = this.#denominator;
+    // Converting each part separately overflows to Infinity/Infinity = NaN
+    // past about 1e308, so take a 64-bit scaled quotient instead.
+    if (numerator === 0n) return 0;
+    const SAFE = 9007199254740992n;
+    if (numerator < SAFE && numerator > -SAFE && denominator < SAFE) {
+      return Number(numerator) / Number(denominator);
+    }
+    const magnitude = numerator < 0n ? -numerator : numerator;
+    const shift = 64 - (bitLength(magnitude) - bitLength(denominator));
+    const quotient = shift >= 0
+      ? (magnitude << BigInt(shift)) / denominator
+      : magnitude / (denominator << BigInt(-shift));
+    // Scale by 2^-shift in two steps so neither factor under/overflows early.
+    const half = Math.trunc(shift / 2);
+    const value = Number(quotient) * 2 ** -half * 2 ** -(shift - half);
+    return numerator < 0n ? -value : value;
   }
 
   /**
@@ -1386,25 +1347,6 @@ export class Rational {
     }
 
     return result;
-  }
-
-  /**
-   * Parses repeated digits notation {digit~count} back to regular digits
-   * @param {string} formattedDigits - String that may contain repeat notation
-   * @returns {string} Expanded string with all digits spelled out
-   * @private
-   */
-  static #parseRepeatedDigits(formattedDigits) {
-    if (!formattedDigits || !formattedDigits.includes("{")) {
-      return formattedDigits;
-    }
-
-    return formattedDigits.replace(
-      /\{(.+?)~(\d+)\}/g,
-      (match, digits, count) => {
-        return digits.repeat(parseInt(count));
-      },
-    );
   }
 
   /**
