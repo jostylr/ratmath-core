@@ -542,22 +542,7 @@ export class Rational {
     }
 
     // Compute a^n and b^n for a/b
-    let resultNum = 1n;
-    let resultDen = 1n;
-    let num = this.#numerator;
-    let den = this.#denominator;
-
-    // Use repeated squaring algorithm (binary exponentiation)
-    for (let i = n < 0n ? -n : n; i > 0n; i >>= 1n) {
-      if (i & 1n) {
-        resultNum *= num;
-        resultDen *= den;
-      }
-      num *= num;
-      den *= den;
-    }
-
-    return new Rational(resultNum, resultDen);
+    return new Rational(this.#numerator ** n, this.#denominator ** n);
   }
 
   /**

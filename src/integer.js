@@ -225,20 +225,7 @@ export class Integer {
       return new Rational(1, positiveResult.value);
     }
 
-    // Use binary exponentiation for efficiency
-    let result = 1n;
-    let base = this.#value;
-    let n = exp;
-
-    while (n > 0n) {
-      if (n & 1n) {
-        result *= base;
-      }
-      base *= base;
-      n >>= 1n;
-    }
-
-    return new Integer(result);
+    return new Integer(this.#value ** exp);
   }
 
   /**

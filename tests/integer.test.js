@@ -252,6 +252,12 @@ describe('Integer', () => {
         const result = a.pow(10);
         expect(result.value).toBe(1024n);
       });
+
+      it('raises to large powers without a wasted final squaring', () => {
+        const result = new Integer(2).pow(600000);
+        expect(result.value).toBe(1n << 600000n);
+        expect(new Integer(-3).pow(5).value).toBe(-243n);
+      });
     });
   });
 

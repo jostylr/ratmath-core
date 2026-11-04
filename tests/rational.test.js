@@ -175,6 +175,12 @@ describe("Rational", () => {
       expect(result.denominator).toBe(4n);
     });
 
+    it("raises a rational to a large power", () => {
+      const result = new Rational(2, 3).pow(300000);
+      expect(result.numerator).toBe(1n << 300000n);
+      expect(result.denominator).toBe(3n ** 300000n);
+    });
+
     it("raises a rational to power 0", () => {
       const r = new Rational(2, 3);
       const result = r.pow(0);
