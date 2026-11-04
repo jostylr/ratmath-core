@@ -75,6 +75,30 @@ The accepted base-10 scalar forms are:
 `#` starts the repeating block. A repeating block of zero marks a terminating
 decimal, so `"1.25#0"` and `"1.25"` are both exactly `5/4`.
 
+## Exact arithmetic with the `R` template tag
+
+`R` parses a small exact-arithmetic expression into Core values. Literals use
+the same grammar as `parseNumber`; interpolated values stay Core values and are
+never converted to strings.
+
+```js
+import { R, Rational } from "@ratmath/core";
+
+R`1:2 + 3`;                   // RationalInterval 4:5
+R`1/2:3/4`;                   // (1/2):(3/4)
+R`0.#3 * 3`;                  // Integer 1
+R`2^-2 + 5!/3!`;              // Rational 81/4
+const x = new Rational(1, 3);
+R`(${x} + 1) ^ 2`;            // Rational 16/9
+R`1.23[56:67] * 2`;           // uncertainty notation from parseNumber
+```
+
+Operators, loosest first: `+ -`, then `:` (interval), then `* /`, then unary
+`-`, then `^` (right-associative, Integer exponent), then postfix `!`. There are
+no names or functions; use JavaScript around it. Interpolations may be Core
+values, bigints, safe integers or literal strings; inexact JS numbers such as
+`0.1` are rejected.
+
 ## Decimal interval notation
 
 Compact, relative, symmetric, and repeating-endpoint intervals are supported:

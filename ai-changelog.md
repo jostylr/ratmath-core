@@ -2,6 +2,16 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## R template tag
+**Model:** Claude Opus 5.5
+**Date:** 2026-11-04
+
+Added `R`, a tagged template for exact arithmetic on Core literals (`R\`1:2 + 3\``).
+
+`src/r-template.js` is a small precedence-climbing parser over `parseNumber`
+literals with `+ - * / ^ ! :` and parentheses; interpolations stay Core values.
+It replaces the legacy `@ratmath/parser` tag for the JavaScript calculators.
+
 ## Integer floor operations and canonical Rational fast paths
 **Model:** Claude Opus 5.5
 **Date:** 2026-11-04

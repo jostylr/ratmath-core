@@ -705,6 +705,15 @@ export class TypePromotion {
 /** Parse a number-only RiX-compatible literal. */
 export function parseNumber(value: string): CoreNumber;
 
+/**
+ * Tagged template for exact arithmetic on Core literals:
+ * R`1:2 + 3`, R`(1/3 + ${x}) ^ 2`. Operators: + - * / ^ ! : and parentheses.
+ */
+export function R(
+  strings: TemplateStringsArray,
+  ...values: Array<CoreNumber | bigint | number | string>
+): CoreNumber;
+
 /** Parse a certified decimal or continued-fraction approximation. */
 export function parseCertifiedApproximation(
   value: string,
@@ -778,6 +787,7 @@ declare const core: {
   normalizeCertifiedApproximation: typeof normalizeCertifiedApproximation;
   possibleRelations: typeof possibleRelations;
   parseNumber: typeof parseNumber;
+  R: typeof R;
   parseCertifiedApproximation: typeof parseCertifiedApproximation;
   parseRational: typeof parseRational;
   parseDecimal: typeof parseDecimal;
