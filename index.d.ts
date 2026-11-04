@@ -190,6 +190,9 @@ export class Integer {
   multiply(other: CoreNumber): CoreNumber;
   divide(other: CoreNumber): CoreNumber;
   modulo(other: Integer): Integer;
+  floorDivide(other: Integer): Integer;
+  floorModulo(other: Integer): Integer;
+  divmod(other: Integer): [Integer, Integer];
   negate(): Integer;
   pow(exponent: number | bigint | Integer): Integer | Rational;
   equals(other: Integer): boolean;

@@ -11,6 +11,15 @@ import { RationalInterval } from "./rational-interval.js";
 import { BaseSystem } from "./base-system.js";
 import { toExactBigInt } from "./bigint.js";
 
+// Floor operations take Integer divisors only; zero is rejected.
+function integerDivisor(other, zeroMessage) {
+  if (!(other instanceof Integer)) {
+    throw new TypeError("Floor division and modulo require an Integer divisor");
+  }
+  if (other.value === 0n) throw new Error(zeroMessage);
+  return other.value;
+}
+
 export class Integer {
   #value;
   static zero = new Integer(0);
@@ -174,6 +183,50 @@ export class Integer {
       return mask;
     }
     throw new TypeError("Possible relations require a Core numeric value");
+  }
+
+  /**
+   * Floor division: the greatest integer q with q <= this / other.
+   * Unlike divide(), the result is always an Integer.
+   * @param {Integer} other - A nonzero Integer divisor
+   * @returns {Integer} floor(this / other)
+   * @throws {Error} If other is zero
+   */
+  floorDivide(other) {
+    const divisor = integerDivisor(other, "Division by zero");
+    const quotient = this.#value / divisor;
+    const remainder = this.#value % divisor;
+    return new Integer(remainder !== 0n && (remainder < 0n) !== (divisor < 0n) ? quotient - 1n : quotient);
+  }
+
+  /**
+   * Floor modulo: this - other * floor(this / other), which has the sign of
+   * the divisor. modulo() keeps BigInt's truncated (dividend-signed) remainder.
+   * @param {Integer} other - A nonzero Integer divisor
+   * @returns {Integer} The floor remainder
+   * @throws {Error} If other is zero
+   */
+  floorModulo(other) {
+    const divisor = integerDivisor(other, "Modulo by zero");
+    const remainder = this.#value % divisor;
+    return new Integer(remainder !== 0n && (remainder < 0n) !== (divisor < 0n) ? remainder + divisor : remainder);
+  }
+
+  /**
+   * Floor quotient and floor remainder together.
+   * @param {Integer} other - A nonzero Integer divisor
+   * @returns {[Integer, Integer]} [floorDivide(other), floorModulo(other)]
+   * @throws {Error} If other is zero
+   */
+  divmod(other) {
+    const divisor = integerDivisor(other, "Division by zero");
+    let quotient = this.#value / divisor;
+    let remainder = this.#value % divisor;
+    if (remainder !== 0n && (remainder < 0n) !== (divisor < 0n)) {
+      quotient -= 1n;
+      remainder += divisor;
+    }
+    return [new Integer(quotient), new Integer(remainder)];
   }
 
   /**
