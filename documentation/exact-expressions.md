@@ -51,6 +51,9 @@ Loosest to tightest: `+ -`; `:` (interval); `* /`; unary `-` and `+`;
 postfix `!` and `!!`. Parentheses group. So `1/2:3/4` is `(1/2):(3/4)`,
 `1:2 + 3` is `(1:2) + 3` and `-2^2` is `-4`.
 
+A whole `Rational` result is returned as an `Integer` (as in RiX):
+``R`0.#3 * 3` `` is `Integer 1`.
+
 ### Interpolation
 
 `${value}` inserts a value without turning it into text. Accepted: `Integer`,

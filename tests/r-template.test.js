@@ -108,3 +108,10 @@ test("R.base reads unprefixed literals in another base", () => {
   expect(() => R.base(16)`.`).toThrow("unexpected '.'");
   expect(() => R.base({})`1`).toThrow("R.base needs");
 });
+
+test("whole results are Integers, as in RiX", () => {
+  expect(R`0.#3 * 3`).toBeInstanceOf(Integer);
+  expect(R`0.#142857 * 7`.value).toBe(1n);
+  expect(R`1/2 + 1/2`).toBeInstanceOf(Integer);
+  expect(R`1/2`).toBeInstanceOf(Rational);
+});
