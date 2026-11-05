@@ -2,6 +2,19 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## RiX-compatible R literals, R.base, and sum/product/seq/range
+**Model:** Claude Opus 5.5
+**Date:** 2026-11-05
+
+`R` reads continued fractions, `_^` radix shifts, base prefixes, `**` and `!!`
+with RiX's spelling, and `R.base(n)` reads literals in another base.
+
+Checked against RiX's evaluator: `-3.~7` negates the continued fraction,
+`1/2_^3` shifts the literal 2, `**` equals `^` (RiX's POWPROD), and the comma
+interval form stays rejected. New `src/sequences.js` adds `range`, `seq`, `sum`
+and `product` over Core values; `bestApproximation`/`bestConvergent` accept
+safe integers and Integers as the denominator bound.
+
 ## R template tag
 **Model:** Claude Opus 5.5
 **Date:** 2026-11-04

@@ -193,11 +193,18 @@ describe("publishing regressions", () => {
     it("rejects invalid denominator bounds", () => {
       const value = new Rational(5, 7);
 
-      for (const invalid of [0n, -1n, 5]) {
-        expect(() => value.bestApproximation(invalid)).toThrow(
-          "positive bigint",
-        );
-        expect(() => value.bestConvergent(invalid)).toThrow("positive bigint");
+      for (const invalid of [0n, -1n, 0, -1, 1.5, "5"]) {
+        expect(() => value.bestApproximation(invalid)).toThrow("positive integer");
+        expect(() => value.bestConvergent(invalid)).toThrow("positive integer");
+      }
+    });
+
+    it("accepts safe integers and Integers as denominator bounds", async () => {
+      const { Integer } = await import("../index.js");
+      const value = new Rational(314159, 100000);
+      for (const bound of [200, new Integer(200)]) {
+        expect(value.bestApproximation(bound).equals(value.bestApproximation(200n))).toBe(true);
+        expect(value.bestConvergent(bound).equals(value.bestConvergent(200n))).toBe(true);
       }
     });
 

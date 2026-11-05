@@ -49,6 +49,7 @@ import {
   parseRepeatingDecimal,
 } from "./src/number-parser.js";
 import { R } from "./src/r-template.js";
+import { product, range, seq, sum } from "./src/sequences.js";
 import {
   isBaseSystem,
   isCertifiedApproximation,
@@ -104,6 +105,10 @@ export {
   parseRational,
   parseRepeatingDecimal,
   R,
+  product,
+  range,
+  seq,
+  sum,
   isBaseSystem,
   isCertifiedApproximation,
   isCoreNumber,
@@ -158,6 +163,10 @@ export default {
   parseRational,
   parseRepeatingDecimal,
   R,
+  product,
+  range,
+  seq,
+  sum,
   isBaseSystem,
   isCertifiedApproximation,
   isCoreNumber,

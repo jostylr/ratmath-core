@@ -307,8 +307,8 @@ export class Rational {
   convergents(options?: number | ConvergentOptions): Rational[];
   getConvergent(index: number): Rational;
   approximationError(target: Rational): Rational;
-  bestApproximation(maxDenominator: bigint): Rational;
-  bestConvergent(maxDenominator: bigint): Rational;
+  bestApproximation(maxDenominator: bigint | number | Integer): Rational;
+  bestConvergent(maxDenominator: bigint | number | Integer): Rational;
   bitLength(): number;
   toJSON(): {
     $ratmath: "Rational";
@@ -713,6 +713,23 @@ export function R(
   strings: TemplateStringsArray,
   ...values: Array<CoreNumber | bigint | number | string>
 ): CoreNumber;
+export namespace R {
+  /** A tag reading unprefixed literals in another base: R.base(16)`ff.8`. */
+  function base(radix: number | bigint | Integer | BaseSystem | string): (
+    strings: TemplateStringsArray,
+    ...values: Array<CoreNumber | bigint | number | string>
+  ) => CoreNumber;
+}
+
+type ExactInput = CoreNumber | bigint | number | string;
+/** Inclusive progression: range(1, 5), range(0, 1, R`1/4`). */
+export function range(start: ExactInput, end: ExactInput, step?: ExactInput): CoreNumber[];
+/** seq(list | start, end[, step], fn?) applies fn to each value. */
+export function seq<T = CoreNumber>(...args: unknown[]): T[];
+/** Exact sum of a list, or of fn over start..end: sum(1, 10, i => R`${i}^2`). */
+export function sum(...args: unknown[]): CoreNumber;
+/** Exact product of a list, or of fn over start..end. */
+export function product(...args: unknown[]): CoreNumber;
 
 /** Parse a certified decimal or continued-fraction approximation. */
 export function parseCertifiedApproximation(
@@ -788,6 +805,10 @@ declare const core: {
   possibleRelations: typeof possibleRelations;
   parseNumber: typeof parseNumber;
   R: typeof R;
+  range: typeof range;
+  seq: typeof seq;
+  sum: typeof sum;
+  product: typeof product;
   parseCertifiedApproximation: typeof parseCertifiedApproximation;
   parseRational: typeof parseRational;
   parseDecimal: typeof parseDecimal;

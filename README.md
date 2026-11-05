@@ -78,8 +78,8 @@ decimal, so `"1.25#0"` and `"1.25"` are both exactly `5/4`.
 ## Exact arithmetic with the `R` template tag
 
 `R` parses a small exact-arithmetic expression into Core values. Literals use
-the same grammar as `parseNumber`; interpolated values stay Core values and are
-never converted to strings.
+RiX's spelling; interpolated values stay Core values and are never converted
+to strings.
 
 ```js
 import { R, Rational } from "@ratmath/core";
@@ -88,16 +88,47 @@ R`1:2 + 3`;                   // RationalInterval 4:5
 R`1/2:3/4`;                   // (1/2):(3/4)
 R`0.#3 * 3`;                  // Integer 1
 R`2^-2 + 5!/3!`;              // Rational 81/4
+R`3.~7~15~1`;                 // continued fraction 355/113
+R`2.5_^-2`;                   // radix shift (RiX has no E notation): 1/40
+R`0xff.8 + 0b0.#01`;          // base prefixes: 511/2 + 1/3
+R.base(16)`ff.8 / 3`;         // unprefixed literals read in base 16: 511/6
 const x = new Rational(1, 3);
 R`(${x} + 1) ^ 2`;            // Rational 16/9
 R`1.23[56:67] * 2`;           // uncertainty notation from parseNumber
 ```
 
+| Literal | Example | Value |
+|---|---|---|
+| integers, `_` grouping | `1_000` | 1000 |
+| fractions, mixed numbers | `3/4`, `1..2/3` | 3/4, 5/3 |
+| decimals, repeating `#`, digit runs | `.5`, `0.#3`, `0.{3~4}1` | 1/2, 1/3, 33331/100000 |
+| uncertainty (colon only) | `1.2[3:6]`, `1.5[+-0.01]` | 1.23:1.26, 1.499:1.501 |
+| intervals | `2:5` | 2:5 |
+| continued fractions | `3.~7~15~1`, `~-1.~2` | 355/113, -1/2 |
+| radix shift | `1_^3`, `2.5_^-2` | 1000, 1/40 |
+| base prefixes | `0xff`, `0b0.#01`, `0o17`, `0z[7]66` | 255, 1/3, 15, 48 |
+| certified prefixes | `1.5?`, `3.~7?` | certified approximations |
+
 Operators, loosest first: `+ -`, then `:` (interval), then `* /`, then unary
-`-`, then `^` (right-associative, Integer exponent), then postfix `!`. There are
-no names or functions; use JavaScript around it. Interpolations may be Core
-values, bigints, safe integers or literal strings; inexact JS numbers such as
-`0.1` are rejected.
+`-`, then `^` and `**` (right-associative, Integer exponent; `**` is the same
+power as `^`, as in RiX), then postfix `!` and `!!`. There are no names or
+functions; use JavaScript around it. Interpolations may be Core values, bigints,
+safe integers or literal strings; inexact JS numbers such as `0.1` are rejected.
+
+### Sums, products and ranges
+
+```js
+import { R, product, range, seq, sum } from "@ratmath/core";
+
+range(0, 1, R`1/4`);              // [0, 1/4, 1/2, 3/4, 1]
+seq(0, 6, 2, (k) => R`${k}^3`);   // [0, 8, 64, 216]
+sum([R`1/2`, R`1/3`]);            // 5/6
+sum(1, 10, (i) => R`${i}^2`);     // 385
+product(1, 5, (j) => j);          // 120
+```
+
+`sum`, `product` and `seq` take a list, or `start, end[, step]`, optionally
+followed by a function of each value (and its index). Ranges are inclusive.
 
 ## Decimal interval notation
 

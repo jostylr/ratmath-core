@@ -84,6 +84,17 @@ const convergentOptions = function (options, defaultLimit) {
 };
 
 
+// A denominator bound may be a bigint, a safe integer or an Integer.
+function positiveDenominatorBound(value) {
+  let bound = value;
+  if (typeof bound === "number" && Number.isSafeInteger(bound)) bound = BigInt(bound);
+  if (typeof bound?.value === "bigint" && bound.denominator === undefined) bound = bound.value;
+  if (typeof bound !== "bigint" || bound < 1n) {
+    throw new Error("Maximum denominator must be a positive integer (bigint, safe integer or Integer)");
+  }
+  return bound;
+}
+
 // Rational comparisons also accept Integer operands (denominator 1).
 function exactParts(other) {
   if (typeof other?.value === "bigint" && other.denominator === undefined) {
@@ -2014,9 +2025,7 @@ export class Rational {
    * @returns {Rational} Best approximation within the limit
    */
   bestApproximation(maxDenominator) {
-    if (typeof maxDenominator !== "bigint" || maxDenominator < 1n) {
-      throw new Error("Maximum denominator must be a positive bigint");
-    }
+    maxDenominator = positiveDenominatorBound(maxDenominator);
 
     if (this.#denominator <= maxDenominator) {
       return new Rational(this.#numerator, this.#denominator);
@@ -2101,9 +2110,7 @@ export class Rational {
    * @returns {Rational} Last convergent within the limit
    */
   bestConvergent(maxDenominator) {
-    if (typeof maxDenominator !== "bigint" || maxDenominator < 1n) {
-      throw new Error("Maximum denominator must be a positive bigint");
-    }
+    maxDenominator = positiveDenominatorBound(maxDenominator);
 
     const negative = this.#numerator < 0n;
     let numerator = negative ? -this.#numerator : this.#numerator;
