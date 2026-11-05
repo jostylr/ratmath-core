@@ -2,7 +2,32 @@
 
 ## Unreleased
 
+### Added
+
+- `R`, a tagged template for exact arithmetic on Core literals with RiX's
+  spelling (fractions, mixed numbers, repeating decimals, uncertainty,
+  intervals, continued fractions `3.~7~15~1`, radix shifts `2.5_^-2`, base
+  prefixes `0xff.8`), operators `+ - * / ^ ** ! !! :`, and exact `${}`
+  interpolation. `R.base(n)` reads unprefixed literals in another base.
+- `range`, `seq`, `sum` and `product` over Core values.
+- `Integer.floorDivide`, `floorModulo` and `divmod`.
+
+### Changed
+
+- `bestApproximation` and `bestConvergent` accept safe integers and `Integer`s
+  as the denominator bound, not only `bigint`.
+- Integer comparisons accept `Rational` operands and Rational comparisons
+  accept `Integer` operands.
+- `Rational` string construction uses the shared literal grammar: `""`, `"."`
+  and `"/2"` now throw, `"0.#3"` and `"1_000"` are accepted, and a second
+  argument divides (`new Rational("3/4", 5)` is 3/20).
+- Faster exact arithmetic for plain `Rational`/`Integer` operands.
+
 ### Fixed
+
+- `Rational.toNumber()` stays finite for parts beyond the double range.
+- `compactedDecimalInterval()` and `relativeMidDecimalInterval()` round
+  outward so the text encloses the interval.
 
 - Parse signed leading decimals such as `Rational("-.5")` with an implicit zero whole part, preserving the negative sign and rejecting malformed inputs.
 

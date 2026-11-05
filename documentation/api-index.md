@@ -35,6 +35,16 @@ current checkout. These exports await a coordinated package release.
 | [`parseContinuedFraction`](parsing.md) | `(value: string \| readonly (number \| bigint)[]) => Rational` |
 | [`parseInterval`](parsing.md) | `(value: string) => RationalInterval` |
 
+## Exact expressions and lists
+
+| Export | Signature |
+|---|---|
+| [`R`](exact-expressions.md) | tagged template: ``R`1:2 + 3` `` → `CoreNumber`; `R.base(radix)` returns a tag |
+| [`range`](exact-expressions.md#rangestart-end-step-1) | `(start, end, step?) => CoreNumber[]` |
+| [`seq`](exact-expressions.md#seq-sum-product) | `(list \| start, end[, step], fn?) => unknown[]` |
+| [`sum`](exact-expressions.md#seq-sum-product) | `(list \| start, end[, step], fn?) => CoreNumber` |
+| [`product`](exact-expressions.md#seq-sum-product) | `(list \| start, end[, step], fn?) => CoreNumber` |
+
 ## TypeScript types
 
 ```ts

@@ -28,6 +28,7 @@ website:
       - index.md
       - getting-started.md
       - parsing.md
+      - exact-expressions.md
       - examples.md
       - section: Classes
         contents:
