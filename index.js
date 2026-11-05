@@ -50,6 +50,7 @@ import {
 } from "./src/number-parser.js";
 import { R } from "./src/r-template.js";
 import { product, range, seq, sum } from "./src/sequences.js";
+import { ExactList, exact } from "./src/exact-list.js";
 import {
   isBaseSystem,
   isCertifiedApproximation,
@@ -105,6 +106,8 @@ export {
   parseRational,
   parseRepeatingDecimal,
   R,
+  ExactList,
+  exact,
   product,
   range,
   seq,
@@ -163,6 +166,8 @@ export default {
   parseRational,
   parseRepeatingDecimal,
   R,
+  ExactList,
+  exact,
   product,
   range,
   seq,

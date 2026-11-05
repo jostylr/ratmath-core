@@ -2,6 +2,17 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## ExactList for range/seq
+**Model:** Claude Opus 5.5
+**Date:** 2026-11-05
+
+`range` and `seq` return `ExactList`, an Array subclass with exact list methods.
+
+`src/exact-list.js` relies on the default `Symbol.species` (the subclass), so
+`map`/`filter`/`slice` keep `ExactList` and Array's `new ExactList(length)`
+path works; arithmetic methods return new lists. Also exported: `exact()`.
+`R` returns whole results as `Integer`, matching RiX.
+
 ## RiX-compatible R literals, R.base, and sum/product/seq/range
 **Model:** Claude Opus 5.5
 **Date:** 2026-11-05

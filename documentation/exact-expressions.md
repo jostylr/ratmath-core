@@ -112,3 +112,30 @@ sum([R`1:2`, 1]);                 // 2:3
 `seq` returns the terms as given. `sum` and `product` convert each term like
 `R` interpolation, add or multiply exactly, return whole results as
 `Integer`, and return `0` and `1` for empty input.
+
+## `ExactList` and `exact(values)`
+
+`range` and `seq` return an `ExactList`, an `Array` subclass. `Array.isArray`
+is true, and indexing, spread, `for…of`, `map`, `filter`, `reduce` and the
+other `Array` methods work; `map`, `filter`, `slice` and `concat` return
+`ExactList`s. Its own methods never mutate:
+
+| Method | Result |
+|---|---|
+| `sum(fn?)`, `product(fn?)` | exact total of the elements (or of `fn(value, index)`); `0` / `1` when empty |
+| `add(c)`, `subtract(c)`, `multiply(c)`, `divide(c)` | new list; `c` is a constant (as in `R` interpolation) or a same-length list |
+| `pow(n)` | each element to the Integer power `n` |
+| `min()`, `max()` | smallest / largest scalar element; throws on an empty list |
+| `toString()` | `[1, 1/2, 1/3]` |
+
+```js
+const xs = range(1, 4);
+xs.multiply(R`1/2`).product();   // 3/2
+xs.pow(-1).sum();                // 25/12
+xs.add(range(4, 1, -1));         // [5, 5, 5, 5]
+```
+
+`exact(iterable)` converts each element like `R` interpolation and returns an
+`ExactList`; `ExactList.from` and `ExactList.of` wrap values unchanged. JSON
+output is a plain array of tagged Core values, and `structuredClone` or
+`postMessage` produce a plain `Array`.

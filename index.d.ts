@@ -722,10 +722,24 @@ export namespace R {
 }
 
 type ExactInput = CoreNumber | bigint | number | string;
+/** An Array of Core values with exact list arithmetic; never mutated by its methods. */
+export class ExactList<T = CoreNumber> extends Array<T> {
+  sum(fn?: (value: T, index: number) => ExactInput): CoreNumber;
+  product(fn?: (value: T, index: number) => ExactInput): CoreNumber;
+  add(other: ExactInput | readonly ExactInput[]): ExactList<CoreNumber>;
+  subtract(other: ExactInput | readonly ExactInput[]): ExactList<CoreNumber>;
+  multiply(other: ExactInput | readonly ExactInput[]): ExactList<CoreNumber>;
+  divide(other: ExactInput | readonly ExactInput[]): ExactList<CoreNumber>;
+  pow(exponent: ExactInput): ExactList<CoreNumber>;
+  min(): CoreNumber;
+  max(): CoreNumber;
+}
+/** Wrap any iterable of exact inputs as an ExactList of Core values. */
+export function exact(values: Iterable<ExactInput>): ExactList<CoreNumber>;
 /** Inclusive progression: range(1, 5), range(0, 1, R`1/4`). */
-export function range(start: ExactInput, end: ExactInput, step?: ExactInput): CoreNumber[];
+export function range(start: ExactInput, end: ExactInput, step?: ExactInput): ExactList<CoreNumber>;
 /** seq(list | start, end[, step], fn?) applies fn to each value. */
-export function seq<T = CoreNumber>(...args: unknown[]): T[];
+export function seq<T = CoreNumber>(...args: unknown[]): ExactList<T>;
 /** Exact sum of a list, or of fn over start..end: sum(1, 10, i => R`${i}^2`). */
 export function sum(...args: unknown[]): CoreNumber;
 /** Exact product of a list, or of fn over start..end. */
@@ -805,6 +819,8 @@ declare const core: {
   possibleRelations: typeof possibleRelations;
   parseNumber: typeof parseNumber;
   R: typeof R;
+  ExactList: typeof ExactList;
+  exact: typeof exact;
   range: typeof range;
   seq: typeof seq;
   sum: typeof sum;

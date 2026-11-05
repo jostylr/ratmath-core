@@ -40,10 +40,12 @@ current checkout. These exports await a coordinated package release.
 | Export | Signature |
 |---|---|
 | [`R`](exact-expressions.md) | tagged template: ``R`1:2 + 3` `` → `CoreNumber`; `R.base(radix)` returns a tag |
-| [`range`](exact-expressions.md#rangestart-end-step-1) | `(start, end, step?) => CoreNumber[]` |
-| [`seq`](exact-expressions.md#seq-sum-product) | `(list \| start, end[, step], fn?) => unknown[]` |
+| [`range`](exact-expressions.md#rangestart-end-step-1) | `(start, end, step?) => ExactList` |
+| [`seq`](exact-expressions.md#seq-sum-product) | `(list \| start, end[, step], fn?) => ExactList` |
 | [`sum`](exact-expressions.md#seq-sum-product) | `(list \| start, end[, step], fn?) => CoreNumber` |
 | [`product`](exact-expressions.md#seq-sum-product) | `(list \| start, end[, step], fn?) => CoreNumber` |
+| [`ExactList`](exact-expressions.md#exactlist-and-exactvalues) | `Array` subclass returned by `range`/`seq`: `.sum()`, `.product()`, `.add(c)`, `.multiply(c)`, `.pow(n)`, `.min()`, `.max()` |
+| [`exact`](exact-expressions.md#exactlist-and-exactvalues) | `(values: Iterable) => ExactList` |
 
 ## TypeScript types
 

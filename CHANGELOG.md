@@ -9,7 +9,10 @@
   intervals, continued fractions `3.~7~15~1`, radix shifts `2.5_^-2`, base
   prefixes `0xff.8`), operators `+ - * / ^ ** ! !! :`, and exact `${}`
   interpolation. `R.base(n)` reads unprefixed literals in another base.
-- `range`, `seq`, `sum` and `product` over Core values.
+- `range`, `seq`, `sum` and `product` over Core values. `range` and `seq`
+  return an `ExactList` (an `Array` subclass with `sum`, `product`, elementwise
+  `add`/`subtract`/`multiply`/`divide`, `pow`, `min`, `max`); `exact(values)`
+  wraps any list.
 - `Integer.floorDivide`, `floorModulo` and `divmod`.
 
 ### Changed

@@ -130,6 +130,28 @@ product(1, 5, (j) => j);          // 120
 `sum`, `product` and `seq` take a list, or `start, end[, step]`, optionally
 followed by a function of each value (and its index). Ranges are inclusive.
 
+`range` and `seq` return an `ExactList`: a real `Array` subclass (indexing,
+spread, `map`/`filter`/`reduce` all work, and `map`/`filter`/`slice` keep the
+subclass) with exact list methods that return new lists:
+
+```js
+import { R, exact, range } from "@ratmath/core";
+
+const xs = range(1, 4);              // [1, 2, 3, 4]
+xs.sum();                            // 10
+xs.product();                        // 24
+xs.multiply(R`1/2`);                 // [1/2, 1, 3/2, 2]
+xs.add([1, 1, 1, 1]);                // elementwise: [2, 3, 4, 5]
+xs.pow(-1).sum();                    // 25/12
+xs.filter((x) => x.isEven()).sum();  // 6
+exact(["1/2", "-3", 2n]).max();      // 2
+```
+
+`add`, `subtract`, `multiply` and `divide` take a constant (Core value, bigint,
+safe integer or literal string) or a same-length list; `pow(n)`, `min()`,
+`max()`, `sum(fn?)` and `product(fn?)` complete the set. `exact(iterable)`
+wraps any list of exact inputs. JSON and `structuredClone` see a plain array.
+
 ## Decimal interval notation
 
 Compact, relative, symmetric, and repeating-endpoint intervals are supported:
