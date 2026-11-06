@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.7.0 — 2026-11-06
+
+`R` and the list helpers are new; string construction of `Rational` is
+stricter (see Changed), which can reject inputs 0.6.0 accepted.
+
 ### Added
 
 - `R`, a tagged template for exact arithmetic on Core literals with RiX's
