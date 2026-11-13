@@ -6,10 +6,18 @@
  *   R`(1/3 + ${x}) ^ 2`     // interpolations stay Core values (never stringified)
  *   R`1.23[56:67] * 2`      // any Core numeric literal (parseNumber grammar)
  *
- * Grammar, loosest to tightest:  + -   then  :  (interval)   then  * /
+ * Grammar, loosest to tightest:  :  (interval)   then  + -   then  * /
  * then unary -, then ^ and ** (right-associative, Integer exponent; ** is the
  * same power as ^, as in RiX today), then postfix ! and !!.
- * So `1/2:3/4` is (1/2):(3/4) and `1:2 + 3` is (1:2) + 3, as in RiX.
+ *
+ * The interval colon is spacing-aware, as in RiX. A colon with no space on
+ * either side stays with the unspaced text around it, and that text is one
+ * operand for the spaced operators beside it:
+ *   R`1:2 + 3:4`  is (1:2) + (3:4)      R`1:2 * 2`   is (1:2) * 2
+ *   R`1/2:3/4`    is (1/2):(3/4)        R`1:${n}+1`  is 1:(n+1)
+ * A colon with a space beside it binds loosest: R`1 : 2 + 3` is 1:5.
+ * `+`, `-` or `*` written with an unspaced colon on both sides combines the
+ * two intervals, so R`1:2+3:4` is also (1:2) + (3:4).
  *
  * Literals follow RiX spelling: 3/4, 1..2/3, 0.#3, 1.2[3:6], 1.5[+-0.01],
  * 1_000, 1.5?, continued fractions 3.~7~15~1 and ~-1.~2, radix shifts
@@ -94,27 +102,96 @@ function readLiteral(rest, base) {
 
 function tokenize(strings, values, base) {
   const tokens = [];
+  // `spaced` records whitespace before a token; an interpolation directly
+  // after text, or text directly after an interpolation, is unspaced.
+  let spaced = false;
+  const push = (token) => { tokens.push({ ...token, spaced }); spaced = false; };
   strings.forEach((text, part) => {
     let index = 0;
     while (index < text.length) {
       const rest = text.slice(index);
       const space = rest.match(/^\s+/);
-      if (space) { index += space[0].length; continue; }
+      if (space) { index += space[0].length; spaced = true; continue; }
       const literal = readLiteral(rest, base);
       if (literal) {
         index += literal.text.length;
         const radixShift = text.slice(index).match(RADIX_SHIFT);
         if (radixShift) index += radixShift[0].length;
-        tokens.push({ kind: "value", value: radixShift ? shift(literal.value, radixShift[1]) : literal.value, text: literal.text });
+        push({ kind: "value", value: radixShift ? shift(literal.value, radixShift[1]) : literal.value, text: literal.text });
         continue;
       }
       const op = OPERATORS.find((candidate) => rest.startsWith(candidate));
-      if (op) { tokens.push({ kind: "op", value: op }); index += op.length; continue; }
+      if (op) { push({ kind: "op", value: op }); index += op.length; continue; }
       throw new SyntaxError(`R: unexpected '${rest[0]}' in \`${strings.join("${…}")}\``);
     }
-    if (part < values.length) tokens.push({ kind: "value", value: coreValue(values[part]), text: `\${${part}}` });
+    if (part < values.length) push({ kind: "value", value: coreValue(values[part]), text: `\${${part}}` });
   });
-  return tokens;
+  return groupIntervalRuns(tokens);
+}
+
+const OPEN = { kind: "op", value: "(", spaced: false };
+const CLOSE = { kind: "op", value: ")", spaced: false };
+
+/**
+ * Spacing-aware interval colons: wrap each unspaced run that holds an unspaced
+ * colon in parentheses, so it is one operand for the spaced operators around
+ * it. A parenthesised group counts as one item of a run. `+`, `-` and `*`
+ * lying between two unspaced colons of one run split it into separate
+ * intervals (`1:2+3:4`); `/` does not, since `1/2:3/4` has fraction endpoints.
+ */
+function groupIntervalRuns(tokens) {
+  let position = 0;
+  const level = (nested) => {
+    const items = [];
+    while (position < tokens.length) {
+      const token = tokens[position];
+      if (token.kind === "op" && token.value === ")") {
+        if (!nested) throw new SyntaxError("R: unexpected ')'");
+        break;
+      }
+      position += 1;
+      if (token.kind === "op" && token.value === "(") {
+        const inner = level(true);
+        if (position >= tokens.length) throw new SyntaxError("R: missing ')'");
+        position += 1; // the matching ')'
+        items.push({ spaced: token.spaced, operand: true, tokens: [{ ...token, spaced: false }, ...inner, CLOSE] });
+      } else {
+        const operand = token.kind === "value" || token.value === "!" || token.value === "!!";
+        items.push({ spaced: token.spaced, operand, op: token.kind === "op" ? token.value : null, tokens: [token] });
+      }
+    }
+    const output = [];
+    for (let start = 0; start < items.length;) {
+      let stop = start + 1;
+      while (stop < items.length && !items[stop].spaced) stop += 1;
+      const run = items.slice(start, stop);
+      start = stop;
+      const isColon = (k) => k > 0 && k < run.length - 1 && run[k].op === ":" && run[k - 1].operand;
+      const colons = run.map((_, k) => k).filter(isColon);
+      if (colons.length === 0) {
+        for (const item of run) output.push(...item.tokens);
+        continue;
+      }
+      const [first, last] = [colons[0], colons[colons.length - 1]];
+      const isSplit = (k) => k > first && k < last && run[k - 1].operand
+        && (run[k].op === "+" || run[k].op === "-" || run[k].op === "*");
+      let segment = [];
+      const flush = () => {
+        const wrap = segment.some((item) => item.op === ":");
+        if (wrap) output.push({ ...OPEN, spaced: segment[0].spaced });
+        for (const item of segment) output.push(...item.tokens);
+        if (wrap) output.push(CLOSE);
+        segment = [];
+      };
+      run.forEach((item, k) => {
+        if (isSplit(k)) { flush(); output.push(...item.tokens); } else segment.push(item);
+      });
+      flush();
+    }
+    return output;
+  };
+  const result = level(false);
+  return result;
 }
 
 export function coreValue(value) {
@@ -154,7 +231,7 @@ function evaluate(strings, values, base) {
     if (!token) throw new SyntaxError("R: expression ended early");
     if (token.kind === "value") return token.value;
     if (token.value === "(") {
-      const value = sum();
+      const value = range();
       if (takeOp(")") === null) throw new SyntaxError("R: missing ')'");
       return value;
     }
@@ -181,17 +258,17 @@ function evaluate(strings, values, base) {
     for (let op; (op = takeOp(["*", "/"])) !== null;) value = op === "*" ? value.multiply(unary()) : value.divide(unary());
     return value;
   }
-  function range() {
-    const value = product();
-    return takeOp(":") !== null ? interval(value, product()) : value;
-  }
   function sum() {
-    let value = range();
-    for (let op; (op = takeOp(["+", "-"])) !== null;) value = op === "+" ? value.add(range()) : value.subtract(range());
+    let value = product();
+    for (let op; (op = takeOp(["+", "-"])) !== null;) value = op === "+" ? value.add(product()) : value.subtract(product());
     return value;
   }
+  function range() {
+    const value = sum();
+    return takeOp(":") !== null ? interval(value, sum()) : value;
+  }
 
-  const result = sum();
+  const result = range();
   if (position < tokens.length) throw new SyntaxError(`R: unexpected '${peek().value ?? peek().text}'`);
   // A whole Rational result is an Integer, as in RiX.
   return result instanceof Rational && result.denominator === 1n ? new Integer(result.numerator) : result;

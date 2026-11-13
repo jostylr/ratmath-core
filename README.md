@@ -86,6 +86,7 @@ import { R, Rational } from "@ratmath/core";
 
 R`1:2 + 3`;                   // RationalInterval 4:5
 R`1/2:3/4`;                   // (1/2):(3/4)
+R`1:2 + 3:4`;                 // (1:2) + (3:4) = 4:6
 R`0.#3 * 3`;                  // Integer 1
 R`2^-2 + 5!/3!`;              // Rational 81/4
 R`3.~7~15~1`;                 // continued fraction 355/113
@@ -109,10 +110,12 @@ R`1.23[56:67] * 2`;           // uncertainty notation from parseNumber
 | base prefixes | `0xff`, `0b0.#01`, `0o17`, `0z[7]66` | 255, 1/3, 15, 48 |
 | certified prefixes | `1.5?`, `3.~7?` | certified approximations |
 
-Operators, loosest first: `+ -`, then `:` (interval), then `* /`, then unary
+Operators, loosest first: `:` (interval), then `+ -`, then `* /`, then unary
 `-`, then `^` and `**` (right-associative, Integer exponent; `**` is the same
 power as `^`, as in RiX), then postfix `!` and `!!`. There are no names or
-functions; use JavaScript around it. Interpolations may be Core values, bigints,
+functions; use JavaScript around it. A colon written without spaces groups with
+the unspaced text around it first, so `1:2 + 3:4` is `4:6`, `1:2 * 2` is `2:4`
+and `1:n+1` is `1:(n+1)`; see the exact-expressions page. Interpolations may be Core values, bigints,
 safe integers or literal strings; inexact JS numbers such as `0.1` are rejected.
 
 ### Sums, products and ranges

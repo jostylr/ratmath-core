@@ -45,11 +45,28 @@ unchanged.
 
 ### Operators
 
-Loosest to tightest: `+ -`; `:` (interval); `* /`; unary `-` and `+`;
-`^` and `**` (right-associative; Integer exponents; `**` is the same power as
-`^`, as in RiX — the interval product power is `RationalInterval.mpow`);
-postfix `!` and `!!`. Parentheses group. So `1/2:3/4` is `(1/2):(3/4)`,
-`1:2 + 3` is `(1:2) + 3` and `-2^2` is `-4`.
+Loosest to tightest: `:` (interval, when it has a space beside it); `+ -`;
+`* /`; unary `-` and `+`; `^` and `**` (right-associative; Integer exponents;
+`**` is the same power as `^`, as in RiX — the interval product power is
+`RationalInterval.mpow`); postfix `!` and `!!`. Parentheses group, and `-2^2`
+is `-4`.
+
+Spacing decides what an interval colon holds, as in RiX. A colon written
+without spaces groups with the unspaced text around it before any spaced
+operator applies:
+
+| Expression | Reads as | Value |
+|---|---|---|
+| `1:2 + 3:4` | `(1:2) + (3:4)` | `4:6` |
+| `1:2 * 2` | `(1:2) * 2` | `2:4` |
+| `1/2:3/4` | `(1/2):(3/4)` | `1/2:3/4` |
+| `1:2*2`, `1:n+1` | arithmetic on the endpoint | `1:4`, `1:(n+1)` |
+| `1:2+3:4` | `(1:2) + (3:4)` | `4:6` |
+| `1 : 2 + 3` | `1:(2 + 3)` | `1:5` |
+
+With a single unspaced colon, unspaced arithmetic belongs to the endpoint. An
+unspaced `+`, `-` or `*` with a colon on both sides joins two intervals; write
+it with spaces (RiX warns about the unspaced form with RX1710).
 
 A whole `Rational` result is returned as an `Integer` (as in RiX):
 ``R`0.#3 * 3` `` is `Integer 1`.

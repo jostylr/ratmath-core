@@ -708,6 +708,8 @@ export function parseNumber(value: string): CoreNumber;
 /**
  * Tagged template for exact arithmetic on Core literals:
  * R`1:2 + 3`, R`(1/3 + ${x}) ^ 2`. Operators: + - * / ^ ! : and parentheses.
+ * An unspaced colon groups with the unspaced text around it before spaced
+ * operators apply: R`1:2 + 3:4` is 4:6, R`1:2 * 2` is 2:4, R`1:2*2` is 1:4.
  */
 export function R(
   strings: TemplateStringsArray,

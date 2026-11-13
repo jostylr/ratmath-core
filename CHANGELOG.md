@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Changed
+
+- `R` reads the interval colon by spacing, as RiX now does. An unspaced colon
+  groups with the unspaced text around it before any spaced operator applies,
+  so ``R`1:2 * 2` `` is `2:4` (0.7.0 gave `1:4`) and ``R`1:2 + 3:4` `` is
+  `4:6` as before. With one unspaced colon, unspaced arithmetic stays on the
+  endpoint (``R`1:2*2` `` is `1:4`, ``R`1:${n}+1` `` is `1:(n+1)`); an
+  unspaced `+ - *` between two colons joins two intervals. A colon with a
+  space beside it now binds loosest: ``R`1 : 2 + 3` `` is `1:5` (0.7.0 gave
+  `4:5`).
+
 ## 0.7.0 — 2026-11-06
 
 `R` and the list helpers are new; string construction of `Rational` is

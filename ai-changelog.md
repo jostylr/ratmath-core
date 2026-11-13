@@ -2,6 +2,18 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## Spacing-aware interval colon in R
+**Model:** Claude Fable 5.2
+**Date:** 2026-11-13
+
+`R` groups an unspaced interval colon with the unspaced text around it before spaced operators apply, matching RiX.
+
+`src/r-template.js` records whether each token had whitespace before it and
+wraps unspaced colon runs in virtual parentheses (`groupIntervalRuns`); the
+grammar's top rule is now `sum (':' sum)?`. Behaviour changes from 0.7.0:
+`1:2 * 2` is `2:4` and `1 : 2 + 3` is `1:5`. Tests in
+`tests/r-spaced-interval-colon.test.js`.
+
 ## ExactList for range/seq
 **Model:** Claude Opus 5.5
 **Date:** 2026-11-05
