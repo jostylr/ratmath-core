@@ -710,14 +710,27 @@ export function parseNumber(value: string): CoreNumber;
  * R`1:2 + 3`, R`(1/3 + ${x}) ^ 2`. Operators: + - * / ^ ! : and parentheses.
  * An unspaced colon groups with the unspaced text around it before spaced
  * operators apply: R`1:2 + 3:4` is 4:6, R`1:2 * 2` is 2:4, R`1:2*2` is 1:4.
- * Three or more colon-joined values are a betweenness test and return a
- * boolean (R`0:${x}:1`); cast with `as unknown as boolean` in TypeScript.
+ *
+ * Three or more colon-joined values are a betweenness test, and `R` returns a
+ * boolean for them at run time. TypeScript cannot see inside a template, so
+ * `R` is typed for numbers; write betweenness tests with `R.between`, which
+ * is typed `boolean`: R.between`0:${x}:1`.
  */
 export function R(
   strings: TemplateStringsArray,
   ...values: Array<CoreNumber | bigint | number | string>
 ): CoreNumber;
 export namespace R {
+  /**
+   * A betweenness test, typed as a boolean: R.between`0:${x}:1` is true when x
+   * lies in [0, 1]. Values must run in one direction (ties allowed); an
+   * interval counts with both endpoints. Throws unless the template is a chain
+   * of three or more colon-joined values.
+   */
+  function between(
+    strings: TemplateStringsArray,
+    ...values: Array<CoreNumber | bigint | number | string>
+  ): boolean;
   /** A tag reading unprefixed literals in another base: R.base(16)`ff.8`. */
   function base(radix: number | bigint | Integer | BaseSystem | string): (
     strings: TemplateStringsArray,

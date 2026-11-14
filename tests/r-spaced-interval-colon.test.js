@@ -115,3 +115,11 @@ describe("R: three or more colon-joined values are a betweenness test", () => {
     expect(() => R`1:2:${"1.5?"}`).toThrow("exact numbers and intervals");
   });
 });
+
+test("R.between is the betweenness chain with a boolean result", () => {
+  const x = new Rational(1, 3);
+  expect(R.between`0:${x}:1`).toBe(true);
+  expect(R.between`0: ${x} * 4 :1`).toBe(false);
+  expect(() => R.between`0:1`).toThrow("three or more colon-joined values");
+  expect(() => R.between`1 + 1`).toThrow("three or more colon-joined values");
+});

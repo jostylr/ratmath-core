@@ -8,7 +8,8 @@ Please note that there were many AI changes done before this log. Below you shou
 
 `R` returns a boolean for a:b:c... chains, matching RiX's betweenness (monotone in one direction, ties allowed, intervals unpacked to endpoints).
 
-A chain used in arithmetic throws a TypeError naming the chain. Tests are in
+A chain used in arithmetic throws a TypeError naming the chain. `R.between`
+gives TypeScript a boolean-typed tag (TS cannot type by template content). Tests are in
 `tests/r-spaced-interval-colon.test.js`.
 
 ## Spacing-aware interval colon in R

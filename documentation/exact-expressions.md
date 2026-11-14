@@ -85,6 +85,11 @@ The values must run in one direction, ascending or descending, and equal
 neighbours are allowed. A chain is a test, not a number: using one in
 arithmetic, such as ``R`(1:2:3) + 1` ``, throws a `TypeError`.
 
+`R.between` is the same test with a boolean type for TypeScript, which cannot
+see inside a template and so types `R` as returning a number:
+``R.between`0:${x}:1` `` returns a `boolean` and throws if the template is not
+a chain of three or more values.
+
 A whole `Rational` result is returned as an `Integer` (as in RiX):
 ``R`0.#3 * 3` `` is `Integer 1`.
 

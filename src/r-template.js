@@ -321,6 +321,18 @@ export function R(strings, ...values) {
 }
 
 /**
+ * The betweenness tag: R.between`0:${x}:1` is R's a:b:c chain, typed as a
+ * boolean. It throws when the template is not a chain of three or more values.
+ */
+R.between = function between(strings, ...values) {
+  const result = evaluate(strings, values, null);
+  if (typeof result !== "boolean") {
+    throw new TypeError("R.between needs three or more colon-joined values, such as R.between`0:${x}:1`");
+  }
+  return result;
+};
+
+/**
  * A tag that reads unprefixed literals in another base: R.base(16)`ff.8 / 3`.
  * The base is a radix (2–62), a BaseSystem, or a string listing the digits in
  * order, such as "01234567". Prefixed literals (0b101) keep their own base.

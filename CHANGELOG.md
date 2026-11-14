@@ -8,6 +8,8 @@
   return a JavaScript boolean, true when they run in one direction (ties
   allowed). ``R`0:${x}:1` `` checks that x lies in [0, 1], and an interval
   operand counts with both endpoints. Using a chain in arithmetic throws.
+  `R.between` is the same test typed as `boolean` for TypeScript, and throws
+  when its template is not a chain.
 
 ### Changed
 
