@@ -2,6 +2,12 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## Release 0.8.0
+**Model:** Claude Opus 5.5
+**Date:** 2026-11-14
+
+Version 0.8.0 with the CHANGELOG heading; a minor bump because two `R` results change from 0.7.0.
+
 ## Betweenness chains in R
 **Model:** Claude Opus 5.5
 **Date:** 2026-11-14

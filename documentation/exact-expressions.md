@@ -5,8 +5,8 @@ title: Exact expressions and list helpers
 `R` is a tagged template that turns a small exact-arithmetic expression into
 Core values. `range`, `seq`, `sum` and `product` combine Core values in lists.
 They are the basis of the RatCalc calculator (`apps/calc`), where input is
-JavaScript with these in scope. *Unreleased; available in the workspace Core
-after 0.6.0.*
+JavaScript with these in scope. *Added in 0.7.0; spacing-aware colons and
+betweenness chains since 0.8.0.*
 
 ## `R`
 

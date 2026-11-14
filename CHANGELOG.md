@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.8.0 — 2026-11-14
+
+`R` reads the interval colon by spacing, as RiX does, which changes two
+results from 0.7.0 (see Changed), and gains betweenness chains.
+
 ### Added
 
 - Betweenness chains in `R`, as in RiX: three or more values joined by colons
