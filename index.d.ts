@@ -710,6 +710,8 @@ export function parseNumber(value: string): CoreNumber;
  * R`1:2 + 3`, R`(1/3 + ${x}) ^ 2`. Operators: + - * / ^ ! : and parentheses.
  * An unspaced colon groups with the unspaced text around it before spaced
  * operators apply: R`1:2 + 3:4` is 4:6, R`1:2 * 2` is 2:4, R`1:2*2` is 1:4.
+ * Three or more colon-joined values are a betweenness test and return a
+ * boolean (R`0:${x}:1`); cast with `as unknown as boolean` in TypeScript.
  */
 export function R(
   strings: TemplateStringsArray,

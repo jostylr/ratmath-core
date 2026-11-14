@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Added
+
+- Betweenness chains in `R`, as in RiX: three or more values joined by colons
+  return a JavaScript boolean, true when they run in one direction (ties
+  allowed). ``R`0:${x}:1` `` checks that x lies in [0, 1], and an interval
+  operand counts with both endpoints. Using a chain in arithmetic throws.
+
 ### Changed
 
 - `R` reads the interval colon by spacing, as RiX now does. An unspaced colon

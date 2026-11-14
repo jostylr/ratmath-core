@@ -32,8 +32,8 @@ describe("R: an unspaced colon groups with the unspaced text around it", () => {
     expect(text(R`1:2*3:4`)).toBe("3:8");
     expect(text(R`1:2+3:4+5:6`)).toBe("9:12");
     expect(text(R`1:2+1+3:4`)).toBe("5:7");
-    // '/' does not split, so a fraction endpoint survives
-    expect(() => R`0:1/2:1`).toThrow();
+    // '/' does not split, so 0:1/2:1 asks whether 1/2 lies in [0, 1]
+    expect(R`0:1/2:1`).toBe(true);
     // a sign after an operator is not a split
     expect(text(R`1:2*-3:4`)).toBe("-6:8");
   });
@@ -67,12 +67,51 @@ describe("R: an unspaced colon groups with the unspaced text around it", () => {
   });
 
   test("malformed colon expressions still throw", () => {
-    expect(() => R`1:2:3`).toThrow();
-    expect(() => R`1: 2+3 :4`).toThrow();
     expect(() => R`:2`).toThrow();
     expect(() => R`1:`).toThrow();
     expect(() => R`(1:2`).toThrow();
     expect(() => R`1:2)`).toThrow();
     expect(() => R`1:2 +`).toThrow();
+  });
+});
+
+describe("R: three or more colon-joined values are a betweenness test", () => {
+  test("it gives a JavaScript boolean", () => {
+    expect(R`1:2:3`).toBe(true);
+    expect(R`3:2:1`).toBe(true);
+    expect(R`1:3:2`).toBe(false);
+    expect(R`1:1:2`).toBe(true);
+    expect(R`1:2:3:4:5`).toBe(true);
+    expect(R`1:2:3:2`).toBe(false);
+    expect(R`0:1/2:1`).toBe(true);
+  });
+
+  test("spaced colons bind loosest, so endpoints and the middle can be sums", () => {
+    expect(R`1: 2+3 :6`).toBe(true);
+    expect(R`1: 2+3 :4`).toBe(false);
+    expect(R`1 : 2 + 3 : 4`).toBe(false);
+    const x = new Rational(1, 3);
+    expect(R`0:${x}:1`).toBe(true);
+    expect(R`0: ${x} * 4 :1`).toBe(false);
+    expect(R`(0:1:2)`).toBe(true);
+  });
+
+  test("an interval operand counts with both endpoints", () => {
+    expect(R`0:(1/4:1/2):1`).toBe(true);
+    expect(R`0:(1/2:2):1`).toBe(false);
+    expect(R`1:(1/4:1/2):0`).toBe(true);
+    expect(R`0:${R`1/4:1/2`}:1`).toBe(true);
+  });
+
+  test("a chain cannot be used as a number", () => {
+    expect(() => R`(1:2:3) + 1`).toThrow("true or false");
+    expect(() => R`1 + (1:2:3)`).toThrow("true or false");
+    expect(() => R`(1:2:3) * 2`).toThrow("true or false");
+    expect(() => R`2 / (1:2:3)`).toThrow("true or false");
+    expect(() => R`-(1:2:3)`).toThrow("true or false");
+    expect(() => R`(1:2:3)^2`).toThrow("true or false");
+    expect(() => R`(1:2:3)!`).toThrow("true or false");
+    expect(() => R`(1:2:3):4`).toThrow("true or false");
+    expect(() => R`1:2:${"1.5?"}`).toThrow("exact numbers and intervals");
   });
 });

@@ -68,6 +68,23 @@ With a single unspaced colon, unspaced arithmetic belongs to the endpoint. An
 unspaced `+`, `-` or `*` with a colon on both sides joins two intervals; write
 it with spaces (RiX warns about the unspaced form with RX1710).
 
+#### Betweenness
+
+Three or more values joined by colons are a betweenness test, as in RiX, and
+`R` returns a JavaScript boolean:
+
+```js
+R`0:${x}:1`;              // true when x lies in [0, 1]
+R`1:3:2`;                 // false: 3 is not between 1 and 2
+R`3:2:1`;                 // true: descending chains count too
+R`1: ${n}+1 :10`;         // spaced colons, so the middle is n + 1
+R`0:(1/4:1/2):1`;         // true: an interval counts with both endpoints
+```
+
+The values must run in one direction, ascending or descending, and equal
+neighbours are allowed. A chain is a test, not a number: using one in
+arithmetic, such as ``R`(1:2:3) + 1` ``, throws a `TypeError`.
+
 A whole `Rational` result is returned as an `Integer` (as in RiX):
 ``R`0.#3 * 3` `` is `Integer 1`.
 

@@ -2,6 +2,15 @@
 
 Please note that there were many AI changes done before this log. Below you should find short summaries of what the AI coding agent has done.
 
+## Betweenness chains in R
+**Model:** Claude Opus 5.5
+**Date:** 2026-11-14
+
+`R` returns a boolean for a:b:c... chains, matching RiX's betweenness (monotone in one direction, ties allowed, intervals unpacked to endpoints).
+
+A chain used in arithmetic throws a TypeError naming the chain. Tests are in
+`tests/r-spaced-interval-colon.test.js`.
+
 ## Spacing-aware interval colon in R
 **Model:** Claude Fable 5.2
 **Date:** 2026-11-13

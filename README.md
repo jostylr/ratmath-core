@@ -115,7 +115,9 @@ Operators, loosest first: `:` (interval), then `+ -`, then `* /`, then unary
 power as `^`, as in RiX), then postfix `!` and `!!`. There are no names or
 functions; use JavaScript around it. A colon written without spaces groups with
 the unspaced text around it first, so `1:2 + 3:4` is `4:6`, `1:2 * 2` is `2:4`
-and `1:n+1` is `1:(n+1)`; see the exact-expressions page. Interpolations may be Core values, bigints,
+and `1:n+1` is `1:(n+1)`. Three or more colon-joined values are a betweenness
+test returning a boolean: `` R`0:${x}:1` `` is `true` when x lies in [0, 1].
+See the exact-expressions page. Interpolations may be Core values, bigints,
 safe integers or literal strings; inexact JS numbers such as `0.1` are rejected.
 
 ### Sums, products and ranges

@@ -19,6 +19,12 @@
  * `+`, `-` or `*` written with an unspaced colon on both sides combines the
  * two intervals, so R`1:2+3:4` is also (1:2) + (3:4).
  *
+ * Three or more values joined by colons are a betweenness test, as in RiX, and
+ * give a JavaScript boolean: R`0:${x}:1` is true when x lies in [0, 1], and
+ * R`1: ${n}+1 :10` checks n + 1. The values must run in one direction
+ * (ascending or descending; equal neighbours are allowed), and an interval
+ * operand counts with both endpoints: R`0:(1/4:1/2):1` is true.
+ *
  * Literals follow RiX spelling: 3/4, 1..2/3, 0.#3, 1.2[3:6], 1.5[+-0.01],
  * 1_000, 1.5?, continued fractions 3.~7~15~1 and ~-1.~2, radix shifts
  * 1_^3 and 2.5_^-2 (RiX has no E notation), and base prefixes 0xff.8, 0b101,
@@ -205,10 +211,37 @@ export function coreValue(value) {
 
 const toRationalish = (value) => (value instanceof Integer ? value.toRational() : value);
 
+// A betweenness chain answers true or false; it is not a number to compute with.
+function numeric(value) {
+  if (typeof value === "boolean") throw new TypeError("R: a betweenness chain (a:b:c) gives true or false, not a number");
+  return value;
+}
+
 function interval(left, right) {
-  const [low, high] = [toRationalish(left), toRationalish(right)];
+  const [low, high] = [toRationalish(numeric(left)), toRationalish(numeric(right))];
   if (!(low instanceof Rational) || !(high instanceof Rational)) throw new TypeError("R: ':' joins two scalar endpoints");
   return new RationalInterval(low, high);
+}
+
+// a:b:c... as in RiX: true when the values run in one direction (ascending or
+// descending, ties allowed); an interval operand takes part with both endpoints.
+function between(values) {
+  const points = values.map((value) => {
+    numeric(value);
+    if (value instanceof RationalInterval) return [value.low, value.high];
+    const point = toRationalish(value);
+    if (!(point instanceof Rational)) throw new TypeError("R: a betweenness chain compares exact numbers and intervals");
+    return [point];
+  });
+  const runs = (direction) => {
+    for (let k = 1; k < points.length; k++) {
+      for (const a of points[k - 1]) {
+        for (const b of points[k]) if (a.compareTo(b) * direction > 0) return false;
+      }
+    }
+    return true;
+  };
+  return runs(1) || runs(-1);
 }
 
 // RiX currently evaluates ** like ^; the interval product power is .mpow(n).
@@ -240,6 +273,7 @@ function evaluate(strings, values, base) {
   function postfix() {
     let value = primary();
     for (let op; (op = takeOp(["!!", "!"])) !== null;) {
+      numeric(value);
       if (!(value instanceof Integer)) throw new TypeError(`R: '${op}' needs an Integer`);
       value = op === "!!" ? value.doubleFactorial() : value.factorial();
     }
@@ -248,24 +282,32 @@ function evaluate(strings, values, base) {
   function exponent() {
     const base = postfix();
     const op = takeOp(["^", "**"]);
-    return op !== null ? power(base, unary(), op) : base;
+    return op !== null ? power(numeric(base), numeric(unary()), op) : base;
   }
   function unary() {
-    return takeOp("-") !== null ? unary().negate() : (takeOp("+"), exponent());
+    return takeOp("-") !== null ? numeric(unary()).negate() : (takeOp("+"), exponent());
   }
   function product() {
     let value = unary();
-    for (let op; (op = takeOp(["*", "/"])) !== null;) value = op === "*" ? value.multiply(unary()) : value.divide(unary());
+    for (let op; (op = takeOp(["*", "/"])) !== null;) {
+      const right = numeric(unary());
+      value = op === "*" ? numeric(value).multiply(right) : numeric(value).divide(right);
+    }
     return value;
   }
   function sum() {
     let value = product();
-    for (let op; (op = takeOp(["+", "-"])) !== null;) value = op === "+" ? value.add(product()) : value.subtract(product());
+    for (let op; (op = takeOp(["+", "-"])) !== null;) {
+      const right = numeric(product());
+      value = op === "+" ? numeric(value).add(right) : numeric(value).subtract(right);
+    }
     return value;
   }
   function range() {
-    const value = sum();
-    return takeOp(":") !== null ? interval(value, sum()) : value;
+    const values = [sum()];
+    while (takeOp(":") !== null) values.push(sum());
+    if (values.length === 1) return values[0];
+    return values.length === 2 ? interval(values[0], values[1]) : between(values);
   }
 
   const result = range();
