@@ -44,11 +44,11 @@
   "author": "James Taylor",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jostylr/ratmath-core.git"
+    "url": "git+https://github.com/ratmath/core.git"
   },
-  "homepage": "https://jostylr.github.io/ratmath-core/",
+  "homepage": "https://core.ratmath.com/",
   "bugs": {
-    "url": "https://github.com/jostylr/ratmath-core/issues"
+    "url": "https://github.com/ratmath/core/issues"
   },
   "license": "MIT",
   "engines": {
