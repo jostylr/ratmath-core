@@ -7,8 +7,8 @@ project:
 
 website:
   title: "@ratmath/core"
-  site-url: https://jostylr.github.io/ratmath-core/
-  repo-url: https://github.com/jostylr/ratmath-core
+  site-url: https://core.ratmath.com/
+  repo-url: https://github.com/ratmath/core
   repo-actions: [source, issue]
   navbar:
     left:
@@ -20,7 +20,7 @@ website:
         text: Examples
     right:
       - icon: github
-        href: https://github.com/jostylr/ratmath-core
+        href: https://github.com/ratmath/core
   sidebar:
     style: docked
     search: true
